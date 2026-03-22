@@ -1,3 +1,5 @@
+![ci](https://github.com/mitchellthompkins/constfilt/actions/workflows/main.yml/badge.svg)
+
 # constfilt
 
 A header-only C++17 library for designing IIR digital filters at compile time.

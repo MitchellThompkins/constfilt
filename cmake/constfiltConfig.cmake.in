@@ -1,0 +1,7 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+find_dependency(consteig)
+
+include("${CMAKE_CURRENT_LIST_DIR}/constfiltTargets.cmake")
+check_required_components(constfilt)

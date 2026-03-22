@@ -1,0 +1,47 @@
+name: ci
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+    branches:
+      - develop
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/mitchellthompkins/consteig_dev_image:latest
+    steps:
+      - name: Checkout
+        run: |
+          git init .
+          git remote add origin "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
+          git fetch --depth=1 origin "$GITHUB_SHA"
+          git checkout FETCH_HEAD
+
+      - name: Check formatting
+        run: make check-format
+
+  build-and-test:
+    name: ${{ matrix.compiler }}
+    needs: lint
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/mitchellthompkins/consteig_dev_image:latest
+    strategy:
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - name: Checkout
+        run: |
+          git init .
+          git remote add origin "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
+          git fetch --depth=1 origin "$GITHUB_SHA"
+          git checkout FETCH_HEAD
+
+      - name: Checkout consteig dependency
+        run: git clone --depth=1 --recurse-submodules https://github.com/mitchellthompkins/consteig ../consteig
+
+      - name: Build and test
+        run: make test.${{ matrix.compiler }}

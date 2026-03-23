@@ -10,27 +10,22 @@ on:
 jobs:
   lint:
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/mitchellthompkins/consteig_dev_image:latest
-    permissions:
-      packages: read
-      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
       - name: Check formatting
-        run: make check-format
+        run: |
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/workspace" \
+            -w /workspace \
+            ghcr.io/mitchellthompkins/consteig_dev_image:latest \
+            make check-format
 
   build-and-test:
     name: ${{ matrix.compiler }}
     needs: lint
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/mitchellthompkins/consteig_dev_image:latest
-    permissions:
-      packages: read
-      contents: read
     strategy:
       matrix:
         compiler: [gcc, clang]
@@ -42,4 +37,11 @@ jobs:
         run: git clone --depth=1 --recurse-submodules https://github.com/mitchellthompkins/consteig ../consteig
 
       - name: Build and test
-        run: make test.${{ matrix.compiler }}
+        run: |
+          PARENT=$(dirname "$GITHUB_WORKSPACE")
+          REPO=$(basename "$GITHUB_WORKSPACE")
+          docker run --rm \
+            -v "$PARENT:/work" \
+            -w "/work/$REPO" \
+            ghcr.io/mitchellthompkins/consteig_dev_image:latest \
+            make test.${{ matrix.compiler }}

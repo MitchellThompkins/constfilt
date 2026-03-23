@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
-#include "constfilt.hpp"
 #include "butterworth_reference.hpp"
+#include "constfilt.hpp"
 #include "test_tools.hpp"
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

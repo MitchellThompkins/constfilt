@@ -28,7 +28,8 @@ TEST(ZOH, FirstOrder_a1_T0p1)
     };
 
     constexpr double Ts = 0.1;
-    constexpr auto sys_d = constfilt::zoh_discretize(sys_c, Ts, constfilt::ZOH{});
+    constexpr auto sys_d =
+        constfilt::zoh_discretize(sys_c, Ts, constfilt::ZOH{});
 
     // Analytic: Ad = exp(-1*0.1) = exp(-0.1) ≈ 0.90483741803595957
     // Bd = (1 - exp(-0.1)) / 1   ≈ 0.09516258196404043
@@ -43,14 +44,11 @@ TEST(ZOH, FirstOrder_a1_T0p1)
 TEST(ZOH, FirstOrder_a5_T0p01)
 {
     constexpr constfilt::StateSpace<double, 1u> sys_c{
-        {{{{-5.0}}}},
-        {{{{1.0}}}},
-        {{{{1.0}}}},
-        0.0
-    };
+        {{{{-5.0}}}}, {{{{1.0}}}}, {{{{1.0}}}}, 0.0};
 
     constexpr double Ts = 0.01;
-    constexpr auto sys_d = constfilt::zoh_discretize(sys_c, Ts, constfilt::ZOH{});
+    constexpr auto sys_d =
+        constfilt::zoh_discretize(sys_c, Ts, constfilt::ZOH{});
 
     // exp(-5*0.01) = exp(-0.05)
     constexpr double Ad_ref = 0.95122942450071403;
@@ -79,9 +77,9 @@ TEST(FaddeevLeVerrier, DiagonalMatrix)
     constexpr consteig::Matrix<double, 2u, 2u> A{{{{2.0, 0.0}, {0.0, 3.0}}}};
     constexpr auto coeffs = constfilt::faddeev_leverrier(A);
 
-    EXPECT_NEAR(coeffs[0],  1.0, 1e-12);
+    EXPECT_NEAR(coeffs[0], 1.0, 1e-12);
     EXPECT_NEAR(coeffs[1], -5.0, 1e-12);
-    EXPECT_NEAR(coeffs[2],  6.0, 1e-12);
+    EXPECT_NEAR(coeffs[2], 6.0, 1e-12);
 }
 
 // ─── ss_to_tf: 1st-order TF check ────────────────────────────────────────────
@@ -93,17 +91,13 @@ TEST(SsToTf, FirstOrder)
     // h[0]=0, h[1]=C*B=0.1
     // b[0]=0, b[1]=0.1
     constexpr constfilt::StateSpace<double, 1u> sys{
-        {{{{0.9}}}},
-        {{{{0.1}}}},
-        {{{{1.0}}}},
-        0.0
-    };
+        {{{{0.9}}}}, {{{{0.1}}}}, {{{{1.0}}}}, 0.0};
     constexpr auto tf = constfilt::ss_to_tf(sys);
 
-    EXPECT_NEAR(tf.a[0],  1.0, 1e-12);
+    EXPECT_NEAR(tf.a[0], 1.0, 1e-12);
     EXPECT_NEAR(tf.a[1], -0.9, 1e-12);
-    EXPECT_NEAR(tf.b[0],  0.0, 1e-12);
-    EXPECT_NEAR(tf.b[1],  0.1, 1e-12);
+    EXPECT_NEAR(tf.b[0], 0.0, 1e-12);
+    EXPECT_NEAR(tf.b[1], 0.1, 1e-12);
 }
 
 } // namespace

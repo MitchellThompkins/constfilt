@@ -16,8 +16,7 @@
 #include <cmath>
 
 // Absolute-value comparison helper (no std::abs in constexpr context).
-template <typename T>
-static constexpr bool withinTol(T a, T b, T tol)
+template <typename T> static constexpr bool withinTol(T a, T b, T tol)
 {
     T diff = a - b;
     return (diff < static_cast<T>(0) ? -diff : diff) < tol;

@@ -8,12 +8,13 @@ namespace constfilt
 
 // ─────────────────────────── Tag types ───────────────────────────────────────
 
-struct ZOH {};
+struct ZOH
+{
+};
 
 // ─────────────────────────── Data structures ─────────────────────────────────
 
-template <typename T, consteig::Size N>
-struct StateSpace
+template <typename T, consteig::Size N> struct StateSpace
 {
     consteig::Matrix<T, N, N> A{};
     consteig::Matrix<T, N, 1> B{};
@@ -35,16 +36,15 @@ struct TransferFunction
 // where V = eigvecs, λ_i = eigvals (complex).
 // Real part extracted at the end (imaginary parts cancel for real A).
 template <typename T, consteig::Size N>
-constexpr consteig::Matrix<T, N, N>
-expm(const consteig::Matrix<T, N, N>& A)
+constexpr consteig::Matrix<T, N, N> expm(const consteig::Matrix<T, N, N> &A)
 {
     using Cx = consteig::Complex<T>;
     using CxMat_NN = consteig::Matrix<Cx, N, N>;
     using CxMat_N1 = consteig::Matrix<Cx, N, 1>;
 
     // 1. Eigenvalues and eigenvectors
-    auto evals = consteig::eigvals(A);       // Matrix<Cx, N, 1>
-    auto V     = consteig::eigvecs(A, evals); // Matrix<Cx, N, N>
+    auto evals = consteig::eigvals(A);    // Matrix<Cx, N, 1>
+    auto V = consteig::eigvecs(A, evals); // Matrix<Cx, N, N>
 
     // 2. Invert V column-by-column via LU
     auto lu_V = consteig::lu(V);
@@ -95,11 +95,11 @@ expm(const consteig::Matrix<T, N, N>& A)
 // Solve  Ac * Bd = (Ad - I) * Bc  via LU.
 // Cc and Dc are unchanged.
 template <typename T, consteig::Size N>
-constexpr StateSpace<T, N>
-zoh_discretize(const StateSpace<T, N>& sys_c, T Ts, ZOH /*tag*/)
+constexpr StateSpace<T, N> zoh_discretize(const StateSpace<T, N> &sys_c, T Ts,
+                                          ZOH /*tag*/)
 {
-    const auto& Ac = sys_c.A;
-    const auto& Bc = sys_c.B;
+    const auto &Ac = sys_c.A;
+    const auto &Bc = sys_c.B;
 
     // Ac * Ts
     consteig::Matrix<T, N, N> AcTs{};
@@ -130,7 +130,7 @@ zoh_discretize(const StateSpace<T, N>& sys_c, T Ts, ZOH /*tag*/)
 
     // Bd = Ac^{-1} * rhs  →  solve Ac * Bd = rhs
     auto lu_Ac = consteig::lu(Ac);
-    auto Bd    = consteig::lu_solve(lu_Ac, rhs);
+    auto Bd = consteig::lu_solve(lu_Ac, rhs);
 
     StateSpace<T, N> sys_d{};
     sys_d.A = Ad;
@@ -149,8 +149,8 @@ zoh_discretize(const StateSpace<T, N>& sys_c, T Ts, ZOH /*tag*/)
 //   c_k = -trace(Ad * p_{k-1}) / k
 //   p_k = Ad * p_{k-1} + c_k * I
 template <typename T, consteig::Size N>
-constexpr consteig::Array<T, N + 1u>
-faddeev_leverrier(const consteig::Matrix<T, N, N>& Ad)
+constexpr consteig::Array<T, N + 1u> faddeev_leverrier(
+    const consteig::Matrix<T, N, N> &Ad)
 {
     consteig::Array<T, N + 1u> coeffs{};
     coeffs[0] = static_cast<T>(1);
@@ -200,13 +200,12 @@ faddeev_leverrier(const consteig::Matrix<T, N, N>& Ad)
 //   h[k] = C * A^{k-1} * B   for k = 1..N
 //   b[k] = sum_{j=0}^{k} a[j] * h[k-j]
 template <typename T, consteig::Size N>
-constexpr consteig::Array<T, N + 1u>
-markov_numerator(const StateSpace<T, N>& sys_d,
-                 const consteig::Array<T, N + 1u>& a_coeffs)
+constexpr consteig::Array<T, N + 1u> markov_numerator(
+    const StateSpace<T, N> &sys_d, const consteig::Array<T, N + 1u> &a_coeffs)
 {
-    const auto& Ad = sys_d.A;
-    const auto& Bd = sys_d.B;
-    const auto& Cd = sys_d.C;
+    const auto &Ad = sys_d.A;
+    const auto &Bd = sys_d.B;
+    const auto &Cd = sys_d.C;
 
     // Compute Markov parameters h[0..N]
     consteig::Array<T, N + 1u> h{};
@@ -267,8 +266,8 @@ markov_numerator(const StateSpace<T, N>& sys_d,
 
 // Full pipeline: discrete state-space → (b, a) transfer function.
 template <typename T, consteig::Size N>
-constexpr TransferFunction<T, N + 1u, N + 1u>
-ss_to_tf(const StateSpace<T, N>& sys_d)
+constexpr TransferFunction<T, N + 1u, N + 1u> ss_to_tf(
+    const StateSpace<T, N> &sys_d)
 {
     auto a = faddeev_leverrier(sys_d.A);
     auto b = markov_numerator(sys_d, a);

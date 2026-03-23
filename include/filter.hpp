@@ -6,11 +6,10 @@
 namespace constfilt
 {
 
-// NB = number of numerator coefficients, NA = number of denominator coefficients.
-// Convention: a[0] = 1 (monic denominator); stored for uniformity.
-// Direct Form II Transposed implementation.
-template <typename T, consteig::Size NB, consteig::Size NA>
-class Filter
+// NB = number of numerator coefficients, NA = number of denominator
+// coefficients. Convention: a[0] = 1 (monic denominator); stored for
+// uniformity. Direct Form II Transposed implementation.
+template <typename T, consteig::Size NB, consteig::Size NA> class Filter
 {
     static constexpr consteig::Size M = (NA > NB ? NA : NB) - 1u; // STATE_LEN
 
@@ -21,8 +20,8 @@ class Filter
 
     constexpr Filter() = default;
 
-    constexpr Filter(const consteig::Array<T, NB>& b,
-                     const consteig::Array<T, NA>& a)
+    constexpr Filter(const consteig::Array<T, NB> &b,
+                     const consteig::Array<T, NA> &a)
         : _b(b), _a(a)
     {
     }
@@ -46,8 +45,8 @@ class Filter
     // Batch: process an array with a local zero-initialized state.
     // constexpr-capable (does not touch member state).
     template <consteig::Size N>
-    constexpr consteig::Array<T, N>
-    operator()(const consteig::Array<T, N>& input) const
+    constexpr consteig::Array<T, N> operator()(
+        const consteig::Array<T, N> &input) const
     {
         consteig::Array<T, N> output{};
         consteig::Array<T, M> local_state{};
@@ -71,8 +70,14 @@ class Filter
     }
 
     // Accessors (for testing)
-    constexpr const consteig::Array<T, NB>& coeffs_b() const { return _b; }
-    constexpr const consteig::Array<T, NA>& coeffs_a() const { return _a; }
+    constexpr const consteig::Array<T, NB> &coeffs_b() const
+    {
+        return _b;
+    }
+    constexpr const consteig::Array<T, NA> &coeffs_a() const
+    {
+        return _a;
+    }
 
     // Reset real-time state to zero.
     void reset()

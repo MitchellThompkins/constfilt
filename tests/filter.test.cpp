@@ -20,14 +20,15 @@ static constexpr consteig::Array<double, 3> REF_A = {1.0, -0.5, 0.0625};
 class TestFilter : public constfilt::Filter<double, 3u, 3u>
 {
   public:
-    constexpr TestFilter(const consteig::Array<double, 3u>& b,
-                         const consteig::Array<double, 3u>& a)
+    constexpr TestFilter(const consteig::Array<double, 3u> &b,
+                         const consteig::Array<double, 3u> &a)
         : constfilt::Filter<double, 3u, 3u>(b, a)
     {
     }
 };
 
-// ─── Coefficient accessor tests ───────────────────────────────────────────────
+// ─── Coefficient accessor tests
+// ───────────────────────────────────────────────
 
 TEST(FilterCoeffs, StoresB)
 {
@@ -56,11 +57,12 @@ TEST(FilterCoeffs, StoresA)
 //      s[0] = 0.5*1 - (-0.5)*0.25 + s[1] = 0.5 + 0.125 + 0 = 0.625
 //      s[1] = 0.25*1 - 0.0625*0.25 = 0.25 - 0.015625 = 0.234375
 // n=1: x=1, y = 0.25 + 0.625 = 0.875
-//      s[0] = 0.5 - (-0.5)*0.875 + 0.234375 = 0.5 + 0.4375 + 0.234375 = 1.171875
-//      s[1] = 0.25 - 0.0625*0.875 = 0.25 - 0.05468750 = 0.195312500
+//      s[0] = 0.5 - (-0.5)*0.875 + 0.234375 = 0.5 + 0.4375 + 0.234375
+//      = 1.171875 s[1] = 0.25 - 0.0625*0.875 = 0.25 - 0.05468750 = 0.195312500
 // n=2: x=1, y = 0.25 + 1.171875 = 1.421875
-//      s[0] = 0.5 - (-0.5)*1.421875 + 0.195312500 = 0.5+0.710937500+0.195312500 = 1.406250
-//      s[1] = 0.25 - 0.0625*1.421875 = 0.25 - 0.088867188 = 0.161132812
+//      s[0] = 0.5 - (-0.5)*1.421875 + 0.195312500 = 0.5+0.710937500+0.195312500
+//      = 1.406250 s[1] = 0.25 - 0.0625*1.421875 = 0.25 - 0.088867188 =
+//      0.161132812
 // n=3: x=1, y = 0.25 + 1.406250 = 1.656250
 
 static constexpr consteig::Array<double, 4> STEP4 = {1.0, 1.0, 1.0, 1.0};
@@ -71,10 +73,10 @@ TEST(FilterBatch, StepResponse4)
     static constexpr auto y = filt(STEP4);
 
     // Tolerances: these are exact rational arithmetic values
-    EXPECT_NEAR(y[0], 0.25,      1e-14);
-    EXPECT_NEAR(y[1], 0.875,     1e-14);
-    EXPECT_NEAR(y[2], 1.421875,  1e-14);
-    EXPECT_NEAR(y[3], 1.656250,  1e-13);
+    EXPECT_NEAR(y[0], 0.25, 1e-14);
+    EXPECT_NEAR(y[1], 0.875, 1e-14);
+    EXPECT_NEAR(y[2], 1.421875, 1e-14);
+    EXPECT_NEAR(y[3], 1.656250, 1e-13);
 }
 
 // ─── Real-time operator() matches batch operator() ───────────────────────────
@@ -83,8 +85,8 @@ TEST(FilterRealTime, MatchesBatch)
 {
     // batch (constexpr path)
     static constexpr TestFilter cfilt(REF_B, REF_A);
-    static constexpr consteig::Array<double, 8> step8 = {
-        1, 1, 1, 1, 1, 1, 1, 1};
+    static constexpr consteig::Array<double, 8> step8 = {1, 1, 1, 1,
+                                                         1, 1, 1, 1};
     static constexpr auto batch_out = cfilt(step8);
 
     // real-time (mutating state)
@@ -97,7 +99,8 @@ TEST(FilterRealTime, MatchesBatch)
     }
 }
 
-// ─── Reset clears state ───────────────────────────────────────────────────────
+// ─── Reset clears state
+// ───────────────────────────────────────────────────────
 
 TEST(FilterReset, StateIsZeroedAfterReset)
 {

@@ -12,6 +12,10 @@ struct ZOH
 {
 };
 
+struct MatchedZ
+{
+};
+
 // ─────────────────────────── Data structures ─────────────────────────────────
 
 template <typename T, consteig::Size N> struct StateSpace
@@ -271,6 +275,67 @@ constexpr TransferFunction<T, N + 1u, N + 1u> ss_to_tf(
 {
     auto a = faddeev_leverrier(sys_d.A);
     auto b = markov_numerator(sys_d, a);
+    TransferFunction<T, N + 1u, N + 1u> tf{};
+    tf.b = b;
+    tf.a = a;
+    return tf;
+}
+
+// ─── Matched-Z discretization ───────────────────────────────────────────────
+
+// Matched-Z: discrete poles at z_k = exp(s_k * Ts).
+// For all-pole continuous systems (no finite zeros), places N zeros at z = -1
+// and matches DC gain: H_d(1) = H_c(0).
+//
+// Steps:
+//   1. Ad = expm(Ac * Ts)               -- same pole mapping as ZOH
+//   2. a  = faddeev_leverrier(Ad)        -- discrete denominator
+//   3. H_c(0) = D - C * Ac^{-1} * B     -- continuous DC gain
+//   4. b = K * (z+1)^N  where K = H_c(0) * a(1) / 2^N
+template <typename T, consteig::Size N>
+constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_discretize(
+    const StateSpace<T, N> &sys_c, T Ts, MatchedZ /*tag*/)
+{
+    // 1. Ad = expm(Ac * Ts)
+    consteig::Matrix<T, N, N> AcTs{};
+    for (consteig::Size r = 0; r < N; ++r)
+        for (consteig::Size c = 0; c < N; ++c)
+            AcTs(r, c) = sys_c.A(r, c) * Ts;
+    const auto Ad = expm(AcTs);
+
+    // 2. Discrete denominator polynomial
+    const auto a = faddeev_leverrier(Ad);
+
+    // 3. Continuous DC gain: solve Ac*x = B, then H_c(0) = D - C*x
+    auto lu_Ac = consteig::lu(sys_c.A);
+    auto x = consteig::lu_solve(lu_Ac, sys_c.B);
+    T dc_gain = sys_c.D;
+    for (consteig::Size j = 0; j < N; ++j)
+        dc_gain -= sys_c.C(0, j) * x(j, 0);
+
+    // 4. a(1) = sum of denominator coefficients
+    T a_at_1 = static_cast<T>(0);
+    for (consteig::Size k = 0; k <= N; ++k)
+        a_at_1 += a[k];
+
+    // 5. 2^N
+    T two_pow_N = static_cast<T>(1);
+    for (consteig::Size k = 0; k < N; ++k)
+        two_pow_N *= static_cast<T>(2);
+
+    // 6. Scale: K = dc_gain * a(1) / 2^N
+    const T K = dc_gain * a_at_1 / two_pow_N;
+
+    // 7. Numerator b[k] = K * C(N, k)  (binomial coefficients of (z+1)^N)
+    consteig::Array<T, N + 1u> b{};
+    T binom = static_cast<T>(1);
+    for (consteig::Size k = 0; k <= N; ++k)
+    {
+        b[k] = K * binom;
+        if (k < N)
+            binom = binom * static_cast<T>(N - k) / static_cast<T>(k + 1u);
+    }
+
     TransferFunction<T, N + 1u, N + 1u> tf{};
     tf.b = b;
     tf.a = a;

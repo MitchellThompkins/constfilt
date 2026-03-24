@@ -100,4 +100,42 @@ TEST(SsToTf, FirstOrder)
     EXPECT_NEAR(tf.b[1], 0.1, 1e-12);
 }
 
+// ─── Matched-Z: 1st-order H_c(s) = a/(s+a) ──────────────────────────────────
+//
+// Matched-Z result:
+//   pole at z = exp(-a*Ts)
+//   zero at z = -1
+//   DC gain = 1  =>  b[0] = b[1] = (1 - exp(-a*Ts)) / 2
+//   a = [1, -exp(-a*Ts)]
+
+TEST(MatchedZ, FirstOrder_a1_T0p1)
+{
+    constexpr constfilt::StateSpace<double, 1u> sys_c{
+        {{{{-1.0}}}}, {{{{1.0}}}}, {{{{1.0}}}}, 0.0};
+    constexpr double Ts = 0.1;
+    constexpr auto tf = constfilt::matched_z_discretize(sys_c, Ts, constfilt::MatchedZ{});
+
+    constexpr double pole = 0.90483741803595957; // exp(-0.1)
+    constexpr double half_bd = (1.0 - pole) / 2.0;
+
+    EXPECT_NEAR(tf.a[0],  1.0,      1e-10);
+    EXPECT_NEAR(tf.a[1], -pole,     1e-10);
+    EXPECT_NEAR(tf.b[0],  half_bd,  1e-10);
+    EXPECT_NEAR(tf.b[1],  half_bd,  1e-10);
+}
+
+TEST(MatchedZ, FirstOrder_DCGain)
+{
+    // H_d(1) should equal H_c(0) = 1
+    constexpr constfilt::StateSpace<double, 1u> sys_c{
+        {{{{-1.0}}}}, {{{{1.0}}}}, {{{{1.0}}}}, 0.0};
+    constexpr double Ts = 0.1;
+    constexpr auto tf = constfilt::matched_z_discretize(sys_c, Ts, constfilt::MatchedZ{});
+
+    // H_d(z=1) = (b[0]+b[1]) / (a[0]+a[1])
+    constexpr double num = tf.b[0] + tf.b[1];
+    constexpr double den = tf.a[0] + tf.a[1];
+    EXPECT_NEAR(num / den, 1.0, 1e-10);
+}
+
 } // namespace

@@ -113,15 +113,16 @@ TEST(MatchedZ, FirstOrder_a1_T0p1)
     constexpr constfilt::StateSpace<double, 1u> sys_c{
         {{{{-1.0}}}}, {{{{1.0}}}}, {{{{1.0}}}}, 0.0};
     constexpr double Ts = 0.1;
-    constexpr auto tf = constfilt::matched_z_discretize(sys_c, Ts, constfilt::MatchedZ{});
+    constexpr auto tf =
+        constfilt::matched_z_discretize(sys_c, Ts, constfilt::MatchedZ{});
 
     constexpr double pole = 0.90483741803595957; // exp(-0.1)
     constexpr double half_bd = (1.0 - pole) / 2.0;
 
-    EXPECT_NEAR(tf.a[0],  1.0,      1e-10);
-    EXPECT_NEAR(tf.a[1], -pole,     1e-10);
-    EXPECT_NEAR(tf.b[0],  half_bd,  1e-10);
-    EXPECT_NEAR(tf.b[1],  half_bd,  1e-10);
+    EXPECT_NEAR(tf.a[0], 1.0, 1e-10);
+    EXPECT_NEAR(tf.a[1], -pole, 1e-10);
+    EXPECT_NEAR(tf.b[0], half_bd, 1e-10);
+    EXPECT_NEAR(tf.b[1], half_bd, 1e-10);
 }
 
 TEST(MatchedZ, FirstOrder_DCGain)
@@ -130,7 +131,8 @@ TEST(MatchedZ, FirstOrder_DCGain)
     constexpr constfilt::StateSpace<double, 1u> sys_c{
         {{{{-1.0}}}}, {{{{1.0}}}}, {{{{1.0}}}}, 0.0};
     constexpr double Ts = 0.1;
-    constexpr auto tf = constfilt::matched_z_discretize(sys_c, Ts, constfilt::MatchedZ{});
+    constexpr auto tf =
+        constfilt::matched_z_discretize(sys_c, Ts, constfilt::MatchedZ{});
 
     // H_d(z=1) = (b[0]+b[1]) / (a[0]+a[1])
     constexpr double num = tf.b[0] + tf.b[1];

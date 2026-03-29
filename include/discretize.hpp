@@ -37,7 +37,7 @@ struct TransferFunction
 
 // expm(A) via eigendecomposition:
 //   Ad = V * diag(exp(λ_i)) * V^{-1}
-// where V = eigvecs, λ_i = eigvals (complex).
+// where V = eigenvectors, λ_i = eigenvalues (complex).
 // Real part extracted at the end (imaginary parts cancel for real A).
 template <typename T, consteig::Size N>
 constexpr consteig::Matrix<T, N, N> expm(const consteig::Matrix<T, N, N> &A)
@@ -47,8 +47,8 @@ constexpr consteig::Matrix<T, N, N> expm(const consteig::Matrix<T, N, N> &A)
     using CxMat_N1 = consteig::Matrix<Cx, N, 1>;
 
     // 1. Eigenvalues and eigenvectors
-    auto evals = consteig::eigvals(A);    // Matrix<Cx, N, 1>
-    auto V = consteig::eigvecs(A, evals); // Matrix<Cx, N, N>
+    auto evals = consteig::eigenvalues(A);       // Matrix<Cx, N, 1>
+    auto V = consteig::eigenvectors(A, evals);   // Matrix<Cx, N, N>
 
     // 2. Invert V column-by-column via LU
     auto lu_V = consteig::lu(V);

@@ -19,11 +19,11 @@ namespace
 
 TEST(ZOH, FirstOrder_a1_T0p1)
 {
-    // Matrix<double,1,1> init: Array<Array<double,1>,1> _data → {{{{val}}}}
+    // Matrix<double,1,1> init: T _data[R][C] → {{{val}}}
     constexpr constfilt::StateSpace<double, 1u> sys_c{
-        {{{{-1.0}}}}, // A = [-1]
-        {{{{1.0}}}},  // B = [1]
-        {{{{1.0}}}},  // C = [1]
+        {{{-1.0}}}, // A = [-1]
+        {{{1.0}}},  // B = [1]
+        {{{1.0}}},  // C = [1]
         0.0           // D = 0
     };
 
@@ -44,7 +44,7 @@ TEST(ZOH, FirstOrder_a1_T0p1)
 TEST(ZOH, FirstOrder_a5_T0p01)
 {
     constexpr constfilt::StateSpace<double, 1u> sys_c{
-        {{{{-5.0}}}}, {{{{1.0}}}}, {{{{1.0}}}}, 0.0};
+        {{{-5.0}}}, {{{1.0}}}, {{{1.0}}}, 0.0};
 
     constexpr double Ts = 0.01;
     constexpr auto sys_d =
@@ -63,7 +63,7 @@ TEST(ZOH, FirstOrder_a5_T0p01)
 TEST(Expm, Scalar)
 {
     // expm([-2]) should be [exp(-2)] ≈ 0.13533528323661270
-    constexpr consteig::Matrix<double, 1u, 1u> A{{{{-2.0}}}};
+    constexpr consteig::Matrix<double, 1u, 1u> A{{{-2.0}}};
     constexpr auto eA = constfilt::expm(A);
     EXPECT_NEAR(eA(0, 0), 0.13533528323661270, 1e-10);
 }
@@ -74,7 +74,7 @@ TEST(FaddeevLeVerrier, DiagonalMatrix)
 {
     // A = diag(2, 3), char poly = (λ-2)(λ-3) = λ^2 - 5λ + 6
     // Expected: [1, -5, 6]
-    constexpr consteig::Matrix<double, 2u, 2u> A{{{{2.0, 0.0}, {0.0, 3.0}}}};
+    constexpr consteig::Matrix<double, 2u, 2u> A{{{2.0, 0.0}, {0.0, 3.0}}};
     constexpr auto coeffs = constfilt::faddeev_leverrier(A);
 
     EXPECT_NEAR(coeffs[0], 1.0, 1e-12);
@@ -91,7 +91,7 @@ TEST(SsToTf, FirstOrder)
     // h[0]=0, h[1]=C*B=0.1
     // b[0]=0, b[1]=0.1
     constexpr constfilt::StateSpace<double, 1u> sys{
-        {{{{0.9}}}}, {{{{0.1}}}}, {{{{1.0}}}}, 0.0};
+        {{{0.9}}}, {{{0.1}}}, {{{1.0}}}, 0.0};
     constexpr auto tf = constfilt::ss_to_tf(sys);
 
     EXPECT_NEAR(tf.a[0], 1.0, 1e-12);
@@ -111,7 +111,7 @@ TEST(SsToTf, FirstOrder)
 TEST(MatchedZ, FirstOrder_a1_T0p1)
 {
     constexpr constfilt::StateSpace<double, 1u> sys_c{
-        {{{{-1.0}}}}, {{{{1.0}}}}, {{{{1.0}}}}, 0.0};
+        {{{-1.0}}}, {{{1.0}}}, {{{1.0}}}, 0.0};
     constexpr double Ts = 0.1;
     constexpr auto tf =
         constfilt::matched_z_discretize(sys_c, Ts, constfilt::MatchedZ{});
@@ -129,7 +129,7 @@ TEST(MatchedZ, FirstOrder_DCGain)
 {
     // H_d(1) should equal H_c(0) = 1
     constexpr constfilt::StateSpace<double, 1u> sys_c{
-        {{{{-1.0}}}}, {{{{1.0}}}}, {{{{1.0}}}}, 0.0};
+        {{{-1.0}}}, {{{1.0}}}, {{{1.0}}}, 0.0};
     constexpr double Ts = 0.1;
     constexpr auto tf =
         constfilt::matched_z_discretize(sys_c, Ts, constfilt::MatchedZ{});

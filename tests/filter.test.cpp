@@ -86,8 +86,7 @@ TEST(FilterRealTime, MatchesBatch)
 {
     // batch (constexpr path)
     static constexpr TestFilter cfilt(REF_B, REF_A);
-    static constexpr std::array<double, 8> step8 = {1, 1, 1, 1,
-                                                         1, 1, 1, 1};
+    static constexpr std::array<double, 8> step8 = {1, 1, 1, 1, 1, 1, 1, 1};
     static constexpr auto batch_out = cfilt(step8);
 
     // real-time (mutating state)

@@ -1,11 +1,11 @@
 #ifndef CONSTFILT_BUTTERWORTH_HPP
 #define CONSTFILT_BUTTERWORTH_HPP
 
-#include <array>
-#include <consteig/consteig.hpp>
 #include "../constfilt_options.hpp"
 #include "discretize.hpp"
 #include "filter.hpp"
+#include <array>
+#include <consteig/consteig.hpp>
 
 namespace constfilt
 {

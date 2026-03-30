@@ -8,8 +8,7 @@
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 // Build a constexpr step-input array of length N
-template <unsigned int N>
-static constexpr std::array<double, N> make_step()
+template <unsigned int N> static constexpr std::array<double, N> make_step()
 {
     std::array<double, N> s{};
     for (unsigned int i = 0; i < N; ++i)

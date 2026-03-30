@@ -24,7 +24,7 @@ TEST(ZOH, FirstOrder_a1_T0p1)
         {{{-1.0}}}, // A = [-1]
         {{{1.0}}},  // B = [1]
         {{{1.0}}},  // C = [1]
-        0.0           // D = 0
+        0.0         // D = 0
     };
 
     constexpr double Ts = 0.1;

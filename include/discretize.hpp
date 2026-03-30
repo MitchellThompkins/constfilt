@@ -48,8 +48,8 @@ constexpr consteig::Matrix<T, N, N> expm(const consteig::Matrix<T, N, N> &A)
     using CxMat_N1 = consteig::Matrix<Cx, N, 1>;
 
     // 1. Eigenvalues and eigenvectors
-    auto evals = consteig::eigenvalues(A);       // Matrix<Cx, N, 1>
-    auto V = consteig::eigenvectors(A, evals);   // Matrix<Cx, N, N>
+    auto evals = consteig::eigenvalues(A);     // Matrix<Cx, N, 1>
+    auto V = consteig::eigenvectors(A, evals); // Matrix<Cx, N, N>
 
     // 2. Invert V column-by-column via LU
     auto lu_V = consteig::lu(V);

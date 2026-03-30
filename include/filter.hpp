@@ -21,8 +21,7 @@ template <typename T, consteig::Size NB, consteig::Size NA> class Filter
 
     constexpr Filter() = default;
 
-    constexpr Filter(const std::array<T, NB> &b,
-                     const std::array<T, NA> &a)
+    constexpr Filter(const std::array<T, NB> &b, const std::array<T, NA> &a)
         : _b(b), _a(a)
     {
     }
@@ -46,8 +45,7 @@ template <typename T, consteig::Size NB, consteig::Size NA> class Filter
     // Batch: process an array with a local zero-initialized state.
     // constexpr-capable (does not touch member state).
     template <consteig::Size N>
-    constexpr std::array<T, N> operator()(
-        const std::array<T, N> &input) const
+    constexpr std::array<T, N> operator()(const std::array<T, N> &input) const
     {
         std::array<T, N> output{};
         std::array<T, M> local_state{};

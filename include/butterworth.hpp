@@ -1,7 +1,8 @@
 #ifndef CONSTFILT_BUTTERWORTH_HPP
 #define CONSTFILT_BUTTERWORTH_HPP
 
-#include "../../consteig/consteig.hpp"
+#include <array>
+#include <consteig/consteig.hpp>
 #include "../constfilt_options.hpp"
 #include "discretize.hpp"
 #include "filter.hpp"
@@ -87,13 +88,13 @@ class Butterworth : public Filter<T, N + 1u, N + 1u>
     //         k = 1..N
     // Coefficients are real by construction (poles come in conjugate pairs,
     // or are real for odd N).
-    static constexpr consteig::Array<T, N + 1u> butterworth_poly_coeffs()
+    static constexpr std::array<T, N + 1u> butterworth_poly_coeffs()
     {
         using Cx = consteig::Complex<T>;
 
         // poly[i] holds the coefficient of s^i (ascending order).
         // Start with the constant polynomial 1.
-        consteig::Array<Cx, N + 1u> poly{};
+        std::array<Cx, N + 1u> poly{};
         poly[0] = Cx{static_cast<T>(1), static_cast<T>(0)};
 
         // Multiply by (s - p_k) for k = 1..N.
@@ -114,7 +115,7 @@ class Butterworth : public Filter<T, N + 1u, N + 1u>
 
         // Convert ascending-order complex to descending-order real.
         // The imaginary parts are zero (or near-zero numerical noise).
-        consteig::Array<T, N + 1u> result{};
+        std::array<T, N + 1u> result{};
         for (consteig::Size i = 0u; i <= N; ++i)
         {
             result[i] = poly[N - i].real;

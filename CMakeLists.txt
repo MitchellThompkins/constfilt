@@ -46,8 +46,15 @@ endif()
 ################################################################################
 # consteig dependency
 ################################################################################
-if(NOT TARGET consteig_eigen)
-    add_subdirectory(../consteig consteig_build)
+if(NOT TARGET consteig)
+    include(FetchContent)
+    FetchContent_Declare(
+        consteig
+        GIT_REPOSITORY https://github.com/MitchellThompkins/consteig
+        GIT_TAG        main
+        GIT_SHALLOW    TRUE
+    )
+    FetchContent_MakeAvailable(consteig)
 endif()
 
 ################################################################################
@@ -55,7 +62,7 @@ endif()
 ################################################################################
 add_library(constfilt INTERFACE)
 target_include_directories(constfilt INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(constfilt INTERFACE consteig_eigen)
+target_link_libraries(constfilt INTERFACE consteig::consteig)
 target_compile_features(constfilt INTERFACE cxx_std_17)
 
 ################################################################################

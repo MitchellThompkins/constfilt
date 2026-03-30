@@ -1,3 +1,4 @@
+#include <array>
 #include <gtest/gtest.h>
 
 #include "constfilt.hpp"
@@ -13,15 +14,15 @@ namespace
 {
 
 // Known transfer function (order 2, NB=3, NA=3)
-static constexpr consteig::Array<double, 3> REF_B = {0.25, 0.5, 0.25};
-static constexpr consteig::Array<double, 3> REF_A = {1.0, -0.5, 0.0625};
+static constexpr std::array<double, 3> REF_B = {0.25, 0.5, 0.25};
+static constexpr std::array<double, 3> REF_A = {1.0, -0.5, 0.0625};
 
 // A Filter subclass that exposes the constructor for testing
 class TestFilter : public constfilt::Filter<double, 3u, 3u>
 {
   public:
-    constexpr TestFilter(const consteig::Array<double, 3u> &b,
-                         const consteig::Array<double, 3u> &a)
+    constexpr TestFilter(const std::array<double, 3u> &b,
+                         const std::array<double, 3u> &a)
         : constfilt::Filter<double, 3u, 3u>(b, a)
     {
     }
@@ -65,7 +66,7 @@ TEST(FilterCoeffs, StoresA)
 //      0.161132812
 // n=3: x=1, y = 0.25 + 1.406250 = 1.656250
 
-static constexpr consteig::Array<double, 4> STEP4 = {1.0, 1.0, 1.0, 1.0};
+static constexpr std::array<double, 4> STEP4 = {1.0, 1.0, 1.0, 1.0};
 
 TEST(FilterBatch, StepResponse4)
 {
@@ -85,7 +86,7 @@ TEST(FilterRealTime, MatchesBatch)
 {
     // batch (constexpr path)
     static constexpr TestFilter cfilt(REF_B, REF_A);
-    static constexpr consteig::Array<double, 8> step8 = {1, 1, 1, 1,
+    static constexpr std::array<double, 8> step8 = {1, 1, 1, 1,
                                                          1, 1, 1, 1};
     static constexpr auto batch_out = cfilt(step8);
 

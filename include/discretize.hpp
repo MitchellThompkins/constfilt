@@ -1,7 +1,8 @@
 #ifndef CONSTFILT_DISCRETIZE_HPP
 #define CONSTFILT_DISCRETIZE_HPP
 
-#include "../../consteig/consteig.hpp"
+#include <array>
+#include <consteig/consteig.hpp>
 
 namespace constfilt
 {
@@ -29,8 +30,8 @@ template <typename T, consteig::Size N> struct StateSpace
 template <typename T, consteig::Size NB, consteig::Size NA>
 struct TransferFunction
 {
-    consteig::Array<T, NB> b{};
-    consteig::Array<T, NA> a{};
+    std::array<T, NB> b{};
+    std::array<T, NA> a{};
 };
 
 // ─────────────────────────── Matrix exponential ──────────────────────────────
@@ -153,10 +154,10 @@ constexpr StateSpace<T, N> zoh_discretize(const StateSpace<T, N> &sys_c, T Ts,
 //   c_k = -trace(Ad * p_{k-1}) / k
 //   p_k = Ad * p_{k-1} + c_k * I
 template <typename T, consteig::Size N>
-constexpr consteig::Array<T, N + 1u> faddeev_leverrier(
+constexpr std::array<T, N + 1u> faddeev_leverrier(
     const consteig::Matrix<T, N, N> &Ad)
 {
-    consteig::Array<T, N + 1u> coeffs{};
+    std::array<T, N + 1u> coeffs{};
     coeffs[0] = static_cast<T>(1);
 
     consteig::Matrix<T, N, N> M = consteig::eye<T, N>(); // p_0 = I
@@ -204,15 +205,15 @@ constexpr consteig::Array<T, N + 1u> faddeev_leverrier(
 //   h[k] = C * A^{k-1} * B   for k = 1..N
 //   b[k] = sum_{j=0}^{k} a[j] * h[k-j]
 template <typename T, consteig::Size N>
-constexpr consteig::Array<T, N + 1u> markov_numerator(
-    const StateSpace<T, N> &sys_d, const consteig::Array<T, N + 1u> &a_coeffs)
+constexpr std::array<T, N + 1u> markov_numerator(
+    const StateSpace<T, N> &sys_d, const std::array<T, N + 1u> &a_coeffs)
 {
     const auto &Ad = sys_d.A;
     const auto &Bd = sys_d.B;
     const auto &Cd = sys_d.C;
 
     // Compute Markov parameters h[0..N]
-    consteig::Array<T, N + 1u> h{};
+    std::array<T, N + 1u> h{};
     h[0] = sys_d.D;
 
     // A_pow = A^{k-1}, starting with A^0 = I
@@ -252,7 +253,7 @@ constexpr consteig::Array<T, N + 1u> markov_numerator(
     }
 
     // Convolve: b[k] = sum_{j=0}^{k} a[j] * h[k-j]
-    consteig::Array<T, N + 1u> b{};
+    std::array<T, N + 1u> b{};
     for (consteig::Size k = 0; k <= N; ++k)
     {
         T sum = static_cast<T>(0);
@@ -327,7 +328,7 @@ constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_discretize(
     const T K = dc_gain * a_at_1 / two_pow_N;
 
     // 7. Numerator b[k] = K * C(N, k)  (binomial coefficients of (z+1)^N)
-    consteig::Array<T, N + 1u> b{};
+    std::array<T, N + 1u> b{};
     T binom = static_cast<T>(1);
     for (consteig::Size k = 0; k <= N; ++k)
     {

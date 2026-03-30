@@ -1,5 +1,4 @@
 # Uses the same dev image as consteig (has cmake, gcc, clang, etc.).
-# Mounts the parent workspace so ../consteig is accessible from constfilt.
 services:
     dev_env:
         image: ${CONSTFILT_IMAGE:-ghcr.io/mitchellthompkins/consteig_dev_image:latest}
@@ -8,7 +7,7 @@ services:
             - MY_UID=${MY_UID:? Error -> need UID.}
             - MY_GID=${MY_GID:? Error -> need GID.}
         volumes:
-            - "${WORKSPACE_DIR:-${PWD}/..}:${WORKSPACE_DIR:-${PWD}/..}"
+            - "${PWD}:${PWD}"
             - "${PWD}/.ash_history:/home/${USER}/.ash_history"
         network_mode: host
         tty: True

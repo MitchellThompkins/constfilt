@@ -1,3 +1,4 @@
+#include <array>
 #include <gtest/gtest.h>
 
 #include "butterworth_reference.hpp"
@@ -8,9 +9,9 @@
 
 // Build a constexpr step-input array of length N
 template <unsigned int N>
-static constexpr consteig::Array<double, N> make_step()
+static constexpr std::array<double, N> make_step()
 {
-    consteig::Array<double, N> s{};
+    std::array<double, N> s{};
     for (unsigned int i = 0; i < N; ++i)
     {
         s[i] = 1.0;

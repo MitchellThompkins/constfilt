@@ -1,7 +1,8 @@
 #ifndef CONSTFILT_FILTER_HPP
 #define CONSTFILT_FILTER_HPP
 
-#include "../../consteig/consteig.hpp"
+#include <array>
+#include <consteig/consteig.hpp>
 
 namespace constfilt
 {
@@ -14,14 +15,14 @@ template <typename T, consteig::Size NB, consteig::Size NA> class Filter
     static constexpr consteig::Size M = (NA > NB ? NA : NB) - 1u; // STATE_LEN
 
   protected:
-    consteig::Array<T, NB> _b{};
-    consteig::Array<T, NA> _a{};
-    consteig::Array<T, M> _state{}; // DF2T delay line, zero-initialized
+    std::array<T, NB> _b{};
+    std::array<T, NA> _a{};
+    std::array<T, M> _state{}; // DF2T delay line, zero-initialized
 
     constexpr Filter() = default;
 
-    constexpr Filter(const consteig::Array<T, NB> &b,
-                     const consteig::Array<T, NA> &a)
+    constexpr Filter(const std::array<T, NB> &b,
+                     const std::array<T, NA> &a)
         : _b(b), _a(a)
     {
     }
@@ -45,11 +46,11 @@ template <typename T, consteig::Size NB, consteig::Size NA> class Filter
     // Batch: process an array with a local zero-initialized state.
     // constexpr-capable (does not touch member state).
     template <consteig::Size N>
-    constexpr consteig::Array<T, N> operator()(
-        const consteig::Array<T, N> &input) const
+    constexpr std::array<T, N> operator()(
+        const std::array<T, N> &input) const
     {
-        consteig::Array<T, N> output{};
-        consteig::Array<T, M> local_state{};
+        std::array<T, N> output{};
+        std::array<T, M> local_state{};
 
         for (consteig::Size n = 0; n < N; ++n)
         {
@@ -70,11 +71,11 @@ template <typename T, consteig::Size NB, consteig::Size NA> class Filter
     }
 
     // Accessors (for testing)
-    constexpr const consteig::Array<T, NB> &coeffs_b() const
+    constexpr const std::array<T, NB> &coeffs_b() const
     {
         return _b;
     }
-    constexpr const consteig::Array<T, NA> &coeffs_a() const
+    constexpr const std::array<T, NA> &coeffs_a() const
     {
         return _a;
     }

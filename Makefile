@@ -89,10 +89,6 @@ test.clang: build.clang
 # Container targets
 ################################################################################
 
-.PHONY: container.build
-container.build:
-	docker build --file ../consteig/Dockerfile --tag consteig_dev_image .
-
 .PHONY: container.pull
 container.pull:
 	docker pull ghcr.io/mitchellthompkins/consteig_dev_image:latest

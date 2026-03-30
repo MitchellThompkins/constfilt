@@ -75,7 +75,8 @@ TEST(FaddeevLeVerrier, DiagonalMatrix)
     // A = diag(2, 3), char poly = (λ-2)(λ-3) = λ^2 - 5λ + 6
     // Expected: [1, -5, 6]
     constexpr consteig::Matrix<double, 2u, 2u> A{{{2.0, 0.0}, {0.0, 3.0}}};
-    constexpr auto coeffs = constfilt::faddeev_leverrier(A);
+    double coeffs[3]{};
+    constfilt::faddeev_leverrier(A, coeffs);
 
     EXPECT_NEAR(coeffs[0], 1.0, 1e-12);
     EXPECT_NEAR(coeffs[1], -5.0, 1e-12);

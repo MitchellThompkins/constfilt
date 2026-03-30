@@ -51,7 +51,7 @@ if(NOT TARGET consteig)
     FetchContent_Declare(
         consteig
         GIT_REPOSITORY https://github.com/MitchellThompkins/consteig
-        GIT_TAG        main
+        GIT_TAG        1.0.0
         GIT_SHALLOW    TRUE
     )
     FetchContent_MakeAvailable(consteig)

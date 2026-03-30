@@ -1,4 +1,3 @@
-#include <array>
 #include <gtest/gtest.h>
 
 #include "constfilt.hpp"
@@ -14,15 +13,14 @@ namespace
 {
 
 // Known transfer function (order 2, NB=3, NA=3)
-static constexpr std::array<double, 3> REF_B = {0.25, 0.5, 0.25};
-static constexpr std::array<double, 3> REF_A = {1.0, -0.5, 0.0625};
+static constexpr double REF_B[3] = {0.25, 0.5, 0.25};
+static constexpr double REF_A[3] = {1.0, -0.5, 0.0625};
 
 // A Filter subclass that exposes the constructor for testing
 class TestFilter : public constfilt::Filter<double, 3u, 3u>
 {
   public:
-    constexpr TestFilter(const std::array<double, 3u> &b,
-                         const std::array<double, 3u> &a)
+    constexpr TestFilter(const double (&b)[3u], const double (&a)[3u])
         : constfilt::Filter<double, 3u, 3u>(b, a)
     {
     }
@@ -66,12 +64,13 @@ TEST(FilterCoeffs, StoresA)
 //      0.161132812
 // n=3: x=1, y = 0.25 + 1.406250 = 1.656250
 
-static constexpr std::array<double, 4> STEP4 = {1.0, 1.0, 1.0, 1.0};
+static constexpr double STEP4[4] = {1.0, 1.0, 1.0, 1.0};
 
 TEST(FilterBatch, StepResponse4)
 {
     static constexpr TestFilter filt(REF_B, REF_A);
-    static constexpr auto y = filt(STEP4);
+    double y[4]{};
+    filt(STEP4, y);
 
     // Tolerances: these are exact rational arithmetic values
     EXPECT_NEAR(y[0], 0.25, 1e-14);
@@ -84,10 +83,12 @@ TEST(FilterBatch, StepResponse4)
 
 TEST(FilterRealTime, MatchesBatch)
 {
-    // batch (constexpr path)
+    static constexpr double step8[8] = {1, 1, 1, 1, 1, 1, 1, 1};
+
+    // batch path
     static constexpr TestFilter cfilt(REF_B, REF_A);
-    static constexpr std::array<double, 8> step8 = {1, 1, 1, 1, 1, 1, 1, 1};
-    static constexpr auto batch_out = cfilt(step8);
+    double batch_out[8]{};
+    cfilt(step8, batch_out);
 
     // real-time (mutating state)
     TestFilter rt_filt(REF_B, REF_A);

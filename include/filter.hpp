@@ -1,7 +1,6 @@
 #ifndef CONSTFILT_FILTER_HPP
 #define CONSTFILT_FILTER_HPP
 
-#include <array>
 #include <consteig/consteig.hpp>
 
 namespace constfilt
@@ -15,15 +14,18 @@ template <typename T, consteig::Size NB, consteig::Size NA> class Filter
     static constexpr consteig::Size M = (NA > NB ? NA : NB) - 1u; // STATE_LEN
 
   protected:
-    std::array<T, NB> _b{};
-    std::array<T, NA> _a{};
-    std::array<T, M> _state{}; // DF2T delay line, zero-initialized
+    T _b[NB]{};
+    T _a[NA]{};
+    T _state[M]{}; // DF2T delay line, zero-initialized
 
     constexpr Filter() = default;
 
-    constexpr Filter(const std::array<T, NB> &b, const std::array<T, NA> &a)
-        : _b(b), _a(a)
+    constexpr Filter(const T (&b)[NB], const T (&a)[NA])
     {
+        for (consteig::Size i = 0; i < NB; ++i)
+            _b[i] = b[i];
+        for (consteig::Size i = 0; i < NA; ++i)
+            _a[i] = a[i];
     }
 
   public:
@@ -45,10 +47,9 @@ template <typename T, consteig::Size NB, consteig::Size NA> class Filter
     // Batch: process an array with a local zero-initialized state.
     // constexpr-capable (does not touch member state).
     template <consteig::Size N>
-    constexpr std::array<T, N> operator()(const std::array<T, N> &input) const
+    constexpr void operator()(const T (&input)[N], T (&output)[N]) const
     {
-        std::array<T, N> output{};
-        std::array<T, M> local_state{};
+        T local_state[M]{};
 
         for (consteig::Size n = 0; n < N; ++n)
         {
@@ -64,16 +65,14 @@ template <typename T, consteig::Size NB, consteig::Size NA> class Filter
 
             output[n] = y;
         }
-
-        return output;
     }
 
     // Accessors (for testing)
-    constexpr const std::array<T, NB> &coeffs_b() const
+    constexpr const T *coeffs_b() const
     {
         return _b;
     }
-    constexpr const std::array<T, NA> &coeffs_a() const
+    constexpr const T *coeffs_a() const
     {
         return _a;
     }

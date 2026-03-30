@@ -4,7 +4,6 @@
 #include "../constfilt_options.hpp"
 #include "discretize.hpp"
 #include "filter.hpp"
-#include <array>
 #include <consteig/consteig.hpp>
 
 namespace constfilt
@@ -63,7 +62,8 @@ class Butterworth : public Filter<T, N + 1u, N + 1u>
         }
 
         // Last row: -p[k] * wc^{N-k}
-        auto p = butterworth_poly_coeffs();
+        T p[N + 1u]{};
+        butterworth_poly_coeffs(p);
         for (consteig::Size k = 0; k < N; ++k)
         {
             sys.A(N - 1u, k) =
@@ -81,20 +81,20 @@ class Butterworth : public Filter<T, N + 1u, N + 1u>
     }
 
     // Normalized Butterworth denominator coefficients (wc=1, monic).
-    // Returns Array<T, N+1> in descending power order: [1, p[N-1], ..., p[0]]
+    // Fills result in descending power order: [1, p[N-1], ..., p[0]]
     //
     // Computed by multiplying out (s - p_k) for each Butterworth pole:
     //   p_k = cos(theta_k) + j*sin(theta_k),  theta_k = pi*(2k+N-1)/(2N)
     //         k = 1..N
     // Coefficients are real by construction (poles come in conjugate pairs,
     // or are real for odd N).
-    static constexpr std::array<T, N + 1u> butterworth_poly_coeffs()
+    static constexpr void butterworth_poly_coeffs(T (&result)[N + 1u])
     {
         using Cx = consteig::Complex<T>;
 
         // poly[i] holds the coefficient of s^i (ascending order).
         // Start with the constant polynomial 1.
-        std::array<Cx, N + 1u> poly{};
+        Cx poly[N + 1u]{};
         poly[0] = Cx{static_cast<T>(1), static_cast<T>(0)};
 
         // Multiply by (s - p_k) for k = 1..N.
@@ -115,12 +115,10 @@ class Butterworth : public Filter<T, N + 1u, N + 1u>
 
         // Convert ascending-order complex to descending-order real.
         // The imaginary parts are zero (or near-zero numerical noise).
-        std::array<T, N + 1u> result{};
         for (consteig::Size i = 0u; i <= N; ++i)
         {
             result[i] = poly[N - i].real;
         }
-        return result;
     }
 };
 

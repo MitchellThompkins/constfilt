@@ -1,22 +1,8 @@
-#include <array>
 #include <gtest/gtest.h>
 
 #include "butterworth_reference.hpp"
 #include "constfilt.hpp"
 #include "test_tools.hpp"
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-// Build a constexpr step-input array of length N
-template <unsigned int N> static constexpr std::array<double, N> make_step()
-{
-    std::array<double, N> s{};
-    for (unsigned int i = 0; i < N; ++i)
-    {
-        s[i] = 1.0;
-    }
-    return s;
-}
 
 // ─── Case 1: N=2, fc=100Hz, fs=1000Hz ────────────────────────────────────────
 
@@ -34,12 +20,15 @@ TEST(Butterworth, N2_fc100_fs1000_Coefficients)
     }
 }
 
-TEST(Butterworth, N2_fc100_fs1000_BatchConstexpr)
+TEST(Butterworth, N2_fc100_fs1000_Batch)
 {
     using Ref = bw_ref::case_2_100Hz_1000Hz;
     static constexpr constfilt::Butterworth<double, 2> filt(100.0, 1000.0);
-    static constexpr auto step = make_step<32>();
-    static constexpr auto y = filt(step);
+    double step[32]{};
+    for (unsigned int i = 0; i < 32u; ++i)
+        step[i] = 1.0;
+    double y[32]{};
+    filt(step, y);
 
     for (unsigned int i = 0; i < 32u; ++i)
     {
@@ -77,12 +66,15 @@ TEST(Butterworth, N4_fc100_fs1000_Coefficients)
     }
 }
 
-TEST(Butterworth, N4_fc100_fs1000_BatchConstexpr)
+TEST(Butterworth, N4_fc100_fs1000_Batch)
 {
     using Ref = bw_ref::case_4_100Hz_1000Hz;
     static constexpr constfilt::Butterworth<double, 4> filt(100.0, 1000.0);
-    static constexpr auto step = make_step<32>();
-    static constexpr auto y = filt(step);
+    double step[32]{};
+    for (unsigned int i = 0; i < 32u; ++i)
+        step[i] = 1.0;
+    double y[32]{};
+    filt(step, y);
 
     for (unsigned int i = 0; i < 32u; ++i)
     {

@@ -150,13 +150,13 @@ TEST(Stability, UnstableSystem_RepeatedImaginaryAxisPole)
     EXPECT_EQ(stab, constfilt::Stability::Unstable);
 }
 
-// --- ContinuousTF: 1st-order, ZOH, coefficients
+// --- AnalogFilter: 1st-order, ZOH, coefficients
 // ---------------------------------
 
-TEST(ContinuousTF, Case1_ZOH_Coefficients)
+TEST(AnalogFilter, Case1_ZOH_Coefficients)
 {
     using Ref = ctf_ref::case_1_zoh_fs10;
-    static constexpr constfilt::ContinuousTF<double, 1u> filt(
+    static constexpr constfilt::AnalogFilter<double, 1u> filt(
         Ref::b_s, Ref::a_s, Ref::sample_rate_hz);
 
     EXPECT_NEAR(filt.coeffs_b()[0], Ref::b[0], CONSTFILT_COEFF_TOL);
@@ -165,10 +165,10 @@ TEST(ContinuousTF, Case1_ZOH_Coefficients)
     EXPECT_NEAR(filt.coeffs_a()[1], Ref::a[1], CONSTFILT_COEFF_TOL);
 }
 
-TEST(ContinuousTF, Case1_ZOH_StepResponse)
+TEST(AnalogFilter, Case1_ZOH_StepResponse)
 {
     using Ref = ctf_ref::case_1_zoh_fs10;
-    constfilt::ContinuousTF<double, 1u> filt(Ref::b_s, Ref::a_s,
+    constfilt::AnalogFilter<double, 1u> filt(Ref::b_s, Ref::a_s,
                                              Ref::sample_rate_hz);
 
     for (unsigned int i = 0; i < 32u; ++i)
@@ -179,13 +179,13 @@ TEST(ContinuousTF, Case1_ZOH_StepResponse)
     }
 }
 
-// --- ContinuousTF: 2nd-order, ZOH, coefficients and step response
+// --- AnalogFilter: 2nd-order, ZOH, coefficients and step response
 // ---------------
 
-TEST(ContinuousTF, Case2_ZOH_Coefficients)
+TEST(AnalogFilter, Case2_ZOH_Coefficients)
 {
     using Ref = ctf_ref::case_2_zoh_fs10;
-    static constexpr constfilt::ContinuousTF<double, 2u> filt(
+    static constexpr constfilt::AnalogFilter<double, 2u> filt(
         Ref::b_s, Ref::a_s, Ref::sample_rate_hz);
 
     for (unsigned int i = 0; i <= 2u; ++i)
@@ -197,10 +197,10 @@ TEST(ContinuousTF, Case2_ZOH_Coefficients)
     }
 }
 
-TEST(ContinuousTF, Case2_ZOH_StepResponse)
+TEST(AnalogFilter, Case2_ZOH_StepResponse)
 {
     using Ref = ctf_ref::case_2_zoh_fs10;
-    constfilt::ContinuousTF<double, 2u> filt(Ref::b_s, Ref::a_s,
+    constfilt::AnalogFilter<double, 2u> filt(Ref::b_s, Ref::a_s,
                                              Ref::sample_rate_hz);
 
     for (unsigned int i = 0; i < 32u; ++i)
@@ -211,13 +211,13 @@ TEST(ContinuousTF, Case2_ZOH_StepResponse)
     }
 }
 
-// --- ContinuousTF: proper TF (D != 0), ZOH
+// --- AnalogFilter: proper TF (D != 0), ZOH
 // --------------------------------------
 
-TEST(ContinuousTF, Case3_Proper_ZOH_Coefficients)
+TEST(AnalogFilter, Case3_Proper_ZOH_Coefficients)
 {
     using Ref = ctf_ref::case_3_proper_zoh_fs10;
-    static constexpr constfilt::ContinuousTF<double, 1u> filt(
+    static constexpr constfilt::AnalogFilter<double, 1u> filt(
         Ref::b_s, Ref::a_s, Ref::sample_rate_hz);
 
     EXPECT_NEAR(filt.coeffs_b()[0], Ref::b[0], CONSTFILT_COEFF_TOL);
@@ -226,10 +226,10 @@ TEST(ContinuousTF, Case3_Proper_ZOH_Coefficients)
     EXPECT_NEAR(filt.coeffs_a()[1], Ref::a[1], CONSTFILT_COEFF_TOL);
 }
 
-TEST(ContinuousTF, Case3_Proper_ZOH_StepResponse)
+TEST(AnalogFilter, Case3_Proper_ZOH_StepResponse)
 {
     using Ref = ctf_ref::case_3_proper_zoh_fs10;
-    constfilt::ContinuousTF<double, 1u> filt(Ref::b_s, Ref::a_s,
+    constfilt::AnalogFilter<double, 1u> filt(Ref::b_s, Ref::a_s,
                                              Ref::sample_rate_hz);
 
     for (unsigned int i = 0; i < 32u; ++i)
@@ -240,13 +240,13 @@ TEST(ContinuousTF, Case3_Proper_ZOH_StepResponse)
     }
 }
 
-// --- ContinuousTF: 2nd-order MatchedZ
+// --- AnalogFilter: 2nd-order MatchedZ
 // -------------------------------------------
 
-TEST(ContinuousTF, Case4_MatchedZ_Coefficients)
+TEST(AnalogFilter, Case4_MatchedZ_Coefficients)
 {
     using Ref = ctf_ref::case_4_mz_fs10;
-    static constexpr constfilt::ContinuousTF<double, 2u, constfilt::MatchedZ>
+    static constexpr constfilt::AnalogFilter<double, 2u, constfilt::MatchedZ>
         filt(Ref::b_s, Ref::a_s, Ref::sample_rate_hz);
 
     for (unsigned int i = 0; i <= 2u; ++i)
@@ -258,10 +258,10 @@ TEST(ContinuousTF, Case4_MatchedZ_Coefficients)
     }
 }
 
-TEST(ContinuousTF, Case4_MatchedZ_StepResponse)
+TEST(AnalogFilter, Case4_MatchedZ_StepResponse)
 {
     using Ref = ctf_ref::case_4_mz_fs10;
-    constfilt::ContinuousTF<double, 2u, constfilt::MatchedZ> filt(
+    constfilt::AnalogFilter<double, 2u, constfilt::MatchedZ> filt(
         Ref::b_s, Ref::a_s, Ref::sample_rate_hz);
 
     for (unsigned int i = 0; i < 32u; ++i)
@@ -272,15 +272,15 @@ TEST(ContinuousTF, Case4_MatchedZ_StepResponse)
     }
 }
 
-// --- ContinuousTF: stability check disabled allows unstable filter
+// --- AnalogFilter: stability check disabled allows unstable filter
 // ---------------
 
-TEST(ContinuousTF, StabilityCheckDisabled_AllowsUnstableFilter)
+TEST(AnalogFilter, StabilityCheckDisabled_AllowsUnstableFilter)
 {
     // H(s) = 1/(s^2-s+1): unstable, but CheckStab=false allows construction.
     constexpr double b[3] = {0.0, 0.0, 1.0};
     constexpr double a[3] = {1.0, -1.0, 1.0};
-    constfilt::ContinuousTF<double, 2u, constfilt::ZOH, false> filt(b, a, 10.0);
+    constfilt::AnalogFilter<double, 2u, constfilt::ZOH, false> filt(b, a, 10.0);
     (void)filt;
 }
 

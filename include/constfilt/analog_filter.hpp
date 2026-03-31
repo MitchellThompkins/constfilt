@@ -1,5 +1,5 @@
-#ifndef CONSTFILT_CONTINUOUS_TF_HPP
-#define CONSTFILT_CONTINUOUS_TF_HPP
+#ifndef CONSTFILT_ANALOG_FILTER_HPP
+#define CONSTFILT_ANALOG_FILTER_HPP
 
 #include "discretize.hpp"
 #include "filter.hpp"
@@ -9,7 +9,7 @@ namespace constfilt
 {
 
 // Build controllable canonical form continuous-time state-space from
-// transfer function coefficients in descending power order:
+// analog transfer function coefficients in descending power order:
 //
 //   H(s) = (b[0]*s^N + b[1]*s^{N-1} + ... + b[N])
 //          / (a[0]*s^N + a[1]*s^{N-1} + ... + a[N])
@@ -55,63 +55,70 @@ constexpr StateSpace<T, N> tf_to_ss(const T (&b)[N + 1u], const T (&a)[N + 1u])
     return sys;
 }
 
-// Discretize a continuous-time transfer function into a Filter.
+// Discretize an analog (continuous-time, s-domain) transfer function into a
+// digital Filter.
+//
+// Coefficients b_s and a_s are Laplace-domain polynomial coefficients in
+// descending power order: b_s[0]*s^N + b_s[1]*s^{N-1} + ... + b_s[N].
+// The class converts these to a continuous-time state-space, optionally
+// checks stability, discretizes via ZOH or MatchedZ, and initializes the
+// underlying Filter with the resulting discrete b/a coefficients.
 //
 // Template parameters:
 //   T          - numeric type (float, double, …)
 //   N          - filter order (degree of denominator)
 //   Method     - ZOH (default) or MatchedZ
-//   CheckStab  - when true (default), throws if the continuous-time system
-//                is Unstable (Stable and MarginallyStable are both accepted).
+//   CheckStab  - when true (default), throws if the analog system is Unstable.
+//                Both Stable and MarginallyStable are accepted.
 //                Reaching the throw during constexpr evaluation is a
 //                compile-time error. Set to false to skip the check.
 //
 // Constructor:
-//   ContinuousTF(b_s, a_s, sample_rate_hz)
-//     b_s           - numerator coefficients [N+1], descending power order
-//     a_s           - denominator coefficients [N+1], descending power order
-//     sample_rate_hz - sample rate in Hz
+//   AnalogFilter(b_s, a_s, sample_rate_hz)
+//     b_s            - s-domain numerator coefficients [N+1]
+//     a_s            - s-domain denominator coefficients [N+1]
+//     sample_rate_hz - sample rate in Hz; Ts = 1/sample_rate_hz
 template <typename T, consteig::Size N, typename Method = ZOH,
           bool CheckStab = true>
-class ContinuousTF : public Filter<T, N + 1u, N + 1u>
+class AnalogFilter : public Filter<T, N + 1u, N + 1u>
 {
     static_assert(N >= 1u, "Filter order must be at least 1");
 
   public:
-    constexpr ContinuousTF(const T (&b_s)[N + 1u], const T (&a_s)[N + 1u],
+    constexpr AnalogFilter(const T (&b_s)[N + 1u], const T (&a_s)[N + 1u],
                            T sample_rate_hz)
-        : ContinuousTF(compute_ba(b_s, a_s, static_cast<T>(1) / sample_rate_hz))
+        : AnalogFilter(compute_ba(b_s, a_s, static_cast<T>(1) / sample_rate_hz))
     {
     }
 
   private:
-    constexpr explicit ContinuousTF(TransferFunction<T, N + 1u, N + 1u> tf)
+    constexpr explicit AnalogFilter(TransferFunction<T, N + 1u, N + 1u> tf)
         : Filter<T, N + 1u, N + 1u>(tf.b, tf.a)
     {
     }
 
-    static constexpr TransferFunction<T, N + 1u, N + 1u> compute_ba(
-        const T (&b_s)[N + 1u], const T (&a_s)[N + 1u], T Ts)
+    static constexpr TransferFunction<T, N + 1u, N + 1u>
+    compute_ba(const T (&b_s)[N + 1u], const T (&a_s)[N + 1u], T Ts)
     {
         const auto sys_c = tf_to_ss<T, N>(b_s, a_s);
 
         if constexpr (CheckStab)
         {
             if (check_stability(sys_c) == Stability::Unstable)
-                throw "constfilt: unstable continuous-time filter";
+                throw "constfilt: unstable analog filter";
         }
 
         return discretize(sys_c, Ts, Method{});
     }
 
-    static constexpr TransferFunction<T, N + 1u, N + 1u> discretize(
-        const StateSpace<T, N> &sys_c, T Ts, ZOH)
+    static constexpr TransferFunction<T, N + 1u, N + 1u>
+    discretize(const StateSpace<T, N> &sys_c, T Ts, ZOH)
     {
         return ss_to_tf(zoh_discretize(sys_c, Ts, ZOH{}));
     }
 
-    static constexpr TransferFunction<T, N + 1u, N + 1u> discretize(
-        const StateSpace<T, N> &sys_c, T Ts, MatchedZ)
+    static constexpr TransferFunction<T, N + 1u, N + 1u>
+    discretize(const StateSpace<T, N> &sys_c, T Ts, MatchedZ)
     {
         return matched_z_discretize(sys_c, Ts, MatchedZ{});
     }
@@ -119,4 +126,4 @@ class ContinuousTF : public Filter<T, N + 1u, N + 1u>
 
 } // namespace constfilt
 
-#endif // CONSTFILT_CONTINUOUS_TF_HPP
+#endif // CONSTFILT_ANALOG_FILTER_HPP

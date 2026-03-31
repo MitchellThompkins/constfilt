@@ -151,10 +151,12 @@ constexpr StateSpace<T, N> zoh_discretize(const StateSpace<T, N> &sys_c, T Ts,
 // Uses consteig::eigenvalues to obtain lam_1..lam_N, then builds
 //   (z - lam_1)(z - lam_2)...(z - lam_N) in complex arithmetic.
 // Real parts are extracted at the end (imaginary parts cancel for real A).
-// Note: Faddeev-LeVerrier is an acceptable alternative if consteig were unavailable;
-// it computes the same coefficients via matrix traces without eigenvalue decomposition.
+// Note: Faddeev-LeVerrier is an acceptable alternative if consteig were
+// unavailable; it computes the same coefficients via matrix traces without
+// eigenvalue decomposition.
 template <typename T, consteig::Size N>
-constexpr void char_poly(const consteig::Matrix<T, N, N> &Ad, T (&coeffs)[N + 1u])
+constexpr void char_poly(const consteig::Matrix<T, N, N> &Ad,
+                         T (&coeffs)[N + 1u])
 {
     using Cx = consteig::Complex<T>;
 

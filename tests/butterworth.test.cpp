@@ -4,7 +4,7 @@
 #include "test_tools.hpp"
 #include <constfilt/constfilt.hpp>
 
-// ─── Case 1: N=2, fc=100Hz, fs=1000Hz ────────────────────────────────────────
+// --- Case 1: N=2, fc=100Hz, fs=1000Hz ----------------------------------------
 
 TEST(Butterworth, N2_fc100_fs1000_Coefficients)
 {
@@ -50,7 +50,7 @@ TEST(Butterworth, N2_fc100_fs1000_RealTime)
     }
 }
 
-// ─── Case 2: N=4, fc=100Hz, fs=1000Hz ────────────────────────────────────────
+// --- Case 2: N=4, fc=100Hz, fs=1000Hz ----------------------------------------
 
 TEST(Butterworth, N4_fc100_fs1000_Coefficients)
 {
@@ -96,7 +96,7 @@ TEST(Butterworth, N4_fc100_fs1000_RealTime)
     }
 }
 
-// ─── Case 3: N=2, fc=500Hz, fs=8000Hz ────────────────────────────────────────
+// --- Case 3: N=2, fc=500Hz, fs=8000Hz ----------------------------------------
 
 TEST(Butterworth, N2_fc500_fs8000_Coefficients)
 {
@@ -125,7 +125,7 @@ TEST(Butterworth, N2_fc500_fs8000_RealTime)
     }
 }
 
-// ─── Case 4: N=3, fc=200Hz, fs=4000Hz ────────────────────────────────────────
+// --- Case 4: N=3, fc=200Hz, fs=4000Hz ----------------------------------------
 
 TEST(Butterworth, N3_fc200_fs4000_Coefficients)
 {

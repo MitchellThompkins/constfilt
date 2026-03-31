@@ -3,7 +3,7 @@
 #include "test_tools.hpp"
 #include <constfilt/constfilt.hpp>
 
-// ─── Mode 3: construct Filter directly from known b/a coefficients ───────────
+// --- Mode 3: construct Filter directly from known b/a coefficients -----------
 
 // Reference: a 3-tap FIR-like IIR with known hand-computed output.
 // b = [0.25, 0.5, 0.25], a = [1.0, -0.5, 0.0625]
@@ -26,8 +26,8 @@ class TestFilter : public constfilt::Filter<double, 3u, 3u>
     }
 };
 
-// ─── Coefficient accessor tests
-// ───────────────────────────────────────────────
+// --- Coefficient accessor tests
+// -----------------------------------------------
 
 TEST(FilterCoeffs, StoresB)
 {
@@ -47,7 +47,7 @@ TEST(FilterCoeffs, StoresA)
     EXPECT_DOUBLE_EQ(a[2], 0.0625);
 }
 
-// ─── Batch operator() correctness ────────────────────────────────────────────
+// --- Batch operator() correctness --------------------------------------------
 
 // Manual DF2T trace for a step input of 4 samples:
 // M = max(3,3)-1 = 2 (state has 2 elements)
@@ -79,7 +79,7 @@ TEST(FilterBatch, StepResponse4)
     EXPECT_NEAR(y[3], 1.656250, 1e-13);
 }
 
-// ─── Real-time operator() matches batch operator() ───────────────────────────
+// --- Real-time operator() matches batch operator() ---------------------------
 
 TEST(FilterRealTime, MatchesBatch)
 {
@@ -100,8 +100,8 @@ TEST(FilterRealTime, MatchesBatch)
     }
 }
 
-// ─── Reset clears state
-// ───────────────────────────────────────────────────────
+// --- Reset clears state
+// -------------------------------------------------------
 
 TEST(FilterReset, StateIsZeroedAfterReset)
 {

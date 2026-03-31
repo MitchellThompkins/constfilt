@@ -28,7 +28,7 @@ class Butterworth : public Filter<T, N + 1u, N + 1u>
     {
     }
 
-    // Full pipeline: specs → continuous SS → ZOH discrete SS → TF.
+    // Full pipeline: specs -> continuous SS -> ZOH discrete SS -> TF.
     static constexpr TransferFunction<T, N + 1u, N + 1u> compute_ba(
         T cutoff_hz, T sample_rate_hz)
     {

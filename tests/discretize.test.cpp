@@ -3,7 +3,7 @@
 #include "test_tools.hpp"
 #include <constfilt/constfilt.hpp>
 
-// ─── ZOH discretization: 1st-order system H(s) = 1/(s+a) ────────────────────
+// --- ZOH discretization: 1st-order system H(s) = 1/(s+a) --------------------
 //
 // Analytic ZOH result:
 //   Ad = exp(-a*T)
@@ -15,11 +15,11 @@
 namespace
 {
 
-// ─── a=1, T=0.1 ──────────────────────────────────────────────────────────────
+// --- a=1, T=0.1 --------------------------------------------------------------
 
 TEST(ZOH, FirstOrder_a1_T0p1)
 {
-    // Matrix<double,1,1> init: T _data[R][C] → {{{val}}}
+    // Matrix<double,1,1> init: T _data[R][C] -> {{{val}}}
     constexpr constfilt::StateSpace<double, 1u> sys_c{
         {{{-1.0}}}, // A = [-1]
         {{{1.0}}},  // B = [1]
@@ -31,15 +31,15 @@ TEST(ZOH, FirstOrder_a1_T0p1)
     constexpr auto sys_d =
         constfilt::zoh_discretize(sys_c, Ts, constfilt::ZOH{});
 
-    // Analytic: Ad = exp(-1*0.1) = exp(-0.1) ≈ 0.90483741803595957
-    // Bd = (1 - exp(-0.1)) / 1   ≈ 0.09516258196404043
+    // Analytic: Ad = exp(-1*0.1) = exp(-0.1) ~= 0.90483741803595957
+    // Bd = (1 - exp(-0.1)) / 1   ~= 0.09516258196404043
     EXPECT_NEAR(sys_d.A(0, 0), 0.90483741803595957, 1e-10);
     EXPECT_NEAR(sys_d.B(0, 0), 0.09516258196404043, 1e-10);
     EXPECT_DOUBLE_EQ(sys_d.C(0, 0), 1.0);
     EXPECT_DOUBLE_EQ(sys_d.D, 0.0);
 }
 
-// ─── a=5, T=0.01 ─────────────────────────────────────────────────────────────
+// --- a=5, T=0.01 -------------------------------------------------------------
 
 TEST(ZOH, FirstOrder_a5_T0p01)
 {
@@ -58,37 +58,37 @@ TEST(ZOH, FirstOrder_a5_T0p01)
     EXPECT_NEAR(sys_d.B(0, 0), Bd_ref, 1e-10);
 }
 
-// ─── expm: 1×1 diagonal case ─────────────────────────────────────────────────
+// --- expm: 1x1 diagonal case -------------------------------------------------
 
 TEST(Expm, Scalar)
 {
-    // expm([-2]) should be [exp(-2)] ≈ 0.13533528323661270
+    // expm([-2]) should be [exp(-2)] ~= 0.13533528323661270
     constexpr consteig::Matrix<double, 1u, 1u> A{{{-2.0}}};
     constexpr auto eA = constfilt::expm(A);
     EXPECT_NEAR(eA(0, 0), 0.13533528323661270, 1e-10);
 }
 
-// ─── Faddeev-LeVerrier: 2×2 diagonal matrix ──────────────────────────────────
+// --- char_poly: 2x2 diagonal matrix ------------------------------------------
 
-TEST(FaddeevLeVerrier, DiagonalMatrix)
+TEST(CharPoly, DiagonalMatrix)
 {
-    // A = diag(2, 3), char poly = (λ-2)(λ-3) = λ^2 - 5λ + 6
+    // A = diag(2, 3), char poly = (lam-2)(lam-3) = lam^2 - 5lam + 6
     // Expected: [1, -5, 6]
     constexpr consteig::Matrix<double, 2u, 2u> A{{{2.0, 0.0}, {0.0, 3.0}}};
     double coeffs[3]{};
-    constfilt::faddeev_leverrier(A, coeffs);
+    constfilt::char_poly(A, coeffs);
 
     EXPECT_NEAR(coeffs[0], 1.0, 1e-12);
     EXPECT_NEAR(coeffs[1], -5.0, 1e-12);
     EXPECT_NEAR(coeffs[2], 6.0, 1e-12);
 }
 
-// ─── ss_to_tf: 1st-order TF check ────────────────────────────────────────────
+// --- ss_to_tf: 1st-order TF check --------------------------------------------
 
 TEST(SsToTf, FirstOrder)
 {
     // Discrete 1st-order: A=[0.9], B=[0.1], C=[1], D=0
-    // Denominator: char poly of [0.9] = z - 0.9 → [1, -0.9]
+    // Denominator: char poly of [0.9] = z - 0.9 -> [1, -0.9]
     // h[0]=0, h[1]=C*B=0.1
     // b[0]=0, b[1]=0.1
     constexpr constfilt::StateSpace<double, 1u> sys{
@@ -101,7 +101,7 @@ TEST(SsToTf, FirstOrder)
     EXPECT_NEAR(tf.b[1], 0.1, 1e-12);
 }
 
-// ─── Matched-Z: 1st-order H_c(s) = a/(s+a) ──────────────────────────────────
+// --- Matched-Z: 1st-order H_c(s) = a/(s+a) ----------------------------------
 //
 // Matched-Z result:
 //   pole at z = exp(-a*Ts)

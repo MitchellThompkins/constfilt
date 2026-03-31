@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "constfilt.hpp"
+#include <constfilt/constfilt.hpp>
 #include "test_tools.hpp"
 
 // ─── Mode 3: construct Filter directly from known b/a coefficients ───────────

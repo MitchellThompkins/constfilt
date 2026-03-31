@@ -1,7 +1,7 @@
 #ifndef CONSTFILT_BUTTERWORTH_HPP
 #define CONSTFILT_BUTTERWORTH_HPP
 
-#include "../constfilt_options.hpp"
+#include "constfilt_options.hpp"
 #include "discretize.hpp"
 #include "filter.hpp"
 #include <consteig/consteig.hpp>

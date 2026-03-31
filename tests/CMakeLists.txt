@@ -5,8 +5,7 @@ endmacro()
 function(add_constfilt_test name source)
     add_executable(${name}.test ${source})
     target_include_directories(${name}.test PRIVATE
-        ${PROJECT_SOURCE_DIR}/test_dependencies
-        ${PROJECT_SOURCE_DIR})
+        ${PROJECT_SOURCE_DIR}/test_dependencies)
     target_link_libraries(${name}.test constfilt gtest_main constfilt_warnings)
     create_test(${name}.test)
 endfunction()

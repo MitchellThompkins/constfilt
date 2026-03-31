@@ -67,7 +67,8 @@ check-format:
 build.gcc:
 	cmake -S . -B $(BUILD_PREFIX)-gcc -G $(CMAKE_GENERATOR) \
 		-DCMAKE_C_COMPILER=gcc \
-		-DCMAKE_CXX_COMPILER=g++
+		-DCMAKE_CXX_COMPILER=g++ \
+		-DCONSTFILT_BUILD_TESTS=ON
 	cmake --build $(BUILD_PREFIX)-gcc --target all -- $(JOB_FLAG)
 
 .PHONY: test.gcc
@@ -78,7 +79,8 @@ test.gcc: build.gcc
 build.clang:
 	cmake -S . -B $(BUILD_PREFIX)-clang -G $(CMAKE_GENERATOR) \
 		-DCMAKE_C_COMPILER=clang \
-		-DCMAKE_CXX_COMPILER=clang++
+		-DCMAKE_CXX_COMPILER=clang++ \
+		-DCONSTFILT_BUILD_TESTS=ON
 	cmake --build $(BUILD_PREFIX)-clang --target all -- $(JOB_FLAG)
 
 .PHONY: test.clang

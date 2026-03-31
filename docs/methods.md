@@ -34,11 +34,14 @@ continuous state-space model of the form:
 
 $$\dot{x} = A_c x + B_c u, \quad y = C_c x + D_c u$$
 
-The reason to go through state-space is that the ZOH formula requires a matrix
-exponential $e^{A_c T_s}$, which is computed via eigendecomposition of $A_c$.
-State-space form gives us a matrix to decompose. consteig provides the
-compile-time eigendecomposition that makes this possible, and it operates on
-matrices — not polynomials.
+The ZOH formula requires a matrix exponential $e^{A_c T_s}$, computed via
+eigendecomposition of $A_c$. consteig provides that eigendecomposition at
+compile time, and it operates on matrices, not polynomials. The state-space
+$(A, B, C, D)$ struct is just how the system is organized; the $A_c$ matrix
+itself is a companion matrix built directly from the denominator polynomial
+coefficients (controllable canonical form). It could equally be described as
+"construct the companion matrix from the polynomial and feed it to the
+eigendecomposition." State-space is the framing, not the reason.
 
 The continuous Butterworth system is expressed in controllable canonical form.
 For a denominator $s^N + p_{N-1} s^{N-1} + \cdots + p_0$:

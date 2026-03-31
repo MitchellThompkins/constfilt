@@ -169,5 +169,4 @@ C[0]       = 1         (all other C entries are 0)
 D          = 0
 ```
 
-where `p[k]` is the frequency-scaled Butterworth polynomial coefficient of
-$s^k$.
+where `p[k]` is the frequency-scaled Butterworth polynomial coefficient of $s^k$.

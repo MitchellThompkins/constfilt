@@ -35,16 +35,15 @@ for ci = 1:length(cases)
     fs  = cases{ci}{3};
     wc  = 2 * pi * fc;
 
-    % Build normalized analog prototype
+    % Build normalized analog prototype and denormalize to wc
     [z_p, p_p, k_p] = buttap(ord);
-
-    % Denormalize to wc
     p_scaled = p_p * wc;
     k_scaled = k_p * wc^ord;
     [b_s, a_s] = zp2tf(z_p, p_scaled, k_scaled);
-
-    % ZOH discretize
     sys_c = tf(b_s, a_s);
+    u = ones(1, STEP_LEN);
+
+    % --- ZOH ---
     sys_d = c2d(sys_c, 1.0/fs, 'zoh');
     [b_d, a_d] = tfdata(sys_d, 'v');
 
@@ -54,41 +53,67 @@ for ci = 1:length(cases)
         b_d = [0, b_d];
     end
 
-    % Step response (32 samples)
-    u = ones(1, STEP_LEN);
-    y = filter(b_d, a_d, u);
-
-    % Emit struct
+    y_zoh = filter(b_d, a_d, u);
     sname = sprintf('case_%d_%dHz_%dHz', ord, fc, fs);
-    fprintf(fid, 'struct %s\n{\n', sname);
-    fprintf(fid, '    static constexpr int    order         = %d;\n', ord);
-    fprintf(fid, '    static constexpr double cutoff_hz     = %.1f;\n', fc);
-    fprintf(fid, '    static constexpr double sample_rate_hz= %.1f;\n\n', fs);
 
-    % b coefficients
+    fprintf(fid, 'struct %s\n{\n', sname);
+    fprintf(fid, '    static constexpr int    order          = %d;\n', ord);
+    fprintf(fid, '    static constexpr double cutoff_hz      = %.1f;\n', fc);
+    fprintf(fid, '    static constexpr double sample_rate_hz = %.1f;\n\n', fs);
     fprintf(fid, '    static constexpr double b[%d] = {', length(b_d));
     for i = 1:length(b_d)
         if i > 1; fprintf(fid, ', '); end
         fprintf(fid, '%.17g', b_d(i));
     end
     fprintf(fid, '};\n');
-
-    % a coefficients
     fprintf(fid, '    static constexpr double a[%d] = {', length(a_d));
     for i = 1:length(a_d)
         if i > 1; fprintf(fid, ', '); end
         fprintf(fid, '%.17g', a_d(i));
     end
     fprintf(fid, '};\n');
-
-    % step response
     fprintf(fid, '    static constexpr double step[%d] = {', STEP_LEN);
     for i = 1:STEP_LEN
         if i > 1; fprintf(fid, ', '); end
-        fprintf(fid, '%.17g', y(i));
+        fprintf(fid, '%.17g', y_zoh(i));
     end
     fprintf(fid, '};\n');
+    fprintf(fid, '};\n\n');
 
+    % --- Matched-Z ---
+    sys_mz = c2d(sys_c, 1.0/fs, 'matched');
+    [b_mz, a_mz] = tfdata(sys_mz, 'v');
+
+    % Zero-pad b_mz to match length of a_mz if needed.
+    while length(b_mz) < length(a_mz)
+        b_mz = [0, b_mz];
+    end
+
+    y_mz = filter(b_mz, a_mz, u);
+    sname_mz = sprintf('case_mz_%d_%dHz_%dHz', ord, fc, fs);
+
+    fprintf(fid, 'struct %s\n{\n', sname_mz);
+    fprintf(fid, '    static constexpr int    order          = %d;\n', ord);
+    fprintf(fid, '    static constexpr double cutoff_hz      = %.1f;\n', fc);
+    fprintf(fid, '    static constexpr double sample_rate_hz = %.1f;\n\n', fs);
+    fprintf(fid, '    static constexpr double b[%d] = {', length(b_mz));
+    for i = 1:length(b_mz)
+        if i > 1; fprintf(fid, ', '); end
+        fprintf(fid, '%.17g', b_mz(i));
+    end
+    fprintf(fid, '};\n');
+    fprintf(fid, '    static constexpr double a[%d] = {', length(a_mz));
+    for i = 1:length(a_mz)
+        if i > 1; fprintf(fid, ', '); end
+        fprintf(fid, '%.17g', a_mz(i));
+    end
+    fprintf(fid, '};\n');
+    fprintf(fid, '    static constexpr double step[%d] = {', STEP_LEN);
+    for i = 1:STEP_LEN
+        if i > 1; fprintf(fid, ', '); end
+        fprintf(fid, '%.17g', y_mz(i));
+    end
+    fprintf(fid, '};\n');
     fprintf(fid, '};\n\n');
 end
 

@@ -262,14 +262,16 @@ constexpr TransferFunction<T, N + 1u, N + 1u> ss_to_tf(
 // --- Matched-Z discretization -----------------------------------------------
 
 // Matched-Z: discrete poles at z_k = exp(s_k * Ts).
-// For all-pole continuous systems (no finite zeros), places N zeros at z = -1
-// and matches DC gain: H_d(1) = H_c(0).
+// For all-pole continuous systems (no finite zeros), places N-1 zeros at
+// z = -1 with b[0] = 0, and matches DC gain: H_d(1) = H_c(0).
 //
 // Steps:
-//   1. Ad = expm(Ac * Ts)               -- same pole mapping as ZOH
-//   2. a  = char_poly(Ad)                -- discrete denominator
-//   3. H_c(0) = D - C * Ac^{-1} * B     -- continuous DC gain
-//   4. b = K * (z+1)^N  where K = H_c(0) * a(1) / 2^N
+//   1. Ad = expm(Ac * Ts)                  -- same pole mapping as ZOH
+//   2. a  = char_poly(Ad)                   -- discrete denominator
+//   3. H_c(0) = D - C * Ac^{-1} * B        -- continuous DC gain
+//   4. b[0] = 0
+//      b[k] = K * C(N-1, k-1)  for k = 1..N  (coefficients of (z+1)^{N-1})
+//      where K = H_c(0) * a(1) / 2^{N-1}
 template <typename T, consteig::Size N>
 constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_discretize(
     const StateSpace<T, N> &sys_c, T Ts, MatchedZ /*tag*/)
@@ -298,21 +300,22 @@ constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_discretize(
     for (consteig::Size k = 0; k <= N; ++k)
         a_at_1 += tf.a[k];
 
-    // 5. 2^N
-    T two_pow_N = static_cast<T>(1);
-    for (consteig::Size k = 0; k < N; ++k)
-        two_pow_N *= static_cast<T>(2);
+    // 5. 2^{N-1}
+    T two_pow_Nm1 = static_cast<T>(1);
+    for (consteig::Size k = 0; k < N - 1u; ++k)
+        two_pow_Nm1 *= static_cast<T>(2);
 
-    // 6. Scale: K = dc_gain * a(1) / 2^N
-    const T K = dc_gain * a_at_1 / two_pow_N;
+    // 6. Scale: K = dc_gain * a(1) / 2^{N-1}
+    const T K = dc_gain * a_at_1 / two_pow_Nm1;
 
-    // 7. Numerator b[k] = K * C(N, k)  (binomial coefficients of (z+1)^N)
+    // 7. b[0] = 0; b[k] = K * C(N-1, k-1) for k = 1..N
+    tf.b[0] = static_cast<T>(0);
     T binom = static_cast<T>(1);
-    for (consteig::Size k = 0; k <= N; ++k)
+    for (consteig::Size k = 1u; k <= N; ++k)
     {
         tf.b[k] = K * binom;
         if (k < N)
-            binom = binom * static_cast<T>(N - k) / static_cast<T>(k + 1u);
+            binom = binom * static_cast<T>(N - k) / static_cast<T>(k);
     }
 
     return tf;

@@ -101,12 +101,11 @@ TEST(SsToTf, FirstOrder)
     EXPECT_NEAR(tf.b[1], 0.1, 1e-12);
 }
 
-// --- Matched-Z: 1st-order H_c(s) = a/(s+a) ----------------------------------
+// --- Matched-Z: 1st-order H_c(s) = 1/(s+a) ----------------------------------
 //
-// Matched-Z result:
+// Matched-Z result (N=1, so N-1=0 zeros at z=-1):
 //   pole at z = exp(-a*Ts)
-//   zero at z = -1
-//   DC gain = 1  =>  b[0] = b[1] = (1 - exp(-a*Ts)) / 2
+//   b[0] = 0,  b[1] = 1 - exp(-a*Ts)   (DC gain = 1)
 //   a = [1, -exp(-a*Ts)]
 
 TEST(MatchedZ, FirstOrder_a1_T0p1)
@@ -118,12 +117,12 @@ TEST(MatchedZ, FirstOrder_a1_T0p1)
         constfilt::matched_z_discretize(sys_c, Ts, constfilt::MatchedZ{});
 
     constexpr double pole = 0.90483741803595957; // exp(-0.1)
-    constexpr double half_bd = (1.0 - pole) / 2.0;
+    constexpr double bd = 1.0 - pole;
 
     EXPECT_NEAR(tf.a[0], 1.0, 1e-10);
     EXPECT_NEAR(tf.a[1], -pole, 1e-10);
-    EXPECT_NEAR(tf.b[0], half_bd, 1e-10);
-    EXPECT_NEAR(tf.b[1], half_bd, 1e-10);
+    EXPECT_NEAR(tf.b[0], 0.0, 1e-10);
+    EXPECT_NEAR(tf.b[1], bd, 1e-10);
 }
 
 TEST(MatchedZ, FirstOrder_DCGain)

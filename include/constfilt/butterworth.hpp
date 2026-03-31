@@ -9,7 +9,7 @@
 namespace constfilt
 {
 
-template <typename T, consteig::Size N>
+template <typename T, consteig::Size N, typename Method = ZOH>
 class Butterworth : public Filter<T, N + 1u, N + 1u>
 {
     static_assert(N >= 1u, "Butterworth order must be at least 1");
@@ -28,15 +28,26 @@ class Butterworth : public Filter<T, N + 1u, N + 1u>
     {
     }
 
-    // Full pipeline: specs -> continuous SS -> ZOH discrete SS -> TF.
+    // Full pipeline: specs -> continuous SS -> discrete TF.
     static constexpr TransferFunction<T, N + 1u, N + 1u> compute_ba(
         T cutoff_hz, T sample_rate_hz)
     {
         const T wc = static_cast<T>(2.0 * CONSTFILT_PI) * cutoff_hz;
         const T Ts = static_cast<T>(1) / sample_rate_hz;
         auto sys_c = build_continuous_ss(wc);
-        auto sys_d = zoh_discretize(sys_c, Ts, ZOH{});
-        return ss_to_tf(sys_d);
+        return discretize(sys_c, Ts, Method{});
+    }
+
+    static constexpr TransferFunction<T, N + 1u, N + 1u> discretize(
+        const StateSpace<T, N> &sys_c, T Ts, ZOH)
+    {
+        return ss_to_tf(zoh_discretize(sys_c, Ts, ZOH{}));
+    }
+
+    static constexpr TransferFunction<T, N + 1u, N + 1u> discretize(
+        const StateSpace<T, N> &sys_c, T Ts, MatchedZ)
+    {
+        return matched_z_discretize(sys_c, Ts, MatchedZ{});
     }
 
     // Build controllable-canonical-form state-space for an N-th order

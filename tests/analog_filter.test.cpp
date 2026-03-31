@@ -156,8 +156,8 @@ TEST(Stability, UnstableSystem_RepeatedImaginaryAxisPole)
 TEST(AnalogFilter, Case1_ZOH_Coefficients)
 {
     using Ref = ctf_ref::case_1_zoh_fs10;
-    static constexpr constfilt::AnalogFilter<double, 1u> filt(
-        Ref::b_s, Ref::a_s, Ref::sample_rate_hz);
+    static constexpr constfilt::AnalogFilter<double, 1u, Ref::b_s, Ref::a_s>
+        filt(Ref::sample_rate_hz);
 
     EXPECT_NEAR(filt.coeffs_b()[0], Ref::b[0], CONSTFILT_COEFF_TOL);
     EXPECT_NEAR(filt.coeffs_b()[1], Ref::b[1], CONSTFILT_COEFF_TOL);
@@ -168,8 +168,8 @@ TEST(AnalogFilter, Case1_ZOH_Coefficients)
 TEST(AnalogFilter, Case1_ZOH_StepResponse)
 {
     using Ref = ctf_ref::case_1_zoh_fs10;
-    constfilt::AnalogFilter<double, 1u> filt(Ref::b_s, Ref::a_s,
-                                             Ref::sample_rate_hz);
+    constfilt::AnalogFilter<double, 1u, Ref::b_s, Ref::a_s> filt(
+        Ref::sample_rate_hz);
 
     for (unsigned int i = 0; i < 32u; ++i)
     {
@@ -185,8 +185,8 @@ TEST(AnalogFilter, Case1_ZOH_StepResponse)
 TEST(AnalogFilter, Case2_ZOH_Coefficients)
 {
     using Ref = ctf_ref::case_2_zoh_fs10;
-    static constexpr constfilt::AnalogFilter<double, 2u> filt(
-        Ref::b_s, Ref::a_s, Ref::sample_rate_hz);
+    static constexpr constfilt::AnalogFilter<double, 2u, Ref::b_s, Ref::a_s>
+        filt(Ref::sample_rate_hz);
 
     for (unsigned int i = 0; i <= 2u; ++i)
     {
@@ -200,8 +200,8 @@ TEST(AnalogFilter, Case2_ZOH_Coefficients)
 TEST(AnalogFilter, Case2_ZOH_StepResponse)
 {
     using Ref = ctf_ref::case_2_zoh_fs10;
-    constfilt::AnalogFilter<double, 2u> filt(Ref::b_s, Ref::a_s,
-                                             Ref::sample_rate_hz);
+    constfilt::AnalogFilter<double, 2u, Ref::b_s, Ref::a_s> filt(
+        Ref::sample_rate_hz);
 
     for (unsigned int i = 0; i < 32u; ++i)
     {
@@ -217,8 +217,8 @@ TEST(AnalogFilter, Case2_ZOH_StepResponse)
 TEST(AnalogFilter, Case3_Proper_ZOH_Coefficients)
 {
     using Ref = ctf_ref::case_3_proper_zoh_fs10;
-    static constexpr constfilt::AnalogFilter<double, 1u> filt(
-        Ref::b_s, Ref::a_s, Ref::sample_rate_hz);
+    static constexpr constfilt::AnalogFilter<double, 1u, Ref::b_s, Ref::a_s>
+        filt(Ref::sample_rate_hz);
 
     EXPECT_NEAR(filt.coeffs_b()[0], Ref::b[0], CONSTFILT_COEFF_TOL);
     EXPECT_NEAR(filt.coeffs_b()[1], Ref::b[1], CONSTFILT_COEFF_TOL);
@@ -229,8 +229,8 @@ TEST(AnalogFilter, Case3_Proper_ZOH_Coefficients)
 TEST(AnalogFilter, Case3_Proper_ZOH_StepResponse)
 {
     using Ref = ctf_ref::case_3_proper_zoh_fs10;
-    constfilt::AnalogFilter<double, 1u> filt(Ref::b_s, Ref::a_s,
-                                             Ref::sample_rate_hz);
+    constfilt::AnalogFilter<double, 1u, Ref::b_s, Ref::a_s> filt(
+        Ref::sample_rate_hz);
 
     for (unsigned int i = 0; i < 32u; ++i)
     {
@@ -246,8 +246,9 @@ TEST(AnalogFilter, Case3_Proper_ZOH_StepResponse)
 TEST(AnalogFilter, Case4_MatchedZ_Coefficients)
 {
     using Ref = ctf_ref::case_4_mz_fs10;
-    static constexpr constfilt::AnalogFilter<double, 2u, constfilt::MatchedZ>
-        filt(Ref::b_s, Ref::a_s, Ref::sample_rate_hz);
+    static constexpr constfilt::AnalogFilter<double, 2u, Ref::b_s, Ref::a_s,
+                                             constfilt::MatchedZ>
+        filt(Ref::sample_rate_hz);
 
     for (unsigned int i = 0; i <= 2u; ++i)
     {
@@ -261,8 +262,8 @@ TEST(AnalogFilter, Case4_MatchedZ_Coefficients)
 TEST(AnalogFilter, Case4_MatchedZ_StepResponse)
 {
     using Ref = ctf_ref::case_4_mz_fs10;
-    constfilt::AnalogFilter<double, 2u, constfilt::MatchedZ> filt(
-        Ref::b_s, Ref::a_s, Ref::sample_rate_hz);
+    constfilt::AnalogFilter<double, 2u, Ref::b_s, Ref::a_s, constfilt::MatchedZ>
+        filt(Ref::sample_rate_hz);
 
     for (unsigned int i = 0; i < 32u; ++i)
     {
@@ -278,9 +279,10 @@ TEST(AnalogFilter, Case4_MatchedZ_StepResponse)
 TEST(AnalogFilter, StabilityCheckDisabled_AllowsUnstableFilter)
 {
     // H(s) = 1/(s^2-s+1): unstable, but CheckStab=false allows construction.
-    constexpr double b[3] = {0.0, 0.0, 1.0};
-    constexpr double a[3] = {1.0, -1.0, 1.0};
-    constfilt::AnalogFilter<double, 2u, constfilt::ZOH, false> filt(b, a, 10.0);
+    // Arrays must have static storage duration to be usable as NTTPs.
+    static constexpr double b[3] = {0.0, 0.0, 1.0};
+    static constexpr double a[3] = {1.0, -1.0, 1.0};
+    constfilt::AnalogFilter<double, 2u, b, a, constfilt::ZOH, false> filt(10.0);
     (void)filt;
 }
 

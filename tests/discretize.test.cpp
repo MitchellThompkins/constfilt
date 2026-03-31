@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
-#include <constfilt/constfilt.hpp>
 #include "test_tools.hpp"
+#include <constfilt/constfilt.hpp>
 
 // ─── ZOH discretization: 1st-order system H(s) = 1/(s+a) ────────────────────
 //

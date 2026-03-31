@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 
 #include "butterworth_reference.hpp"
-#include <constfilt/constfilt.hpp>
 #include "test_tools.hpp"
+#include <constfilt/constfilt.hpp>
 
 // ─── Case 1: N=2, fc=100Hz, fs=1000Hz ────────────────────────────────────────
 

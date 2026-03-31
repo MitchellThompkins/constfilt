@@ -54,7 +54,7 @@ if(NOT TARGET consteig::consteig)
     FetchContent_MakeAvailable(consteig)
 endif()
 
-target_link_libraries(constfilt INTERFACE consteig::consteig)
+target_link_libraries(constfilt INTERFACE $<BUILD_INTERFACE:consteig::consteig>)
 
 ################################################################################
 # Development mode (skipped when consumed via add_subdirectory/FetchContent)

@@ -34,12 +34,11 @@ continuous state-space model of the form:
 
 $$\dot{x} = A_c x + B_c u, \quad y = C_c x + D_c u$$
 
-The reason to go through state-space rather than discretizing the transfer
-function polynomial directly is that state-space makes the math exact and
-tractable. The ZOH formula involves a matrix exponential $e^{A_c T_s}$, which
-is well-defined and computable from the eigendecomposition of $A_c$. There is
-no equivalent closed-form expression that operates directly on transfer function
-coefficients for higher-order systems.
+The reason to go through state-space is that the ZOH formula requires a matrix
+exponential $e^{A_c T_s}$, which is computed via eigendecomposition of $A_c$.
+State-space form gives us a matrix to decompose. consteig provides the
+compile-time eigendecomposition that makes this possible, and it operates on
+matrices — not polynomials.
 
 The continuous Butterworth system is expressed in controllable canonical form.
 For a denominator $s^N + p_{N-1} s^{N-1} + \cdots + p_0$:

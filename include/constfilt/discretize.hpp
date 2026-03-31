@@ -35,12 +35,13 @@ struct TransferFunction
 
 // --------------------------- Matrix exponential ------------------------------
 
-// expm(A) via eigendecomposition:
+// matrix_exp(A) via eigendecomposition:
 //   Ad = V * diag(exp(lam_i)) * V^{-1}
 // where V = eigenvectors, lam_i = eigenvalues (complex).
 // Real part extracted at the end (imaginary parts cancel for real A).
 template <typename T, consteig::Size N>
-constexpr consteig::Matrix<T, N, N> expm(const consteig::Matrix<T, N, N> &A)
+constexpr consteig::Matrix<T, N, N> matrix_exp(
+    const consteig::Matrix<T, N, N> &A)
 {
     using Cx = consteig::Complex<T>;
     using CxMat_NN = consteig::Matrix<Cx, N, N>;
@@ -65,7 +66,7 @@ constexpr consteig::Matrix<T, N, N> expm(const consteig::Matrix<T, N, N> &A)
         }
     }
 
-    // 3. Accumulate: expm = sum_i exp(lam_i) * v_i * w_i^T
+    // 3. Accumulate: matrix_exp = sum_i exp(lam_i) * v_i * w_i^T
     //    where v_i = column i of V, w_i^T = row i of V_inv
     CxMat_NN result_c{};
     for (consteig::Size i = 0; i < N; ++i)
@@ -95,7 +96,7 @@ constexpr consteig::Matrix<T, N, N> expm(const consteig::Matrix<T, N, N> &A)
 
 // --------------------------- ZOH discretization ------------------------------
 
-// ZOH: Ad = expm(Ac*Ts),  Bd = Ac^{-1} * (Ad - I) * Bc
+// ZOH: Ad = matrix_exp(Ac*Ts),  Bd = Ac^{-1} * (Ad - I) * Bc
 // Solve  Ac * Bd = (Ad - I) * Bc  via LU.
 // Cc and Dc are unchanged.
 template <typename T, consteig::Size N>
@@ -115,7 +116,7 @@ constexpr StateSpace<T, N> zoh_discretize(const StateSpace<T, N> &sys_c, T Ts,
         }
     }
 
-    consteig::Matrix<T, N, N> Ad = expm(AcTs);
+    consteig::Matrix<T, N, N> Ad = matrix_exp(AcTs);
 
     // (Ad - I)
     consteig::Matrix<T, N, N> AdmI = Ad - consteig::eye<T, N>();
@@ -266,7 +267,7 @@ constexpr TransferFunction<T, N + 1u, N + 1u> ss_to_tf(
 // z = -1 with b[0] = 0, and matches DC gain: H_d(1) = H_c(0).
 //
 // Steps:
-//   1. Ad = expm(Ac * Ts)                  -- same pole mapping as ZOH
+//   1. Ad = matrix_exp(Ac * Ts)                  -- same pole mapping as ZOH
 //   2. a  = char_poly(Ad)                   -- discrete denominator
 //   3. H_c(0) = D - C * Ac^{-1} * B        -- continuous DC gain
 //   4. b[0] = 0
@@ -276,12 +277,12 @@ template <typename T, consteig::Size N>
 constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_discretize(
     const StateSpace<T, N> &sys_c, T Ts, MatchedZ /*tag*/)
 {
-    // 1. Ad = expm(Ac * Ts)
+    // 1. Ad = matrix_exp(Ac * Ts)
     consteig::Matrix<T, N, N> AcTs{};
     for (consteig::Size r = 0; r < N; ++r)
         for (consteig::Size c = 0; c < N; ++c)
             AcTs(r, c) = sys_c.A(r, c) * Ts;
-    const auto Ad = expm(AcTs);
+    const auto Ad = matrix_exp(AcTs);
 
     TransferFunction<T, N + 1u, N + 1u> tf{};
 

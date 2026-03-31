@@ -58,13 +58,14 @@ TEST(ZOH, FirstOrder_a5_T0p01)
     EXPECT_NEAR(sys_d.B(0, 0), Bd_ref, 1e-10);
 }
 
-// --- expm: 1x1 diagonal case -------------------------------------------------
+// --- matrix_exp: 1x1 diagonal case
+// -------------------------------------------------
 
 TEST(Expm, Scalar)
 {
-    // expm([-2]) should be [exp(-2)] ~= 0.13533528323661270
+    // matrix_exp([-2]) should be [exp(-2)] ~= 0.13533528323661270
     constexpr consteig::Matrix<double, 1u, 1u> A{{{-2.0}}};
-    constexpr auto eA = constfilt::expm(A);
+    constexpr auto eA = constfilt::matrix_exp(A);
     EXPECT_NEAR(eA(0, 0), 0.13533528323661270, 1e-10);
 }
 

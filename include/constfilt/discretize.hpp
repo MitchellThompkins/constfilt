@@ -55,14 +55,14 @@ constexpr consteig::Matrix<T, N, N> matrix_exp(
     auto lu_V = consteig::lu(V);
 
     CxMat_NN V_inv{};
-    for (consteig::Size j = 0; j < N; ++j)
+    for (consteig::Size col = 0; col < N; ++col)
     {
-        CxMat_N1 e_j{};
-        e_j(j, 0) = Cx{static_cast<T>(1), static_cast<T>(0)};
-        auto col = consteig::lu_solve(lu_V, e_j);
-        for (consteig::Size i = 0; i < N; ++i)
+        CxMat_N1 e_col{};
+        e_col(col, 0) = Cx{static_cast<T>(1), static_cast<T>(0)};
+        auto col_vec = consteig::lu_solve(lu_V, e_col);
+        for (consteig::Size row = 0; row < N; ++row)
         {
-            V_inv(i, j) = col(i, 0);
+            V_inv(row, col) = col_vec(row, 0);
         }
     }
 
@@ -208,11 +208,11 @@ constexpr void markov_numerator(const StateSpace<T, N> &sys_d,
         T val = static_cast<T>(0);
         for (consteig::Size c = 0; c < N; ++c)
         {
-            // (A_pow * B)[c] = sum_j A_pow(c,j)*B(j,0)
+            // (A_pow * B)[c] = sum_col A_pow(c,col)*B(col,0)
             T AB_c = static_cast<T>(0);
-            for (consteig::Size j = 0; j < N; ++j)
+            for (consteig::Size col = 0; col < N; ++col)
             {
-                AB_c += A_pow(c, j) * Bd(j, 0);
+                AB_c += A_pow(c, col) * Bd(col, 0);
             }
             val += Cd(0, c) * AB_c;
         }
@@ -225,9 +225,9 @@ constexpr void markov_numerator(const StateSpace<T, N> &sys_d,
             for (consteig::Size cc = 0; cc < N; ++cc)
             {
                 T sum = static_cast<T>(0);
-                for (consteig::Size j = 0; j < N; ++j)
+                for (consteig::Size col = 0; col < N; ++col)
                 {
-                    sum += A_pow(r, j) * Ad(j, cc);
+                    sum += A_pow(r, col) * Ad(col, cc);
                 }
                 next(r, cc) = sum;
             }
@@ -293,8 +293,8 @@ constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_discretize(
     auto lu_Ac = consteig::lu(sys_c.A);
     auto x = consteig::lu_solve(lu_Ac, sys_c.B);
     T dc_gain = sys_c.D;
-    for (consteig::Size j = 0; j < N; ++j)
-        dc_gain -= sys_c.C(0, j) * x(j, 0);
+    for (consteig::Size col = 0; col < N; ++col)
+        dc_gain -= sys_c.C(0, col) * x(col, 0);
 
     // 4. a(1) = sum of denominator coefficients
     T a_at_1 = static_cast<T>(0);

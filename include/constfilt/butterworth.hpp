@@ -58,7 +58,7 @@ class Butterworth : public Filter<T, N + 1u, N + 1u>
     // where p[] are the normalized (wc=1) Butterworth coefficients.
     //
     // Companion matrix A:
-    //   A[i][i+1] = 1   for i = 0..N-2
+    //   A[row][row+1] = 1   for row = 0..N-2
     //   A[N-1][k] = -(p[k] * wc^{N-k})   for k = 0..N-1
     //
     // B = [0, ..., 0, wc^N]^T,  C = [1, 0, ..., 0],  D = 0
@@ -67,9 +67,9 @@ class Butterworth : public Filter<T, N + 1u, N + 1u>
         StateSpace<T, N> sys{};
 
         // Fill super-diagonal with 1
-        for (consteig::Size i = 0; i < N - 1u; ++i)
+        for (consteig::Size row = 0; row < N - 1u; ++row)
         {
-            sys.A(i, i + 1u) = static_cast<T>(1);
+            sys.A(row, row + 1u) = static_cast<T>(1);
         }
 
         // Last row: -p[k] * wc^{N-k}

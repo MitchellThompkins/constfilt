@@ -336,49 +336,61 @@ constexpr TransferFunction<T, N + 1u, N + 1u> analog_to_digital(
 // z = -1 with b[0] = 0, and matches DC gain: H_d(1) = H_c(0).
 //
 // Steps:
-//   1. Ad = matrix_exp(Ac * Ts)                  -- same pole mapping as ZOH
-//   2. a  = char_poly(Ad)                   -- discrete denominator
-//   3. H_c(0) = D - C * Ac^{-1} * B        -- continuous DC gain
-//   4. b[0] = 0
+//   1. s_k = eigenvalues(Ac)               -- continuous poles
+//   2. z_k = exp(s_k * Ts)                 -- map poles to z-domain directly
+//   3. a  = prod(z - z_k)                  -- discrete denominator
+//   4. H_c(0) = D - C * Ac^{-1} * B       -- continuous DC gain
+//   5. b[0] = 0
 //      b[k] = K * C(N-1, k-1)  for k = 1..N  (coefficients of (z+1)^{N-1})
 //      where K = H_c(0) * a(1) / 2^{N-1}
 template <typename T, consteig::Size N>
 constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_discretize(
     const StateSpace<T, N> &sys_c, T Ts, MatchedZ /*tag*/)
 {
-    // 1. Ad = matrix_exp(Ac * Ts)
-    consteig::Matrix<T, N, N> AcTs{};
-    for (consteig::Size r = 0; r < N; ++r)
-        for (consteig::Size c = 0; c < N; ++c)
-            AcTs(r, c) = sys_c.A(r, c) * Ts;
-    const auto Ad = matrix_exp(AcTs);
+    using Cx = consteig::Complex<T>;
+
+    // 1-2. Continuous poles s_k; map directly to discrete z_k = exp(s_k * Ts).
+    //      Build denominator polynomial prod(z - z_k) in complex arithmetic.
+    auto evals_c = consteig::eigenvalues(sys_c.A);
+
+    Cx p[N + 1u]{};
+    p[0] = Cx{static_cast<T>(1), static_cast<T>(0)};
+    for (consteig::Size k = 0; k < N; ++k)
+    {
+        const Cx z_k = consteig::exp(evals_c(k, 0) * Cx{Ts, static_cast<T>(0)});
+        p[k + 1u] = Cx{static_cast<T>(0), static_cast<T>(0)} - z_k * p[k];
+        for (consteig::Size i = k; i > 0u; --i)
+            p[i] = p[i] - z_k * p[i - 1u];
+        // p[0] unchanged (stays 1)
+    }
 
     TransferFunction<T, N + 1u, N + 1u> tf{};
 
-    // 2. Discrete denominator polynomial
-    char_poly(Ad, tf.a);
+    // 3. Extract real part of denominator
+    for (consteig::Size i = 0; i <= N; ++i)
+        tf.a[i] = p[i].real;
 
-    // 3. Continuous DC gain: solve Ac*x = B, then H_c(0) = D - C*x
+    // 4. Continuous DC gain: solve Ac*x = B, then H_c(0) = D - C*x
     auto lu_Ac = consteig::lu(sys_c.A);
     auto x = consteig::lu_solve(lu_Ac, sys_c.B);
     T dc_gain = sys_c.D;
     for (consteig::Size col = 0; col < N; ++col)
         dc_gain -= sys_c.C(0, col) * x(col, 0);
 
-    // 4. a(1) = sum of denominator coefficients
+    // 5. a(1) = sum of denominator coefficients
     T a_at_1 = static_cast<T>(0);
     for (consteig::Size k = 0; k <= N; ++k)
         a_at_1 += tf.a[k];
 
-    // 5. 2^{N-1}
+    // 6. 2^{N-1}
     T two_pow_Nm1 = static_cast<T>(1);
     for (consteig::Size k = 0; k < N - 1u; ++k)
         two_pow_Nm1 *= static_cast<T>(2);
 
-    // 6. Scale: K = dc_gain * a(1) / 2^{N-1}
+    // 7. Scale: K = dc_gain * a(1) / 2^{N-1}
     const T K = dc_gain * a_at_1 / two_pow_Nm1;
 
-    // 7. b[0] = 0; b[k] = K * C(N-1, k-1) for k = 1..N
+    // 8. b[0] = 0; b[k] = K * C(N-1, k-1) for k = 1..N
     tf.b[0] = static_cast<T>(0);
     T binom = static_cast<T>(1);
     for (consteig::Size k = 1u; k <= N; ++k)

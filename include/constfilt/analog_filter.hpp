@@ -11,8 +11,7 @@ namespace constfilt
 // Discretize an analog (continuous-time, s-domain) transfer function into a
 // digital Filter.
 //
-// b_c and a_c are Laplace-domain polynomial coefficients in descending power
-// order:
+// Coefficients are in descending power order:
 //   coeff[0]*s^N + coeff[1]*s^{N-1} + ... + coeff[N]
 //
 // Template parameters:
@@ -24,11 +23,15 @@ namespace constfilt
 //               Unstable. Both Stable and MarginallyStable are accepted.
 //               Set to false to skip.
 //
-// Constructor:
+// Constructors:
 //   AnalogFilter(b_c, a_c, sample_rate_hz)
-//     b_c            - s-domain numerator coefficients [N+1], descending order
-//     a_c            - s-domain denominator coefficients [N+1], descending
-//     order sample_rate_hz - sample rate in Hz; Ts = 1/sample_rate_hz
+//     b_c            - s-domain numerator array [N+1], descending order
+//     a_c            - s-domain denominator array [N+1], descending order
+//     sample_rate_hz - sample rate in Hz
+//
+//   AnalogFilter(continuous_tf, sample_rate_hz)
+//     continuous_tf  - s-domain TransferFunction (e.g. from a subclass)
+//     sample_rate_hz - sample rate in Hz
 template <typename T, consteig::Size N, typename Method = ZOH,
           bool CheckStab = true>
 class AnalogFilter : public Filter<T, N + 1u, N + 1u>
@@ -42,29 +45,28 @@ class AnalogFilter : public Filter<T, N + 1u, N + 1u>
     {
     }
 
-  protected:
-    // For subclasses that supply a pre-computed digital TF (e.g. Butterworth).
-    constexpr explicit AnalogFilter(TransferFunction<T, N + 1u, N + 1u> tf)
-        : Filter<T, N + 1u, N + 1u>(tf.b, tf.a)
+    constexpr AnalogFilter(TransferFunction<T, N + 1u, N + 1u> continuous_tf,
+                           T sample_rate_hz)
+        : AnalogFilter(checked_discretize(continuous_tf.b, continuous_tf.a,
+                                          sample_rate_hz))
     {
-    }
-
-    // Continuous-to-digital discretization; exposed so subclasses can reuse.
-    static constexpr TransferFunction<T, N + 1u, N + 1u> discretize(
-        const T (&b_c)[N + 1u], const T (&a_c)[N + 1u], T sample_rate_hz)
-    {
-        return analog_to_digital(tf_to_ss<T, N>(b_c, a_c),
-                                 static_cast<T>(1) / sample_rate_hz, Method{});
     }
 
   private:
+    constexpr explicit AnalogFilter(
+        TransferFunction<T, N + 1u, N + 1u> digital_tf)
+        : Filter<T, N + 1u, N + 1u>(digital_tf.b, digital_tf.a)
+    {
+    }
+
     static constexpr TransferFunction<T, N + 1u, N + 1u> checked_discretize(
         const T (&b_c)[N + 1u], const T (&a_c)[N + 1u], T sample_rate_hz)
     {
         if (CheckStab &&
             check_stability(tf_to_ss<T, N>(b_c, a_c)) == Stability::Unstable)
             throw "constfilt: unstable analog filter";
-        return discretize(b_c, a_c, sample_rate_hz);
+        return analog_to_digital(tf_to_ss<T, N>(b_c, a_c),
+                                 static_cast<T>(1) / sample_rate_hz, Method{});
     }
 };
 

@@ -121,7 +121,7 @@ for ci = 1:length(lpf_cases)
 end
 
 % =============================================================================
-% High-pass cases (ZOH only — matched-Z assumes all-pole and does not apply)
+% High-pass cases (ZOH only - matched-Z assumes all-pole and does not apply)
 % =============================================================================
 
 hpf_cases = {

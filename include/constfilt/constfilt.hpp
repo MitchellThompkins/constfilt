@@ -5,6 +5,7 @@
 #include "butterworth.hpp"
 #include "constfilt_options.hpp"
 #include "discretize.hpp"
+#include "elliptic.hpp"
 #include "filter.hpp"
 #include "stability.hpp"
 

@@ -52,9 +52,28 @@ if(NOT TARGET consteig::consteig)
         GIT_SHALLOW    TRUE
     )
     FetchContent_MakeAvailable(consteig)
+
+    set(CMAKE_POLICY_VERSION_MINIMUM 3.5 CACHE STRING "" FORCE)
+    FetchContent_Declare(
+        gcem
+        GIT_REPOSITORY https://github.com/MitchellThompkins/gcem
+        GIT_TAG        add-optional-no-stdlib
+    )
+    FetchContent_MakeAvailable(gcem)
+    unset(CMAKE_POLICY_VERSION_MINIMUM CACHE)
+
+    # Use gcem in no-stdlib (builtin) mode and suppress third-party warnings.
+    target_compile_definitions(gcem INTERFACE GCEM_TRAITS_BUILTIN)
+    get_target_property(_gcem_inc gcem INTERFACE_INCLUDE_DIRECTORIES)
+    set_target_properties(gcem PROPERTIES
+        INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${_gcem_inc}"
+    )
 endif()
 
-target_link_libraries(constfilt INTERFACE $<BUILD_INTERFACE:consteig::consteig>)
+target_link_libraries(constfilt INTERFACE
+    $<BUILD_INTERFACE:consteig::consteig>
+    $<BUILD_INTERFACE:gcem>
+)
 
 ################################################################################
 # Development mode (skipped when consumed via add_subdirectory/FetchContent)
@@ -134,3 +153,4 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/constfilt
     )
 endif()
+

@@ -43,6 +43,10 @@ $(BUILD_PREFIX)/$(BUILD_FILE):
 	cd $(BUILD_PREFIX) && \
 	cmake .. $(CMAKE_OPTIONS); \
 
+.PHONY: generate-reference
+generate-reference:
+	octave --no-gui octave/generate_butterworth_tests.m
+
 .PHONY: remove
 remove:
 	rm -rf build/ build-gcc/ build-clang/

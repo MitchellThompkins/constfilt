@@ -260,6 +260,75 @@ constexpr TransferFunction<T, N + 1u, N + 1u> ss_to_tf(
     return tf;
 }
 
+// --------------------------- tf_to_ss ----------------------------------------
+
+// Build controllable canonical form continuous-time state-space from
+// analog transfer function coefficients in descending power order:
+//
+//   H(s) = (b[0]*s^N + b[1]*s^{N-1} + ... + b[N])
+//          / (a[0]*s^N + a[1]*s^{N-1} + ... + a[N])
+//
+// Handles proper (deg b = deg a) and strictly proper (b[0]=0) cases.
+// a[0] must be non-zero; the denominator is normalized to monic form
+// internally.
+//
+// Resulting state-space (controllable canonical form):
+//   A: super-diagonal = 1; last row = [-a_N, -a_{N-1}, ..., -a_1] / a_0
+//   B: [0, ..., 0, 1]^T
+//   C: [e_N, e_{N-1}, ..., e_1]  where e_k = b_k/a_0 - D*(a_k/a_0)
+//   D: b[0] / a[0]
+template <typename T, consteig::Size N>
+constexpr StateSpace<T, N> tf_to_ss(const T (&b)[N + 1u], const T (&a)[N + 1u])
+{
+    StateSpace<T, N> sys{};
+
+    const T inv_a0 = static_cast<T>(1) / a[0];
+
+    sys.D = b[0] * inv_a0;
+
+    // Numerator residual: e[k] = b[k]/a[0] - D*(a[k]/a[0])  for k=1..N
+    T e[N + 1u]{};
+    for (consteig::Size k = 1u; k <= N; ++k)
+        e[k] = b[k] * inv_a0 - sys.D * (a[k] * inv_a0);
+
+    // A: super-diagonal
+    for (consteig::Size row = 0; row < N - 1u; ++row)
+        sys.A(row, row + 1u) = static_cast<T>(1);
+
+    // A: last row = -a[N-k]/a[0]  for k=0..N-1
+    for (consteig::Size k = 0; k < N; ++k)
+        sys.A(N - 1u, k) = -(a[N - k] * inv_a0);
+
+    // B: last entry = 1
+    sys.B(N - 1u, 0) = static_cast<T>(1);
+
+    // C: C[0][k] = e[N-k]
+    for (consteig::Size k = 0; k < N; ++k)
+        sys.C(0, k) = e[N - k];
+
+    return sys;
+}
+
+// --------------------------- analog_to_digital
+// --------------------------------
+
+// Discretize a continuous-time state-space via ZOH and extract the (b, a) TF.
+template <typename T, consteig::Size N>
+constexpr TransferFunction<T, N + 1u, N + 1u> analog_to_digital(
+    const StateSpace<T, N> &sys_c, T Ts, ZOH)
+{
+    return ss_to_tf(zoh_discretize(sys_c, Ts, ZOH{}));
+}
+
+// Discretize a continuous-time state-space via matched-Z and extract the (b, a)
+// TF.
+template <typename T, consteig::Size N>
+constexpr TransferFunction<T, N + 1u, N + 1u> analog_to_digital(
+    const StateSpace<T, N> &sys_c, T Ts, MatchedZ)
+{
+    return matched_z_discretize(sys_c, Ts, MatchedZ{});
+}
+
 // --- Matched-Z discretization -----------------------------------------------
 
 // Matched-Z: discrete poles at z_k = exp(s_k * Ts).

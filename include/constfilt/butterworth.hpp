@@ -28,67 +28,33 @@ class Butterworth : public Filter<T, N + 1u, N + 1u>
     {
     }
 
-    // Full pipeline: specs -> continuous SS -> discrete TF.
+    // Full pipeline: specs -> continuous TF -> continuous SS -> discrete TF.
     static constexpr TransferFunction<T, N + 1u, N + 1u> compute_ba(
         T cutoff_hz, T sample_rate_hz)
     {
         const T wc = static_cast<T>(2.0 * CONSTFILT_PI) * cutoff_hz;
         const T Ts = static_cast<T>(1) / sample_rate_hz;
-        auto sys_c = build_continuous_ss(wc);
-        return discretize(sys_c, Ts, Method{});
+        T b_c[N + 1u]{};
+        T a_c[N + 1u]{};
+        continuous_tf(wc, b_c, a_c);
+        return analog_to_digital(tf_to_ss<T, N>(b_c, a_c), Ts, Method{});
     }
 
-    static constexpr TransferFunction<T, N + 1u, N + 1u> discretize(
-        const StateSpace<T, N> &sys_c, T Ts, ZOH)
-    {
-        return ss_to_tf(zoh_discretize(sys_c, Ts, ZOH{}));
-    }
-
-    static constexpr TransferFunction<T, N + 1u, N + 1u> discretize(
-        const StateSpace<T, N> &sys_c, T Ts, MatchedZ)
-    {
-        return matched_z_discretize(sys_c, Ts, MatchedZ{});
-    }
-
-    // Build controllable-canonical-form state-space for an N-th order
-    // Butterworth LP with cutoff wc (rad/s).
+    // Continuous-time lowpass Butterworth TF coefficients (descending power
+    // order).
     //
-    // Denormalized denominator (monic):
-    //   d(s) = s^N + p[N-1]*wc * s^{N-1} + ... + p[0]*wc^N
-    // where p[] are the normalized (wc=1) Butterworth coefficients.
+    // Numerator: b[N] = wc^N, all other b[k] = 0  (DC gain = 1)
     //
-    // Companion matrix A:
-    //   A[row][row+1] = 1   for row = 0..N-2
-    //   A[N-1][k] = -(p[k] * wc^{N-k})   for k = 0..N-1
-    //
-    // B = [0, ..., 0, wc^N]^T,  C = [1, 0, ..., 0],  D = 0
-    static constexpr StateSpace<T, N> build_continuous_ss(T wc)
+    // Denominator: a[k] = p[k] * wc^k where p[] are the normalized (wc=1)
+    // Butterworth polynomial coefficients in descending order (p[0] = 1).
+    static constexpr void continuous_tf(T wc, T (&b)[N + 1u], T (&a)[N + 1u])
     {
-        StateSpace<T, N> sys{};
+        b[N] = consteig::pow(wc, static_cast<int>(N));
 
-        // Fill super-diagonal with 1
-        for (consteig::Size row = 0; row < N - 1u; ++row)
-        {
-            sys.A(row, row + 1u) = static_cast<T>(1);
-        }
-
-        // Last row: -p[k] * wc^{N-k}
         T p[N + 1u]{};
         butterworth_poly_coeffs(p);
-        for (consteig::Size k = 0; k < N; ++k)
-        {
-            sys.A(N - 1u, k) =
-                -p[k] * consteig::pow(wc, static_cast<int>(N - k));
-        }
-
-        // B: last entry = wc^N
-        sys.B(N - 1u, 0) = consteig::pow(wc, static_cast<int>(N));
-
-        // C: first entry = 1
-        sys.C(0, 0) = static_cast<T>(1);
-
-        // D = 0 (already zero-initialized)
-        return sys;
+        for (consteig::Size k = 0; k <= N; ++k)
+            a[k] = p[k] * consteig::pow(wc, static_cast<int>(k));
     }
 
     // Normalized Butterworth denominator coefficients (wc=1, monic).

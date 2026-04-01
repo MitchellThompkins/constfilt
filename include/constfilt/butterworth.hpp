@@ -122,6 +122,13 @@ class Butterworth : public AnalogFilter<T, N, Method>
     }
 };
 
+// Convenience aliases for first-order RC-equivalent filters.
+template <typename T, typename Method = ZOH>
+using FirstOrderLowPass = Butterworth<T, 1u, Method, LowPass>;
+
+template <typename T, typename Method = ZOH>
+using FirstOrderHighPass = Butterworth<T, 1u, Method, HighPass>;
+
 } // namespace constfilt
 
 #endif // CONSTFILT_BUTTERWORTH_HPP

@@ -11,47 +11,60 @@ namespace constfilt
 // Discretize an analog (continuous-time, s-domain) transfer function into a
 // digital Filter.
 //
-// B and A are references to static-storage-duration constexpr arrays of
-// Laplace-domain polynomial coefficients in descending power order:
+// b_c and a_c are Laplace-domain polynomial coefficients in descending power
+// order:
 //   coeff[0]*s^N + coeff[1]*s^{N-1} + ... + coeff[N]
 //
-// Because B and A are non-type template parameters, stability can be
-// static_asserted at instantiation time with no runtime overhead.
-//
 // Template parameters:
-//   T          - numeric type (float, double, …)
-//   N          - filter order (degree of denominator)
-//   B          - reference to static constexpr s-domain numerator array [N+1]
-//   A          - reference to static constexpr s-domain denominator array [N+1]
-//   Method     - ZOH (default) or MatchedZ
-//   CheckStab  - when true (default), static_asserts that the analog system
-//                is not Unstable at instantiation time. Both Stable and
-//                MarginallyStable are accepted. Set to false to skip.
+//   T         - numeric type (float, double, …)
+//   N         - filter order (degree of denominator)
+//   Method    - ZOH (default) or MatchedZ
+//   CheckStab - when true (default), throws at construction (a compile-time
+//               error for constexpr instances) if the analog system is
+//               Unstable. Both Stable and MarginallyStable are accepted.
+//               Set to false to skip.
 //
 // Constructor:
-//   AnalogFilter(sample_rate_hz)
-//     sample_rate_hz - sample rate in Hz; Ts = 1/sample_rate_hz
-template <typename T, consteig::Size N, const T (&B)[N + 1u],
-          const T (&A)[N + 1u], typename Method = ZOH, bool CheckStab = true>
+//   AnalogFilter(b_c, a_c, sample_rate_hz)
+//     b_c            - s-domain numerator coefficients [N+1], descending order
+//     a_c            - s-domain denominator coefficients [N+1], descending
+//     order sample_rate_hz - sample rate in Hz; Ts = 1/sample_rate_hz
+template <typename T, consteig::Size N, typename Method = ZOH,
+          bool CheckStab = true>
 class AnalogFilter : public Filter<T, N + 1u, N + 1u>
 {
     static_assert(N >= 1u, "Filter order must be at least 1");
-    static_assert(!CheckStab || check_stability(tf_to_ss<T, N>(B, A)) !=
-                                    Stability::Unstable,
-                  "constfilt: unstable analog filter");
 
   public:
-    constexpr AnalogFilter(T sample_rate_hz)
-        : AnalogFilter(analog_to_digital(tf_to_ss<T, N>(B, A),
-                                         static_cast<T>(1) / sample_rate_hz,
-                                         Method{}))
+    constexpr AnalogFilter(const T (&b_c)[N + 1u], const T (&a_c)[N + 1u],
+                           T sample_rate_hz)
+        : AnalogFilter(checked_discretize(b_c, a_c, sample_rate_hz))
     {
     }
 
-  private:
+  protected:
+    // For subclasses that supply a pre-computed digital TF (e.g. Butterworth).
     constexpr explicit AnalogFilter(TransferFunction<T, N + 1u, N + 1u> tf)
         : Filter<T, N + 1u, N + 1u>(tf.b, tf.a)
     {
+    }
+
+    // Continuous-to-digital discretization; exposed so subclasses can reuse.
+    static constexpr TransferFunction<T, N + 1u, N + 1u> discretize(
+        const T (&b_c)[N + 1u], const T (&a_c)[N + 1u], T sample_rate_hz)
+    {
+        return analog_to_digital(tf_to_ss<T, N>(b_c, a_c),
+                                 static_cast<T>(1) / sample_rate_hz, Method{});
+    }
+
+  private:
+    static constexpr TransferFunction<T, N + 1u, N + 1u> checked_discretize(
+        const T (&b_c)[N + 1u], const T (&a_c)[N + 1u], T sample_rate_hz)
+    {
+        if (CheckStab &&
+            check_stability(tf_to_ss<T, N>(b_c, a_c)) == Stability::Unstable)
+            throw "constfilt: unstable analog filter";
+        return discretize(b_c, a_c, sample_rate_hz);
     }
 };
 

@@ -1,43 +1,39 @@
 #ifndef CONSTFILT_BUTTERWORTH_HPP
 #define CONSTFILT_BUTTERWORTH_HPP
 
+#include "analog_filter.hpp"
 #include "constfilt_options.hpp"
-#include "discretize.hpp"
-#include "filter.hpp"
 #include <consteig/consteig.hpp>
 
 namespace constfilt
 {
 
+// Butterworth poles are always strictly in the left half-plane, so no
+// stability check is needed (CheckStab = false).
 template <typename T, consteig::Size N, typename Method = ZOH>
-class Butterworth : public Filter<T, N + 1u, N + 1u>
+class Butterworth : public AnalogFilter<T, N, Method, false>
 {
     static_assert(N >= 1u, "Butterworth order must be at least 1");
 
   public:
     // Construct from filter specification; all math is constexpr.
     constexpr Butterworth(T cutoff_hz, T sample_rate_hz)
-        : Butterworth(compute_ba(cutoff_hz, sample_rate_hz))
+        : AnalogFilter<T, N, Method, false>(
+              compute_tf(cutoff_hz, sample_rate_hz))
     {
     }
 
   private:
-    // Delegating constructor: receives pre-computed transfer function.
-    constexpr explicit Butterworth(TransferFunction<T, N + 1u, N + 1u> tf)
-        : Filter<T, N + 1u, N + 1u>(tf.b, tf.a)
-    {
-    }
-
     // Full pipeline: specs -> continuous TF -> continuous SS -> discrete TF.
-    static constexpr TransferFunction<T, N + 1u, N + 1u> compute_ba(
+    static constexpr TransferFunction<T, N + 1u, N + 1u> compute_tf(
         T cutoff_hz, T sample_rate_hz)
     {
         const T wc = static_cast<T>(2.0 * CONSTFILT_PI) * cutoff_hz;
-        const T Ts = static_cast<T>(1) / sample_rate_hz;
         T b_c[N + 1u]{};
         T a_c[N + 1u]{};
         continuous_tf(wc, b_c, a_c);
-        return analog_to_digital(tf_to_ss<T, N>(b_c, a_c), Ts, Method{});
+        return AnalogFilter<T, N, Method, false>::discretize(b_c, a_c,
+                                                             sample_rate_hz);
     }
 
     // Continuous-time lowpass Butterworth TF coefficients (descending power

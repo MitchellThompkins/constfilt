@@ -15,16 +15,18 @@ namespace constfilt
 // (on imaginary axis in the s-domain).
 //
 // Parameters:
-//   cutoff_hz      – passband edge (−Rp dB point)
-//   ripple_db      – passband ripple Rp  (e.g. 0.5)
-//   attenuation_db – stopband attenuation Rs (e.g. 40)
-//   sample_rate_hz – sample rate
+//   cutoff_hz      - passband edge (−Rp dB point)
+//   ripple_db      - passband ripple Rp  (e.g. 0.5)
+//   attenuation_db - stopband attenuation Rs (e.g. 40)
+//   sample_rate_hz - sample rate
 //
 // The analog prototype is normalized so the passband edge is at ωₚ = 2π·cutoff_hz.
 // The selectivity parameter k is found from the degree equation
-//   K(k')/K(k) = N · K(k₁')/K(k₁)
+//   K(k')/K(k) = N * K(k1')/K(k1)
 // via constexpr bisection.  All elliptic-function arithmetic uses the
-// Landen / AGM algorithms (only require sqrt, sin, cos — all in consteig).
+// Landen / AGM algorithms (only require sqrt, sin, cos).
+// https://www.dsprelated.com/showabstract/3867.php
+// https://community.ptc.com/sejnu66972/attachments/sejnu66972/PTCMathcad/176201/1/13.2_Analog_Elliptic_Filter_Design.pdf
 template <typename T, consteig::Size N, typename Method = ZOH,
           typename FilterType = LowPass>
 class Elliptic : public AnalogFilter<T, N, Method>
@@ -73,9 +75,9 @@ class Elliptic : public AnalogFilter<T, N, Method>
         return static_cast<T>(CONSTFILT_PI) / (static_cast<T>(2) * a);
     }
 
-    // Incomplete elliptic integral of the first kind F(φ, k) via AGM-based
+    // Incomplete elliptic integral of the first kind F(phi, k) via AGM-based
     // descending Landen transform (same convergence rate as K).
-    //   F(φ, k) = ∫₀^φ dt / √(1 - k²·sin²(t))
+    //   F(phi, k) = integral from 0 to phi of dt / sqrt(1 - k^2 * sin(t)^2)
     static constexpr T elliptic_F(T phi, T k)
     {
         // Descending Landen: produce a sequence kₙ → 0, accumulate angle.
@@ -254,9 +256,11 @@ class Elliptic : public AnalogFilter<T, N, Method>
         const T ep = consteig::sqrt(
             consteig::pow(static_cast<T>(10), static_cast<int>(ripple_db) / 10) -
             static_cast<T>(1));
+
         const T es = consteig::sqrt(
             consteig::pow(static_cast<T>(10), static_cast<int>(attenuation_db) / 10) -
             static_cast<T>(1));
+
         const T k1 = ep / es;
         const T k1p = consteig::sqrt(static_cast<T>(1) - k1 * k1);
 

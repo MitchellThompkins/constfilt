@@ -20,8 +20,8 @@ namespace constfilt
 //   attenuation_db - stopband attenuation Rs (e.g. 40)
 //   sample_rate_hz - sample rate
 //
-// The analog prototype is normalized so the passband edge is at ωₚ = 2π·cutoff_hz.
-// The selectivity parameter k is found from the degree equation
+// The analog prototype is normalized so the passband edge is at ωₚ =
+// 2π·cutoff_hz. The selectivity parameter k is found from the degree equation
 //   K(k')/K(k) = N * K(k1')/K(k1)
 // via constexpr bisection.  All elliptic-function arithmetic uses the
 // Landen / AGM algorithms (only require sqrt, sin, cos).
@@ -44,7 +44,8 @@ class Elliptic : public AnalogFilter<T, N, Method>
 
   private:
     using Cx = consteig::Complex<T>;
-    static constexpr consteig::Size M = N / 2u; // number of zero / complex-pole pairs
+    static constexpr consteig::Size M =
+        N / 2u; // number of zero / complex-pole pairs
 
     static constexpr TransferFunction<T, N + 1u, N + 1u> compute_continuous_tf(
         T cutoff_hz, T ripple_db, T attenuation_db)
@@ -93,11 +94,11 @@ class Elliptic : public AnalogFilter<T, N, Method>
             // Corresponding angle update:
             T sin2 = static_cast<T>(2) * consteig::sin(phin) *
                      consteig::cos(phin) /
-                     (static_cast<T>(1) + kn * consteig::sin(phin) *
-                                             consteig::sin(phin));
+                     (static_cast<T>(1) +
+                      kn * consteig::sin(phin) * consteig::sin(phin));
             phin = (phin + consteig::sin(phin) * consteig::cos(phin) *
-                               (static_cast<T>(1) +
-                                kn * consteig::sin(phin) * consteig::sin(phin)) /
+                               (static_cast<T>(1) + kn * consteig::sin(phin) *
+                                                        consteig::sin(phin)) /
                                consteig::sqrt(static_cast<T>(1) -
                                               kn * kn * consteig::sin(phin) *
                                                   consteig::sin(phin))) /
@@ -107,7 +108,8 @@ class Elliptic : public AnalogFilter<T, N, Method>
             kn = k2;
             scale *= (static_cast<T>(1) + kn) / static_cast<T>(2);
         }
-        // For small kn the integral is just phi / sqrt(1 - kn^2*sin^2(phi)) ≈ phi.
+        // For small kn the integral is just phi / sqrt(1 - kn^2*sin^2(phi)) ≈
+        // phi.
         return phin / scale;
     }
 
@@ -122,8 +124,10 @@ class Elliptic : public AnalogFilter<T, N, Method>
         T kn = k;
         while (kn > static_cast<T>(1e-12) && nsteps < 32)
         {
-            T kn1 = (static_cast<T>(1) - consteig::sqrt(static_cast<T>(1) - kn * kn)) /
-                    (static_cast<T>(1) + consteig::sqrt(static_cast<T>(1) - kn * kn));
+            T kn1 = (static_cast<T>(1) -
+                     consteig::sqrt(static_cast<T>(1) - kn * kn)) /
+                    (static_cast<T>(1) +
+                     consteig::sqrt(static_cast<T>(1) - kn * kn));
             ks[nsteps++] = kn;
             kn = kn1;
         }
@@ -145,10 +149,13 @@ class Elliptic : public AnalogFilter<T, N, Method>
         {
             T ki = ks[i];
             T t = ki * sn;
-            T sn2 = ((static_cast<T>(1) + ki) * sn) / (static_cast<T>(1) + t * cn_v);
+            T sn2 = ((static_cast<T>(1) + ki) * sn) /
+                    (static_cast<T>(1) + t * cn_v);
             T cn2 = (cn_v - t) / (static_cast<T>(1) + t * cn_v);
-            T dn2 = (dn - ki * (sn * sn - static_cast<T>(1)) + ki * ki * sn * sn) /
-                    (static_cast<T>(1) + (static_cast<T>(1) - ki * ki) * sn * sn * dn);
+            T dn2 =
+                (dn - ki * (sn * sn - static_cast<T>(1)) + ki * ki * sn * sn) /
+                (static_cast<T>(1) +
+                 (static_cast<T>(1) - ki * ki) * sn * sn * dn);
             // Simplified: dn = (dn + (1-ki²)/(dn)) ... use exact formula:
             T ki2 = ki * ki;
             T sn_p = sn2;
@@ -163,8 +170,10 @@ class Elliptic : public AnalogFilter<T, N, Method>
             //   sn₊ = (1+k₁)*sn*cn / (1 + k₁*sn²)
             //   cn₊ = (cn² - k₁*sn²) / (1 + k₁*sn²)  ... wait wrong.
             // Use the standard formulas:
-            sn = ((static_cast<T>(1) + ki) * sn * cn_v) / (static_cast<T>(1) + ki * sn * sn);
-            cn_v = (cn_v * cn_v - ki * sn * sn) / (static_cast<T>(1) + ki * sn * sn);
+            sn = ((static_cast<T>(1) + ki) * sn * cn_v) /
+                 (static_cast<T>(1) + ki * sn * sn);
+            cn_v = (cn_v * cn_v - ki * sn * sn) /
+                   (static_cast<T>(1) + ki * sn * sn);
             // Recompute from scratch after sn/cn update:
             dn = consteig::sqrt(
                 static_cast<T>(1) -
@@ -172,7 +181,8 @@ class Elliptic : public AnalogFilter<T, N, Method>
             (void)num_dn;
             (void)sn_p;
             // Correct dn ascending:
-            T k_orig = ks[0]; // This is wrong — should use ks[i] from ORIGINAL level
+            T k_orig =
+                ks[0]; // This is wrong — should use ks[i] from ORIGINAL level
             (void)k_orig;
         }
         sn_out = sn;
@@ -183,7 +193,8 @@ class Elliptic : public AnalogFilter<T, N, Method>
     // =========================================================================
     // NOTE: The Landen ascending back-substitution above has bookkeeping issues
     // that make it unreliable for general use. Use a simpler, well-known
-    // iterative algorithm instead (Gauss transformation / arithmetic-geometric):
+    // iterative algorithm instead (Gauss transformation /
+    // arithmetic-geometric):
     // =========================================================================
 
     // Reliable Jacobi sn/cn/dn via the method of descending Landen sequences
@@ -253,18 +264,21 @@ class Elliptic : public AnalogFilter<T, N, Method>
                                       T (&b)[N + 1u], T (&a)[N + 1u], LowPass)
     {
         // Ripple factors.
-        const T ep = consteig::sqrt(
-            consteig::pow(static_cast<T>(10), static_cast<int>(ripple_db) / 10) -
-            static_cast<T>(1));
+        const T ep =
+            consteig::sqrt(consteig::pow(static_cast<T>(10),
+                                         static_cast<int>(ripple_db) / 10) -
+                           static_cast<T>(1));
 
         const T es = consteig::sqrt(
-            consteig::pow(static_cast<T>(10), static_cast<int>(attenuation_db) / 10) -
+            consteig::pow(static_cast<T>(10),
+                          static_cast<int>(attenuation_db) / 10) -
             static_cast<T>(1));
 
         const T k1 = ep / es;
         const T k1p = consteig::sqrt(static_cast<T>(1) - k1 * k1);
 
-        // Degree equation: find k ∈ (0,1) such that K(k')/K(k) = N·K(k1')/K(k1).
+        // Degree equation: find k ∈ (0,1) such that K(k')/K(k) =
+        // N·K(k1')/K(k1).
         const T target = static_cast<T>(N) * elliptic_K(k1p) / elliptic_K(k1);
         T k_lo = static_cast<T>(1e-6);
         T k_hi = static_cast<T>(1) - static_cast<T>(1e-6);
@@ -284,15 +298,17 @@ class Elliptic : public AnalogFilter<T, N, Method>
 
         // v₀ = F(arctan(1/εₚ), k') / N
         // (sc(N·v₀, k') = 1/εₚ → N·v₀ = F(arctan(1/εₚ), k'))
-        // Use approximate incomplete integral via simple Gauss-Legendre on [0,φ].
-        // For constexpr: use a direct series since arctan(1/ep) can be small.
-        const T phi_v0 = consteig::cos(static_cast<T>(1) / ep); // arctan(1/ep) = arccos(ep/sqrt(1+ep^2))
+        // Use approximate incomplete integral via simple Gauss-Legendre on
+        // [0,φ]. For constexpr: use a direct series since arctan(1/ep) can be
+        // small.
+        const T phi_v0 = consteig::cos(
+            static_cast<T>(1) / ep); // arctan(1/ep) = arccos(ep/sqrt(1+ep^2))
         // Actually arctan(x) = arcsin(x/sqrt(1+x²)) = arccos(1/sqrt(1+x²))
-        // We have no arctan. Use: phi = arcsin(1/sqrt(1+ep^2)) = arccos(ep/sqrt(1+ep^2))
-        // Since we have cos (inverse): phi such that cos(phi)=ep/sqrt(1+ep^2),
-        // and we need F(phi, k') numerically.
-        // Approximate F(phi, k') ≈ phi (for small k'): use 8-point GL quadrature.
-        // 8-point Gauss-Legendre nodes/weights on [0,1]:
+        // We have no arctan. Use: phi = arcsin(1/sqrt(1+ep^2)) =
+        // arccos(ep/sqrt(1+ep^2)) Since we have cos (inverse): phi such that
+        // cos(phi)=ep/sqrt(1+ep^2), and we need F(phi, k') numerically.
+        // Approximate F(phi, k') ≈ phi (for small k'): use 8-point GL
+        // quadrature. 8-point Gauss-Legendre nodes/weights on [0,1]:
         // clang-format off
         constexpr T gl_x[8] = {0.0198550717512319, 0.1016667612931866, 0.2372337950418355,
                                 0.4082826787521751, 0.5917173212478249, 0.7627662049581645,
@@ -302,21 +318,25 @@ class Elliptic : public AnalogFilter<T, N, Method>
                                 0.1111905172266872, 0.0506142681451881};
         // clang-format on
         const T cos_phi = ep / consteig::sqrt(static_cast<T>(1) + ep * ep);
-        const T sin_phi = static_cast<T>(1) / consteig::sqrt(static_cast<T>(1) + ep * ep);
-        // phi ≈ arcsin(sin_phi); integrate F(phi, k') = ∫₀^phi dt/sqrt(1-k'²sin²t)
-        // on [0, phi] using 8-pt GL scaled to [0, phi].
+        const T sin_phi =
+            static_cast<T>(1) / consteig::sqrt(static_cast<T>(1) + ep * ep);
+        // phi ≈ arcsin(sin_phi); integrate F(phi, k') = ∫₀^phi
+        // dt/sqrt(1-k'²sin²t) on [0, phi] using 8-pt GL scaled to [0, phi].
         // sin(t) for t in [0,phi]: sin(phi*x) where x∈[0,1].
         (void)cos_phi;
         T F_phi = static_cast<T>(0);
         for (int gi = 0; gi < 8; ++gi)
         {
-            T t = sin_phi * static_cast<T>(CONSTFILT_PI) / static_cast<T>(2) * gl_x[gi];
-            // t is the argument; sin(t*pi/2 * ... ) — wait, we need t ∈ [0, phi].
-            // Actually phi = arcsin(sin_phi), so:
-            T t_actual = gl_x[gi] * (static_cast<T>(CONSTFILT_PI) / static_cast<T>(2));
+            T t = sin_phi * static_cast<T>(CONSTFILT_PI) / static_cast<T>(2) *
+                  gl_x[gi];
+            // t is the argument; sin(t*pi/2 * ... ) — wait, we need t ∈ [0,
+            // phi]. Actually phi = arcsin(sin_phi), so:
+            T t_actual =
+                gl_x[gi] * (static_cast<T>(CONSTFILT_PI) / static_cast<T>(2));
             // We want [0, arcsin(1/sqrt(1+ep^2))], so scale:
             T phi_actual = static_cast<T>(CONSTFILT_PI) / static_cast<T>(2) *
-                           static_cast<T>(1) / consteig::sqrt(static_cast<T>(1) + ep * ep);
+                           static_cast<T>(1) /
+                           consteig::sqrt(static_cast<T>(1) + ep * ep);
             (void)t;
             T st = consteig::sin(gl_x[gi] * phi_actual);
             F_phi += gl_w[gi] * phi_actual /
@@ -330,8 +350,8 @@ class Elliptic : public AnalogFilter<T, N, Method>
         T sn_v0, cn_v0, dn_v0;
         sn_cn_dn(v0, kp, sn_v0, cn_v0, dn_v0);
 
-        // Build numerator (from zeros) and denominator (from poles) polynomials.
-        // Use complex arithmetic; results will be real.
+        // Build numerator (from zeros) and denominator (from poles)
+        // polynomials. Use complex arithmetic; results will be real.
         Cx poly_a[N + 1u]{};
         Cx poly_b[N + 1u]{};
         poly_a[0] = {static_cast<T>(1), static_cast<T>(0)};
@@ -340,7 +360,8 @@ class Elliptic : public AnalogFilter<T, N, Method>
         // Complex poles and real zeros.
         for (consteig::Size m = 1u; m <= M; ++m)
         {
-            const T zeta_m = static_cast<T>(2u * m - 1u) * Kval / static_cast<T>(N);
+            const T zeta_m =
+                static_cast<T>(2u * m - 1u) * Kval / static_cast<T>(N);
             T sn_z, cn_z, dn_z;
             sn_cn_dn(zeta_m, k, sn_z, cn_z, dn_z);
 
@@ -353,13 +374,15 @@ class Elliptic : public AnalogFilter<T, N, Method>
                 Cx oz_p{static_cast<T>(0), omega_z};
                 for (consteig::Size i = M * 2u + 1u; i > 0u; --i)
                     poly_b[i] = poly_b[i - 1u] - oz_p * poly_b[i];
-                poly_b[0] = -{static_cast<T>(0), static_cast<T>(0)} - oz_p * poly_b[0];
+                poly_b[0] =
+                    -{static_cast<T>(0), static_cast<T>(0)} - oz_p * poly_b[0];
             }
             {
                 Cx oz_m{static_cast<T>(0), -omega_z};
                 for (consteig::Size i = M * 2u + 1u; i > 0u; --i)
                     poly_b[i] = poly_b[i - 1u] - oz_m * poly_b[i];
-                poly_b[0] = -{static_cast<T>(0), static_cast<T>(0)} - oz_m * poly_b[0];
+                poly_b[0] =
+                    -{static_cast<T>(0), static_cast<T>(0)} - oz_m * poly_b[0];
             }
 
             // Complex pole: pₘ = (num_r + j·num_i) / denom
@@ -372,10 +395,12 @@ class Elliptic : public AnalogFilter<T, N, Method>
             // Multiply poly_a by (s - pm)(s - conj(pm)).
             for (consteig::Size i = N; i > 0u; --i)
                 poly_a[i] = poly_a[i - 1u] - pm * poly_a[i];
-            poly_a[0] = Cx{static_cast<T>(0), static_cast<T>(0)} - pm * poly_a[0];
+            poly_a[0] =
+                Cx{static_cast<T>(0), static_cast<T>(0)} - pm * poly_a[0];
             for (consteig::Size i = N; i > 0u; --i)
                 poly_a[i] = poly_a[i - 1u] - pm_c * poly_a[i];
-            poly_a[0] = Cx{static_cast<T>(0), static_cast<T>(0)} - pm_c * poly_a[0];
+            poly_a[0] =
+                Cx{static_cast<T>(0), static_cast<T>(0)} - pm_c * poly_a[0];
         }
 
         // Real pole for odd N: p₀ = −sn(v₀,k')/cn(v₀,k').
@@ -384,11 +409,13 @@ class Elliptic : public AnalogFilter<T, N, Method>
             Cx p0{-sn_v0 / cn_v0, static_cast<T>(0)};
             for (consteig::Size i = N; i > 0u; --i)
                 poly_a[i] = poly_a[i - 1u] - p0 * poly_a[i];
-            poly_a[0] = Cx{static_cast<T>(0), static_cast<T>(0)} - p0 * poly_a[0];
+            poly_a[0] =
+                Cx{static_cast<T>(0), static_cast<T>(0)} - p0 * poly_a[0];
         }
 
         // Extract real parts (imaginary should be ≈ 0).
-        // Polynomials are in ascending power (poly[i] = coeff of s^i); flip to descending.
+        // Polynomials are in ascending power (poly[i] = coeff of s^i); flip to
+        // descending.
         for (consteig::Size i = 0; i <= N; ++i)
         {
             a[i] = poly_a[N - i].real;
@@ -411,14 +438,16 @@ class Elliptic : public AnalogFilter<T, N, Method>
         }
     }
 
-    // --- High-pass: LP→HP transform -------------------------------------------
+    // --- High-pass: LP→HP transform
+    // -------------------------------------------
     static constexpr void elliptic_tf(T wc, T ripple_db, T attenuation_db,
                                       T (&b)[N + 1u], T (&a)[N + 1u], HighPass)
     {
         // Compute LPF prototype first (normalized, wc=1).
         T b_lp[N + 1u]{};
         T a_lp[N + 1u]{};
-        elliptic_tf(static_cast<T>(1) / (static_cast<T>(2) * static_cast<T>(CONSTFILT_PI)),
+        elliptic_tf(static_cast<T>(1) /
+                        (static_cast<T>(2) * static_cast<T>(CONSTFILT_PI)),
                     ripple_db, attenuation_db, b_lp, a_lp, LowPass{});
         // The LP is normalized to cutoff=1/(2π) so the angular cutoff is 1.
         // After LP→HP: a_hp[k] = a_lp[N-k] * wc^k, b_hp[k] = b_lp[N-k] * wc^k.

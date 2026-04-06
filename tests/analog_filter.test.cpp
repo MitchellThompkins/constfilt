@@ -19,6 +19,11 @@ TEST(TfToSs, FirstOrder_StrictlyProper)
     constexpr double a[2] = {1.0, 1.0};
     constexpr auto sys = constfilt::tf_to_ss<double, 1u>(b, a);
 
+    static_assert(sys.A(0, 0) == -1.0, "A(0,0)");
+    static_assert(sys.B(0, 0) == 1.0, "B(0,0)");
+    static_assert(sys.C(0, 0) == 1.0, "C(0,0)");
+    static_assert(sys.D == 0.0, "D");
+
     EXPECT_DOUBLE_EQ(sys.A(0, 0), -1.0);
     EXPECT_DOUBLE_EQ(sys.B(0, 0), 1.0);
     EXPECT_DOUBLE_EQ(sys.C(0, 0), 1.0);
@@ -36,6 +41,12 @@ TEST(TfToSs, FirstOrder_Proper)
     constexpr double b[2] = {1.0, 2.0};
     constexpr double a[2] = {1.0, 1.0};
     constexpr auto sys = constfilt::tf_to_ss<double, 1u>(b, a);
+
+    static_assert(sys.A(0, 0) == -1.0, "A(0,0)");
+    static_assert(sys.B(0, 0) == 1.0, "B(0,0)");
+    static_assert(sys.C(0, 0) == 1.0,
+                  "C(0,0)"); // e[1] = b[1]/a[0] - D*a[1]/a[0] = 2-1=1
+    static_assert(sys.D == 1.0, "D");
 
     EXPECT_DOUBLE_EQ(sys.A(0, 0), -1.0);
     EXPECT_DOUBLE_EQ(sys.B(0, 0), 1.0);
@@ -55,6 +66,16 @@ TEST(TfToSs, SecondOrder_StrictlyProper)
     constexpr double b[3] = {0.0, 0.0, 1.0};
     constexpr double a[3] = {1.0, 3.0, 2.0};
     constexpr auto sys = constfilt::tf_to_ss<double, 2u>(b, a);
+
+    static_assert(sys.A(0, 0) == 0.0, "A(0,0)");
+    static_assert(sys.A(0, 1) == 1.0, "A(0,1)");
+    static_assert(sys.A(1, 0) == -2.0, "A(1,0)");
+    static_assert(sys.A(1, 1) == -3.0, "A(1,1)");
+    static_assert(sys.B(0, 0) == 0.0, "B(0,0)");
+    static_assert(sys.B(1, 0) == 1.0, "B(1,0)");
+    static_assert(sys.C(0, 0) == 1.0, "C(0,0)");
+    static_assert(sys.C(0, 1) == 0.0, "C(0,1)");
+    static_assert(sys.D == 0.0, "D");
 
     EXPECT_DOUBLE_EQ(sys.A(0, 0), 0.0);
     EXPECT_DOUBLE_EQ(sys.A(0, 1), 1.0);
@@ -77,6 +98,11 @@ TEST(TfToSs, UnnormalizedDenominator)
     constexpr double b[2] = {0.0, 2.0};
     constexpr double a[2] = {2.0, 4.0};
     constexpr auto sys = constfilt::tf_to_ss<double, 1u>(b, a);
+
+    static_assert(sys.A(0, 0) == -2.0, "A(0,0)"); // -a[1]/a[0] = -4/2
+    static_assert(sys.B(0, 0) == 1.0, "B(0,0)");
+    static_assert(sys.C(0, 0) == 1.0, "C(0,0)"); // e[1] = b[1]/a[0] - 0 = 1
+    static_assert(sys.D == 0.0, "D");
 
     EXPECT_DOUBLE_EQ(sys.A(0, 0), -2.0); // -a[1]/a[0] = -4/2
     EXPECT_DOUBLE_EQ(sys.B(0, 0), 1.0);
@@ -159,6 +185,11 @@ TEST(AnalogFilter, Case1_ZOH_Coefficients)
     static constexpr constfilt::AnalogFilter<double, 1u> filt(
         Ref::b_s, Ref::a_s, Ref::sample_rate_hz);
 
+    static_assert(withinTol(filt.coeffs_b()[0], Ref::b[0], 1e-9), "b[0]");
+    static_assert(withinTol(filt.coeffs_b()[1], Ref::b[1], 1e-9), "b[1]");
+    static_assert(withinTol(filt.coeffs_a()[0], Ref::a[0], 1e-9), "a[0]");
+    static_assert(withinTol(filt.coeffs_a()[1], Ref::a[1], 1e-9), "a[1]");
+
     EXPECT_NEAR(filt.coeffs_b()[0], Ref::b[0], CONSTFILT_COEFF_TOL);
     EXPECT_NEAR(filt.coeffs_b()[1], Ref::b[1], CONSTFILT_COEFF_TOL);
     EXPECT_NEAR(filt.coeffs_a()[0], Ref::a[0], CONSTFILT_COEFF_TOL);
@@ -187,6 +218,13 @@ TEST(AnalogFilter, Case2_ZOH_Coefficients)
     using Ref = ctf_ref::case_2_zoh_fs10;
     static constexpr constfilt::AnalogFilter<double, 2u> filt(
         Ref::b_s, Ref::a_s, Ref::sample_rate_hz);
+
+    static_assert(withinTol(filt.coeffs_b()[0], Ref::b[0], 1e-9), "b[0]");
+    static_assert(withinTol(filt.coeffs_b()[1], Ref::b[1], 1e-9), "b[1]");
+    static_assert(withinTol(filt.coeffs_b()[2], Ref::b[2], 1e-9), "b[2]");
+    static_assert(withinTol(filt.coeffs_a()[0], Ref::a[0], 1e-9), "a[0]");
+    static_assert(withinTol(filt.coeffs_a()[1], Ref::a[1], 1e-9), "a[1]");
+    static_assert(withinTol(filt.coeffs_a()[2], Ref::a[2], 1e-9), "a[2]");
 
     for (unsigned int i = 0; i <= 2u; ++i)
     {
@@ -220,6 +258,11 @@ TEST(AnalogFilter, Case3_Proper_ZOH_Coefficients)
     static constexpr constfilt::AnalogFilter<double, 1u> filt(
         Ref::b_s, Ref::a_s, Ref::sample_rate_hz);
 
+    static_assert(withinTol(filt.coeffs_b()[0], Ref::b[0], 1e-9), "b[0]");
+    static_assert(withinTol(filt.coeffs_b()[1], Ref::b[1], 1e-9), "b[1]");
+    static_assert(withinTol(filt.coeffs_a()[0], Ref::a[0], 1e-9), "a[0]");
+    static_assert(withinTol(filt.coeffs_a()[1], Ref::a[1], 1e-9), "a[1]");
+
     EXPECT_NEAR(filt.coeffs_b()[0], Ref::b[0], CONSTFILT_COEFF_TOL);
     EXPECT_NEAR(filt.coeffs_b()[1], Ref::b[1], CONSTFILT_COEFF_TOL);
     EXPECT_NEAR(filt.coeffs_a()[0], Ref::a[0], CONSTFILT_COEFF_TOL);
@@ -248,6 +291,13 @@ TEST(AnalogFilter, Case4_MatchedZ_Coefficients)
     using Ref = ctf_ref::case_4_mz_fs10;
     static constexpr constfilt::AnalogFilter<double, 2u, constfilt::MatchedZ>
         filt(Ref::b_s, Ref::a_s, Ref::sample_rate_hz);
+
+    static_assert(withinTol(filt.coeffs_b()[0], Ref::b[0], 1e-9), "b[0]");
+    static_assert(withinTol(filt.coeffs_b()[1], Ref::b[1], 1e-9), "b[1]");
+    static_assert(withinTol(filt.coeffs_b()[2], Ref::b[2], 1e-9), "b[2]");
+    static_assert(withinTol(filt.coeffs_a()[0], Ref::a[0], 1e-9), "a[0]");
+    static_assert(withinTol(filt.coeffs_a()[1], Ref::a[1], 1e-9), "a[1]");
+    static_assert(withinTol(filt.coeffs_a()[2], Ref::a[2], 1e-9), "a[2]");
 
     for (unsigned int i = 0; i <= 2u; ++i)
     {

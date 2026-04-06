@@ -33,6 +33,11 @@ TEST(ZOH, FirstOrder_a1_T0p1)
 
     // Analytic: Ad = exp(-1*0.1) = exp(-0.1) ~= 0.90483741803595957
     // Bd = (1 - exp(-0.1)) / 1   ~= 0.09516258196404043
+    static_assert(withinTol(sys_d.A(0, 0), 0.90483741803595957, 1e-10), "Ad");
+    static_assert(withinTol(sys_d.B(0, 0), 0.09516258196404043, 1e-10), "Bd");
+    static_assert(sys_d.C(0, 0) == 1.0, "Cd");
+    static_assert(sys_d.D == 0.0, "Dd");
+
     EXPECT_NEAR(sys_d.A(0, 0), 0.90483741803595957, 1e-10);
     EXPECT_NEAR(sys_d.B(0, 0), 0.09516258196404043, 1e-10);
     EXPECT_DOUBLE_EQ(sys_d.C(0, 0), 1.0);
@@ -54,6 +59,9 @@ TEST(ZOH, FirstOrder_a5_T0p01)
     constexpr double Ad_ref = 0.95122942450071403;
     constexpr double Bd_ref = (1.0 - 0.95122942450071403) / 5.0;
 
+    static_assert(withinTol(sys_d.A(0, 0), Ad_ref, 1e-10), "Ad");
+    static_assert(withinTol(sys_d.B(0, 0), Bd_ref, 1e-10), "Bd");
+
     EXPECT_NEAR(sys_d.A(0, 0), Ad_ref, 1e-10);
     EXPECT_NEAR(sys_d.B(0, 0), Bd_ref, 1e-10);
 }
@@ -66,6 +74,9 @@ TEST(Expm, Scalar)
     // matrix_exp([-2]) should be [exp(-2)] ~= 0.13533528323661270
     constexpr consteig::Matrix<double, 1u, 1u> A{{{-2.0}}};
     constexpr auto eA = constfilt::matrix_exp(A);
+
+    static_assert(withinTol(eA(0, 0), 0.13533528323661270, 1e-10), "eA(0,0)");
+
     EXPECT_NEAR(eA(0, 0), 0.13533528323661270, 1e-10);
 }
 
@@ -76,9 +87,20 @@ TEST(CharPoly, DiagonalMatrix)
     // A = diag(2, 3), char poly = (lam-2)(lam-3) = lam^2 - 5lam + 6
     // Expected: [1, -5, 6]
     constexpr consteig::Matrix<double, 2u, 2u> A{{{2.0, 0.0}, {0.0, 3.0}}};
+
+    // Compile-time: wrap the out-param call in a constexpr lambda.
+    constexpr auto poly = [&A]() {
+        constfilt::ConstexprArray<double, 3> r{};
+        constfilt::char_poly(A, r.data);
+        return r;
+    }();
+    static_assert(withinTol(poly.data[0], 1.0, 1e-12), "coeffs[0]");
+    static_assert(withinTol(poly.data[1], -5.0, 1e-12), "coeffs[1]");
+    static_assert(withinTol(poly.data[2], 6.0, 1e-12), "coeffs[2]");
+
+    // Runtime verification.
     double coeffs[3]{};
     constfilt::char_poly(A, coeffs);
-
     EXPECT_NEAR(coeffs[0], 1.0, 1e-12);
     EXPECT_NEAR(coeffs[1], -5.0, 1e-12);
     EXPECT_NEAR(coeffs[2], 6.0, 1e-12);
@@ -95,6 +117,11 @@ TEST(SsToTf, FirstOrder)
     constexpr constfilt::StateSpace<double, 1u> sys{
         {{{0.9}}}, {{{0.1}}}, {{{1.0}}}, 0.0};
     constexpr auto tf = constfilt::ss_to_tf(sys);
+
+    static_assert(withinTol(tf.a[0], 1.0, 1e-12), "a[0]");
+    static_assert(withinTol(tf.a[1], -0.9, 1e-12), "a[1]");
+    static_assert(withinTol(tf.b[0], 0.0, 1e-12), "b[0]");
+    static_assert(withinTol(tf.b[1], 0.1, 1e-12), "b[1]");
 
     EXPECT_NEAR(tf.a[0], 1.0, 1e-12);
     EXPECT_NEAR(tf.a[1], -0.9, 1e-12);
@@ -120,6 +147,11 @@ TEST(MatchedZ, FirstOrder_a1_T0p1)
     constexpr double pole = 0.90483741803595957; // exp(-0.1)
     constexpr double bd = 1.0 - pole;
 
+    static_assert(withinTol(tf.a[0], 1.0, 1e-10), "a[0]");
+    static_assert(withinTol(tf.a[1], -pole, 1e-10), "a[1]");
+    static_assert(withinTol(tf.b[0], 0.0, 1e-10), "b[0]");
+    static_assert(withinTol(tf.b[1], bd, 1e-10), "b[1]");
+
     EXPECT_NEAR(tf.a[0], 1.0, 1e-10);
     EXPECT_NEAR(tf.a[1], -pole, 1e-10);
     EXPECT_NEAR(tf.b[0], 0.0, 1e-10);
@@ -138,6 +170,9 @@ TEST(MatchedZ, FirstOrder_DCGain)
     // H_d(z=1) = (b[0]+b[1]) / (a[0]+a[1])
     constexpr double num = tf.b[0] + tf.b[1];
     constexpr double den = tf.a[0] + tf.a[1];
+
+    static_assert(withinTol(num / den, 1.0, 1e-10), "DC gain");
+
     EXPECT_NEAR(num / den, 1.0, 1e-10);
 }
 

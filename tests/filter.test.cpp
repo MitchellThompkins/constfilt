@@ -33,6 +33,9 @@ TEST(FilterCoeffs, StoresB)
 {
     static constexpr TestFilter filt(REF_B, REF_A);
     static constexpr auto b = filt.coeffs_b();
+    static_assert(filt.coeffs_b()[0] == 0.25, "b[0]");
+    static_assert(filt.coeffs_b()[1] == 0.5, "b[1]");
+    static_assert(filt.coeffs_b()[2] == 0.25, "b[2]");
     EXPECT_DOUBLE_EQ(b[0], 0.25);
     EXPECT_DOUBLE_EQ(b[1], 0.5);
     EXPECT_DOUBLE_EQ(b[2], 0.25);
@@ -42,6 +45,9 @@ TEST(FilterCoeffs, StoresA)
 {
     static constexpr TestFilter filt(REF_B, REF_A);
     static constexpr auto a = filt.coeffs_a();
+    static_assert(filt.coeffs_a()[0] == 1.0, "a[0]");
+    static_assert(filt.coeffs_a()[1] == -0.5, "a[1]");
+    static_assert(filt.coeffs_a()[2] == 0.0625, "a[2]");
     EXPECT_DOUBLE_EQ(a[0], 1.0);
     EXPECT_DOUBLE_EQ(a[1], -0.5);
     EXPECT_DOUBLE_EQ(a[2], 0.0625);
@@ -69,10 +75,17 @@ static constexpr double STEP4[4] = {1.0, 1.0, 1.0, 1.0};
 TEST(FilterBatch, StepResponse4)
 {
     static constexpr TestFilter filt(REF_B, REF_A);
+
+    // Compile-time batch run + verification.
+    static constexpr auto out = constfilt::batch_filter(filt, STEP4);
+    static_assert(withinTol(out.data[0], 0.25, 1e-14), "step[0]");
+    static_assert(withinTol(out.data[1], 0.875, 1e-14), "step[1]");
+    static_assert(withinTol(out.data[2], 1.421875, 1e-14), "step[2]");
+    static_assert(withinTol(out.data[3], 1.656250, 1e-13), "step[3]");
+
+    // Runtime verification.
     double y[4]{};
     filt(STEP4, y);
-
-    // Tolerances: these are exact rational arithmetic values
     EXPECT_NEAR(y[0], 0.25, 1e-14);
     EXPECT_NEAR(y[1], 0.875, 1e-14);
     EXPECT_NEAR(y[2], 1.421875, 1e-14);

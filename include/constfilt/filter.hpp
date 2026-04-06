@@ -87,6 +87,28 @@ template <typename T, consteig::Size NB, consteig::Size NA> class Filter
     }
 };
 
+// Value-semantic array wrapper enabling compile-time capture of batch filter
+// output. Use with batch_filter() to evaluate Filter::operator() at compile
+// time and verify results with static_assert.
+template <typename T, consteig::Size N> struct ConstexprArray
+{
+    T data[N]{};
+};
+
+// Returns the output of filt(input) as a ConstexprArray. Because this
+// function returns by value it is suitable for constexpr evaluation:
+//
+//   static constexpr auto out = constfilt::batch_filter(filt, input);
+//   static_assert(out.data[0] == expected, "compile-time check");
+template <typename FilterType, typename T, consteig::Size N>
+constexpr ConstexprArray<T, N> batch_filter(const FilterType &filt,
+                                            const T (&input)[N])
+{
+    ConstexprArray<T, N> out{};
+    filt(input, out.data);
+    return out;
+}
+
 } // namespace constfilt
 
 #endif // CONSTFILT_FILTER_HPP

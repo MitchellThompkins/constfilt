@@ -52,6 +52,14 @@ if(NOT TARGET consteig::consteig)
         GIT_SHALLOW    TRUE
     )
     FetchContent_MakeAvailable(consteig)
+
+    FetchContent_Declare(
+        consteig
+        GIT_REPOSITORY https://github.com/kthohr/gcem
+        GIT_TAG        v1.18.0
+        GIT_SHALLOW    TRUE
+    )
+    FetchContent_MakeAvailable(consteig)
 endif()
 
 target_link_libraries(constfilt INTERFACE $<BUILD_INTERFACE:consteig::consteig>)

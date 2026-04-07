@@ -3,6 +3,7 @@
 
 #include "analog_filter.hpp"
 #include "butterworth.hpp"
+#include "elliptic.hpp"
 #include "constfilt_options.hpp"
 #include "discretize.hpp"
 #include "filter.hpp"

@@ -53,16 +53,27 @@ if(NOT TARGET consteig::consteig)
     )
     FetchContent_MakeAvailable(consteig)
 
+    set(CMAKE_POLICY_VERSION_MINIMUM 3.5 CACHE STRING "" FORCE)
     FetchContent_Declare(
-        consteig
+        gcem
         GIT_REPOSITORY https://github.com/kthohr/gcem
         GIT_TAG        v1.18.0
         GIT_SHALLOW    TRUE
     )
-    FetchContent_MakeAvailable(consteig)
+    FetchContent_MakeAvailable(gcem)
+    unset(CMAKE_POLICY_VERSION_MINIMUM CACHE)
+
+    # Suppress warnings from gcem headers (third-party code).
+    get_target_property(_gcem_inc gcem INTERFACE_INCLUDE_DIRECTORIES)
+    set_target_properties(gcem PROPERTIES
+        INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${_gcem_inc}"
+    )
 endif()
 
-target_link_libraries(constfilt INTERFACE $<BUILD_INTERFACE:consteig::consteig>)
+target_link_libraries(constfilt INTERFACE
+    $<BUILD_INTERFACE:consteig::consteig>
+    $<BUILD_INTERFACE:gcem>
+)
 
 ################################################################################
 # Development mode (skipped when consumed via add_subdirectory/FetchContent)

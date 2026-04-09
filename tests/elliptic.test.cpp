@@ -9,7 +9,8 @@
 TEST(EllipticLP, N2_Rp05_Rs40_fc100_fs1000_Coefficients)
 {
     using Ref = el_ref::lp_2_5rp_40rs_100Hz_1000Hz;
-    static constexpr constfilt::Elliptic<double, 2> filt(100.0, 0.5, 40.0, 1000.0);
+    static constexpr constfilt::Elliptic<double, 2> filt(100.0, 0.5, 40.0,
+                                                         1000.0);
 
     for (unsigned int i = 0; i <= 2u; ++i)
     {
@@ -23,7 +24,8 @@ TEST(EllipticLP, N2_Rp05_Rs40_fc100_fs1000_Coefficients)
 TEST(EllipticLP, N2_Rp05_Rs40_fc100_fs1000_Batch)
 {
     using Ref = el_ref::lp_2_5rp_40rs_100Hz_1000Hz;
-    static constexpr constfilt::Elliptic<double, 2> filt(100.0, 0.5, 40.0, 1000.0);
+    static constexpr constfilt::Elliptic<double, 2> filt(100.0, 0.5, 40.0,
+                                                         1000.0);
     double step[32]{};
     for (unsigned int i = 0; i < 32u; ++i)
         step[i] = 1.0;
@@ -55,7 +57,8 @@ TEST(EllipticLP, N2_Rp05_Rs40_fc100_fs1000_RealTime)
 TEST(EllipticLP, N4_Rp05_Rs40_fc100_fs1000_Coefficients)
 {
     using Ref = el_ref::lp_4_5rp_40rs_100Hz_1000Hz;
-    static constexpr constfilt::Elliptic<double, 4> filt(100.0, 0.5, 40.0, 1000.0);
+    static constexpr constfilt::Elliptic<double, 4> filt(100.0, 0.5, 40.0,
+                                                         1000.0);
 
     for (unsigned int i = 0; i <= 4u; ++i)
     {
@@ -69,7 +72,8 @@ TEST(EllipticLP, N4_Rp05_Rs40_fc100_fs1000_Coefficients)
 TEST(EllipticLP, N4_Rp05_Rs40_fc100_fs1000_Batch)
 {
     using Ref = el_ref::lp_4_5rp_40rs_100Hz_1000Hz;
-    static constexpr constfilt::Elliptic<double, 4> filt(100.0, 0.5, 40.0, 1000.0);
+    static constexpr constfilt::Elliptic<double, 4> filt(100.0, 0.5, 40.0,
+                                                         1000.0);
     double step[32]{};
     for (unsigned int i = 0; i < 32u; ++i)
         step[i] = 1.0;
@@ -101,7 +105,8 @@ TEST(EllipticLP, N4_Rp05_Rs40_fc100_fs1000_RealTime)
 TEST(EllipticLP, N3_Rp10_Rs60_fc200_fs4000_Coefficients)
 {
     using Ref = el_ref::lp_3_10rp_60rs_200Hz_4000Hz;
-    static constexpr constfilt::Elliptic<double, 3> filt(200.0, 1.0, 60.0, 4000.0);
+    static constexpr constfilt::Elliptic<double, 3> filt(200.0, 1.0, 60.0,
+                                                         4000.0);
 
     for (unsigned int i = 0; i <= 3u; ++i)
     {
@@ -146,8 +151,8 @@ TEST(EllipticHP, N2_Rp05_Rs40_fc100_fs1000_Coefficients)
 TEST(EllipticHP, N2_Rp05_Rs40_fc100_fs1000_RealTime)
 {
     using Ref = el_ref::hp_2_5rp_40rs_100Hz_1000Hz;
-    constfilt::Elliptic<double, 2, constfilt::ZOH, constfilt::HighPass>
-        filt(100.0, 0.5, 40.0, 1000.0);
+    constfilt::Elliptic<double, 2, constfilt::ZOH, constfilt::HighPass> filt(
+        100.0, 0.5, 40.0, 1000.0);
 
     for (unsigned int i = 0; i < 32u; ++i)
     {
@@ -178,8 +183,8 @@ TEST(EllipticHP, N3_Rp10_Rs60_fc200_fs4000_Coefficients)
 TEST(EllipticHP, N3_Rp10_Rs60_fc200_fs4000_RealTime)
 {
     using Ref = el_ref::hp_3_10rp_60rs_200Hz_4000Hz;
-    constfilt::Elliptic<double, 3, constfilt::ZOH, constfilt::HighPass>
-        filt(200.0, 1.0, 60.0, 4000.0);
+    constfilt::Elliptic<double, 3, constfilt::ZOH, constfilt::HighPass> filt(
+        200.0, 1.0, 60.0, 4000.0);
 
     for (unsigned int i = 0; i < 32u; ++i)
     {

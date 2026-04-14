@@ -62,7 +62,8 @@ if(NOT TARGET consteig::consteig)
     FetchContent_MakeAvailable(gcem)
     unset(CMAKE_POLICY_VERSION_MINIMUM CACHE)
 
-    # Suppress warnings from gcem headers (third-party code).
+    # Use gcem in no-stdlib (builtin) mode and suppress third-party warnings.
+    target_compile_definitions(gcem INTERFACE GCEM_TRAITS_BUILTIN)
     get_target_property(_gcem_inc gcem INTERFACE_INCLUDE_DIRECTORIES)
     set_target_properties(gcem PROPERTIES
         INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${_gcem_inc}"

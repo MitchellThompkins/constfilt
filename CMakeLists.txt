@@ -56,9 +56,8 @@ if(NOT TARGET consteig::consteig)
     set(CMAKE_POLICY_VERSION_MINIMUM 3.5 CACHE STRING "" FORCE)
     FetchContent_Declare(
         gcem
-        GIT_REPOSITORY https://github.com/kthohr/gcem
-        GIT_TAG        v1.18.0
-        GIT_SHALLOW    TRUE
+        GIT_REPOSITORY https://github.com/MitchellThompkins/gcem
+        GIT_TAG        add-optional-no-stdlib
     )
     FetchContent_MakeAvailable(gcem)
     unset(CMAKE_POLICY_VERSION_MINIMUM CACHE)

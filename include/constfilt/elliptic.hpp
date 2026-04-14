@@ -67,11 +67,11 @@ class Elliptic : public AnalogFilter<T, N, Method>
     static constexpr T elliptic_K(T k)
     {
         T a = static_cast<T>(1);
-        T b = consteig::sqrt(static_cast<T>(1) - k * k);
+        T b = gcem::sqrt(static_cast<T>(1) - k * k);
         for (int i = 0; i < 64; ++i)
         {
             T a2 = (a + b) / static_cast<T>(2);
-            T b2 = consteig::sqrt(a * b);
+            T b2 = gcem::sqrt(a * b);
             a = a2;
             b = b2;
         }
@@ -81,7 +81,7 @@ class Elliptic : public AnalogFilter<T, N, Method>
     // Convert a power ratio in dB to linear: 10^(x/10) = exp(x * ln10/10).
     static constexpr T from_db10(T x)
     {
-        return consteig::exp(x * static_cast<T>(0.23025850929940457));
+        return gcem::exp(x * static_cast<T>(0.23025850929940457));
     }
 
     // Nome q from modulus k (ncauer q-series approximation).
@@ -89,8 +89,8 @@ class Elliptic : public AnalogFilter<T, N, Method>
     //   q  = q0 + 2*q0^5 + 15*q0^9 + 150*q0^13
     static constexpr T compute_nome(T k)
     {
-        const T kp = consteig::sqrt(static_cast<T>(1) - k * k);
-        const T sqrt_kp = consteig::sqrt(kp);
+        const T kp = gcem::sqrt(static_cast<T>(1) - k * k);
+        const T sqrt_kp = gcem::sqrt(kp);
         const T q0 = static_cast<T>(0.5) * (static_cast<T>(1) - sqrt_kp) /
                      (static_cast<T>(1) + sqrt_kp);
         const T q0_2 = q0 * q0;
@@ -108,7 +108,7 @@ class Elliptic : public AnalogFilter<T, N, Method>
     //   k = (theta2/theta3)^2
     static constexpr T modulus_from_nome(T q)
     {
-        const T q14 = consteig::sqrt(consteig::sqrt(q));
+        const T q14 = gcem::sqrt(gcem::sqrt(q));
         const T q2 = q * q;
 
         T theta2 = static_cast<T>(0);
@@ -173,7 +173,7 @@ class Elliptic : public AnalogFilter<T, N, Method>
             const T sign =
                 (m % 2 == 0) ? static_cast<T>(1) : static_cast<T>(-1);
             const T x = static_cast<T>(2 * m + 1) * l;
-            const T ex = consteig::exp(x);
+            const T ex = gcem::exp(x);
             const T sh = (ex - static_cast<T>(1) / ex) / static_cast<T>(2);
             sig01 += sign * qpow1 * sh;
         }
@@ -192,12 +192,12 @@ class Elliptic : public AnalogFilter<T, N, Method>
             const T sign =
                 (m % 2 == 0) ? static_cast<T>(1) : static_cast<T>(-1);
             const T x = static_cast<T>(2 * m) * l;
-            const T ex = consteig::exp(x);
+            const T ex = gcem::exp(x);
             const T ch = (ex + static_cast<T>(1) / ex) / static_cast<T>(2);
             sig02 += sign * qpow2 * ch;
         }
 
-        const T q14 = consteig::sqrt(consteig::sqrt(q));
+        const T q14 = gcem::sqrt(gcem::sqrt(q));
         T sig0 = static_cast<T>(2) * q14 * sig01 /
                  (static_cast<T>(1) + static_cast<T>(2) * sig02);
         return (sig0 < static_cast<T>(0)) ? -sig0 : sig0;
@@ -215,7 +215,7 @@ class Elliptic : public AnalogFilter<T, N, Method>
     {
         const T mu = (N % 2u == 1u) ? static_cast<T>(ii)
                                     : static_cast<T>(ii) - static_cast<T>(0.5);
-        const T q14 = consteig::sqrt(consteig::sqrt(q));
+        const T q14 = gcem::sqrt(gcem::sqrt(q));
         const T q2 = q * q;
         const T pi_mu_n = static_cast<T>(CONSTFILT_PI) * mu / static_cast<T>(N);
 
@@ -233,7 +233,7 @@ class Elliptic : public AnalogFilter<T, N, Method>
             const T sign =
                 (m % 2 == 0) ? static_cast<T>(1) : static_cast<T>(-1);
             const T arg = static_cast<T>(2 * m + 1) * pi_mu_n;
-            soma1 += sign * qpow1 * consteig::sin(arg);
+            soma1 += sign * qpow1 * gcem::sin(arg);
         }
         soma1 *= static_cast<T>(2) * q14;
 
@@ -251,7 +251,7 @@ class Elliptic : public AnalogFilter<T, N, Method>
             const T sign =
                 (m % 2 == 0) ? static_cast<T>(1) : static_cast<T>(-1);
             const T arg = static_cast<T>(2 * m) * pi_mu_n;
-            soma2 += sign * qpow2 * consteig::cos(arg);
+            soma2 += sign * qpow2 * gcem::cos(arg);
         }
         soma2 *= static_cast<T>(2);
 
@@ -286,9 +286,9 @@ class Elliptic : public AnalogFilter<T, N, Method>
                                       T (&b)[N + 1u], T (&a)[N + 1u], LowPass)
     {
         // Ripple factors.
-        const T ep = consteig::sqrt(from_db10(ripple_db) - static_cast<T>(1));
+        const T ep = gcem::sqrt(from_db10(ripple_db) - static_cast<T>(1));
         const T es =
-            consteig::sqrt(from_db10(attenuation_db) - static_cast<T>(1));
+            gcem::sqrt(from_db10(attenuation_db) - static_cast<T>(1));
 
         const T k1 = ep / es;
 
@@ -296,18 +296,18 @@ class Elliptic : public AnalogFilter<T, N, Method>
         // This bypasses the degree equation solver entirely, giving full
         // machine precision for q regardless of how k is found.
         const T q1 = compute_nome(k1);
-        const T q = consteig::exp(gcem::log(q1) / static_cast<T>(N));
+        const T q = gcem::exp(gcem::log(q1) / static_cast<T>(N));
 
         // Recover design modulus k from q via theta functions.
         const T k = modulus_from_nome(q);
         const T ws = static_cast<T>(1) / k;
-        const T sqrt_ws = consteig::sqrt(ws);
+        const T sqrt_ws = gcem::sqrt(ws);
 
         // Pole-shift parameter sig0.
         const T sig0 = compute_sig0(ripple_db, q);
 
         // Derived quantity w.
-        const T w = consteig::sqrt((static_cast<T>(1) + k * sig0 * sig0) *
+        const T w = gcem::sqrt((static_cast<T>(1) + k * sig0 * sig0) *
                                    (static_cast<T>(1) + sig0 * sig0 / k));
 
         // Ascending-order polynomials: poly[i] = coefficient of s^i.
@@ -322,7 +322,7 @@ class Elliptic : public AnalogFilter<T, N, Method>
         for (consteig::Size ii = 1u; ii <= M; ++ii)
         {
             const T wi = compute_wi(ii, q);
-            const T Vi = consteig::sqrt((static_cast<T>(1) - k * wi * wi) *
+            const T Vi = gcem::sqrt((static_cast<T>(1) - k * wi * wi) *
                                         (static_cast<T>(1) - wi * wi / k));
 
             // Zeros (scaled): +/-j * sqrt(ws) / wi
@@ -362,7 +362,7 @@ class Elliptic : public AnalogFilter<T, N, Method>
         //   odd  N -> H(0) = 1
         //   even N -> H(0) = Gp = 1/sqrt(1+ep^2)
         const T Gp =
-            static_cast<T>(1) / consteig::sqrt(static_cast<T>(1) + ep * ep);
+            static_cast<T>(1) / gcem::sqrt(static_cast<T>(1) + ep * ep);
         const T H0 = (N % 2u == 1u) ? static_cast<T>(1) : Gp;
         const T gain = H0 * a[N] / b[N];
         for (consteig::Size i = 0u; i <= N; ++i)
@@ -371,7 +371,7 @@ class Elliptic : public AnalogFilter<T, N, Method>
         // Scale for passband cutoff wc: coefficient of s^i picks up wc^i.
         for (consteig::Size i = 0u; i <= N; ++i)
         {
-            const T sc = consteig::pow(wc, static_cast<int>(i));
+            const T sc = gcem::pow(wc, static_cast<int>(i));
             a[i] *= sc;
             b[i] *= sc;
         }
@@ -394,7 +394,7 @@ class Elliptic : public AnalogFilter<T, N, Method>
 
         for (consteig::Size j = 0u; j <= N; ++j)
         {
-            const T sc = consteig::pow(wc, static_cast<int>(j));
+            const T sc = gcem::pow(wc, static_cast<int>(j));
             a[j] = a_lp[N - j] * sc;
             b[j] = b_lp[N - j] * sc;
         }

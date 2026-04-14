@@ -287,8 +287,7 @@ class Elliptic : public AnalogFilter<T, N, Method>
     {
         // Ripple factors.
         const T ep = gcem::sqrt(from_db10(ripple_db) - static_cast<T>(1));
-        const T es =
-            gcem::sqrt(from_db10(attenuation_db) - static_cast<T>(1));
+        const T es = gcem::sqrt(from_db10(attenuation_db) - static_cast<T>(1));
 
         const T k1 = ep / es;
 
@@ -308,7 +307,7 @@ class Elliptic : public AnalogFilter<T, N, Method>
 
         // Derived quantity w.
         const T w = gcem::sqrt((static_cast<T>(1) + k * sig0 * sig0) *
-                                   (static_cast<T>(1) + sig0 * sig0 / k));
+                               (static_cast<T>(1) + sig0 * sig0 / k));
 
         // Ascending-order polynomials: poly[i] = coefficient of s^i.
         Cx poly_a[N + 1u]{};
@@ -323,7 +322,7 @@ class Elliptic : public AnalogFilter<T, N, Method>
         {
             const T wi = compute_wi(ii, q);
             const T Vi = gcem::sqrt((static_cast<T>(1) - k * wi * wi) *
-                                        (static_cast<T>(1) - wi * wi / k));
+                                    (static_cast<T>(1) - wi * wi / k));
 
             // Zeros (scaled): +/-j * sqrt(ws) / wi
             const T omega_z = sqrt_ws / wi;

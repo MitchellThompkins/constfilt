@@ -154,6 +154,3 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     )
 endif()
 
-add_executable(main main.cpp)
-target_include_directories(main PRIVATE ${PROJECT_SOURCE_DIR}/test_dependencies)
-target_link_libraries(main constfilt)

@@ -33,50 +33,47 @@ include(GNUInstallDirs)
 # Public INTERFACE target (the only target external consumers need)
 ################################################################################
 add_library(constfilt INTERFACE)
-target_compile_features(constfilt INTERFACE cxx_std_17)
-add_library(constfilt::constfilt ALIAS constfilt)
-
-################################################################################
-# Bundled dependencies
-# Run scripts/fetch_consteig.sh and scripts/fetch_gcem.sh to populate.
-################################################################################
-set(_deps "${CMAKE_CURRENT_SOURCE_DIR}/include/constfilt/dependencies")
-
-option(CONSTFILT_USE_GCEM
-    "Use gcem as the math backend for consteig instead of built-in constexpr math" OFF)
-option(CONSTFILT_GCEM_USE_STDLIB
-    "Allow gcem to use stdlib headers instead of builtins (only with CONSTFILT_USE_GCEM)" OFF)
-
-# consteig: bundled under include/constfilt/dependencies/consteig/
-# Include as SYSTEM to suppress third-party warnings.
-add_library(constfilt_consteig INTERFACE)
-target_include_directories(constfilt_consteig SYSTEM INTERFACE
-    $<BUILD_INTERFACE:${_deps}>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-)
-if(CONSTFILT_USE_GCEM)
-    target_compile_definitions(constfilt_consteig INTERFACE CONSTEIG_USE_GCEM)
-    if(CONSTFILT_GCEM_USE_STDLIB)
-        target_compile_definitions(constfilt_consteig INTERFACE CONSTEIG_GCEM_USE_STDLIB)
-    endif()
-endif()
-
-# gcem: bundled under include/constfilt/dependencies/gcem/
-# Include as SYSTEM to suppress third-party warnings.
-add_library(constfilt_gcem INTERFACE)
-target_include_directories(constfilt_gcem SYSTEM INTERFACE
-    $<BUILD_INTERFACE:${_deps}/gcem>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-)
-if(NOT CONSTFILT_GCEM_USE_STDLIB)
-    target_compile_definitions(constfilt_gcem INTERFACE GCEM_TRAITS_BUILTIN)
-endif()
-
 target_include_directories(constfilt INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
-target_link_libraries(constfilt INTERFACE constfilt_consteig constfilt_gcem)
+target_compile_features(constfilt INTERFACE cxx_std_17)
+add_library(constfilt::constfilt ALIAS constfilt)
+
+################################################################################
+# consteig dependency
+################################################################################
+if(NOT TARGET consteig::consteig)
+    include(FetchContent)
+    FetchContent_Declare(
+        consteig
+        GIT_REPOSITORY https://github.com/MitchellThompkins/consteig
+        GIT_TAG        1.0.0
+        GIT_SHALLOW    TRUE
+    )
+    FetchContent_MakeAvailable(consteig)
+
+    set(CMAKE_POLICY_VERSION_MINIMUM 3.5 CACHE STRING "" FORCE)
+    FetchContent_Declare(
+        gcem
+        GIT_REPOSITORY https://github.com/MitchellThompkins/gcem
+        GIT_TAG        add-optional-no-stdlib
+    )
+    FetchContent_MakeAvailable(gcem)
+    unset(CMAKE_POLICY_VERSION_MINIMUM CACHE)
+
+    # Use gcem in no-stdlib (builtin) mode and suppress third-party warnings.
+    target_compile_definitions(gcem INTERFACE GCEM_TRAITS_BUILTIN)
+    get_target_property(_gcem_inc gcem INTERFACE_INCLUDE_DIRECTORIES)
+    set_target_properties(gcem PROPERTIES
+        INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${_gcem_inc}"
+    )
+endif()
+
+target_link_libraries(constfilt INTERFACE
+    $<BUILD_INTERFACE:consteig::consteig>
+    $<BUILD_INTERFACE:gcem>
+)
 
 ################################################################################
 # Development mode (skipped when consumed via add_subdirectory/FetchContent)
@@ -129,12 +126,8 @@ endif()
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     include(CMakePackageConfigHelpers)
 
-    install(TARGETS constfilt constfilt_consteig constfilt_gcem EXPORT constfiltTargets)
+    install(TARGETS constfilt EXPORT constfiltTargets)
     install(DIRECTORY include/constfilt DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-    # Bundle bundled dependencies so installed consumers need no extra find_package.
-    install(DIRECTORY ${_deps}/consteig DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-    install(FILES ${_deps}/gcem/gcem.hpp DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-    install(DIRECTORY ${_deps}/gcem/gcem_incl DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
     install(EXPORT constfiltTargets
         FILE constfiltTargets.cmake

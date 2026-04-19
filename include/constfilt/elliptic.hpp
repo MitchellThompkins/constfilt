@@ -262,12 +262,13 @@ class Elliptic : public AnalogFilter<T, N, Method>
     // In-place multiply polynomial poly (ascending order, currently degree
     // deg-1) by (s - root), bringing it to degree deg.
     // =========================================================================
-    static constexpr void poly_mul_root(Complex (&poly)[N + 1u], consteig::Size deg,
-                                        Complex root)
+    static constexpr void poly_mul_root(Complex (&poly)[N + 1u],
+                                        consteig::Size deg, Complex root)
     {
         for (consteig::Size j = deg; j > 0u; --j)
             poly[j] = poly[j - 1u] - root * poly[j];
-        poly[0] = Complex{static_cast<T>(0), static_cast<T>(0)} - root * poly[0];
+        poly[0] =
+            Complex{static_cast<T>(0), static_cast<T>(0)} - root * poly[0];
     }
 
     // =========================================================================
@@ -292,8 +293,8 @@ class Elliptic : public AnalogFilter<T, N, Method>
         const T k1 = ep / es;
 
         // Nome q via modular identity: q = q1^(1/N) where q1 = nome(k1).
-        // This bypasses the degree equation solver entirely, giving full
-        // machine precision for q regardless of how k is found.
+        // The modular equation K'(k)/K(k) = N*K'(k1)/K(k1) is equivalent in
+        // nome space to q = q1^(1/N), an exact identity requiring no iteration.
         const T q1 = compute_nome(k1);
         const T q = gcem::exp(gcem::log(q1) / static_cast<T>(N));
 

@@ -4,10 +4,12 @@
 transfer function in the s-domain, then discretizes it via the parent class
 `AnalogFilter`. All arithmetic is `constexpr`.
 
-The algorithm follows Octave's `ncauer` theta-function path. It avoids the
-classical degree-equation solver (which requires root finding) by using the
-modular identity to go directly from the selectivity ratio `k1` to the design
-nome `q`.
+The algorithm follows Octave's `ncauer` theta-function path. The classical
+degree-equation approach solves `K'(k)/K(k) = N * K'(k1)/K(k1)` for the design
+modulus `k` via iterative root finding on a transcendental scalar equation.
+This implementation bypasses that entirely: the modular identity `q = q1^(1/N)`
+is an analytic equivalence, not an approximation, so `q` is obtained in a single
+closed-form expression at full machine precision with no iteration.
 
 ---
 
@@ -48,9 +50,9 @@ The design nome `q` is then obtained by the modular identity:
 q = q1^(1/N) = exp(log(q1) / N)
 ```
 
-This step replaces the degree-equation solver. The identity holds because the
-elliptic modular equation is `K'(k)/K(k) = N * K'(k1)/K(k1)`, which in terms
-of nomes reduces to `q = q1^(1/N)`. No iteration or root finding is required.
+The elliptic modular equation `K'(k)/K(k) = N * K'(k1)/K(k1)` is equivalent in
+nome space to `q = q1^(1/N)`. This is an exact identity, so no iteration or
+convergence criterion is needed and no error accumulates across steps.
 
 ---
 
@@ -192,3 +194,38 @@ and discretizes it using the method selected by the `Method` template parameter
 eigendecomposition followed by an LU solve for the input matrix Bd. The discrete
 transfer function is then extracted via Faddeev-LeVerrier and stored in the
 `Filter` base.
+
+---
+
+## Test reference and the `ncauer.m` shadow
+
+`tests/elliptic_reference.hpp` is regenerated from Octave's stock `ellip()` via
+`octave/generate_elliptic_tests.m`. Since the reference needs to be independent
+of the constfilt implementation (otherwise a bug common to both would not be
+caught), the reference path uses Octave's own numerical elliptic-degree-equation
+solver rather than constfilt's modular-identity path.
+
+Inside the signal-package `ncauer.m`, the helper `__ellip_ws` solves the degree
+equation via `fminbnd(@f, eps, 1-eps)` with no explicit options. `fminbnd`'s
+default `TolX` (roughly 1e-4 on the search variable) propagates to the analog
+pole locations at the ~1e-6 level, which is too loose to serve as a reference
+for the `CONSTFILT_COEFF_TOL = 1e-9` assertions in `tests/elliptic.test.cpp`.
+
+To be clear, this does **not** mean Octave's `ellip` is incorrect. It produces
+a valid elliptic filter that meets the requested passband-ripple and
+stopband-attenuation specs well within engineering tolerances, and no user of
+`ellip` for actual filter design would ever notice the ~1e-6 discrepancy. The
+upstream package simply picked `fminbnd`'s default `TolX` when solving the
+degree equation — a reasonable speed/accuracy tradeoff for general use, but
+not documented as an accuracy guarantee and not tight enough for a 1e-9
+cross-check.
+
+For this reason `octave/ncauer.m` is a verbatim copy of upstream
+[`ncauer.m`](https://github.com/gnu-octave/octave-signal/blob/main/inst/ncauer.m)
+with a single-line patch: `__ellip_ws` now passes
+`optimset('TolX', 1e-15, 'MaxIter', 10000)` to `fminbnd`. The generator script
+prepends `octave/` to Octave's function path so this local copy shadows the
+signal-package version, and stock `ellip()` is called unchanged. With that
+change, Octave's independent numerical-solver path and constfilt's
+modular-identity path agree to roughly 1e-13 on every test case, and the
+reference faithfully exercises the 1e-9 coefficient tolerance.

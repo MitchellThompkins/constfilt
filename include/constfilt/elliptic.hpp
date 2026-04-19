@@ -47,7 +47,21 @@ class Elliptic : public AnalogFilter<T, N, Method>
     using Complex = consteig::Complex<T>;
 
     // Number of complex-conjugate pole/zero pairs: floor(N/2).
-    static constexpr consteig::Size M = N / 2u;
+    static constexpr consteig::Size M{N / 2u};
+
+    // ln(10)/10: converts dB power ratio to natural-log exponent (10^(x/10) =
+    // exp(x*ln10/10)).
+    static constexpr double LN10_OVER_10{0.23025850929940457};
+    // AGM iteration count for elliptic_K; 64 rounds gives full double
+    // precision.
+    static constexpr int AGM_ITERATIONS{64};
+    // Truncation depth for theta-function and nome q-series (terms beyond 30
+    // are negligible).
+    static constexpr int SERIES_TERMS{30};
+    // Coefficients of the nome q-series: q = q0 + 2*q0^5 + 15*q0^9 + 150*q0^13.
+    static constexpr int NOME_COEFF_Q0_5{2};
+    static constexpr int NOME_COEFF_Q0_9{15};
+    static constexpr int NOME_COEFF_Q0_13{150};
 
     static constexpr TransferFunction<T, N + 1u, N + 1u> compute_continuous_tf(
         T cutoff_hz, T ripple_db, T attenuation_db)
@@ -68,7 +82,7 @@ class Elliptic : public AnalogFilter<T, N, Method>
     {
         T a = static_cast<T>(1);
         T b = gcem::sqrt(static_cast<T>(1) - k * k);
-        for (int i = 0; i < 64; ++i)
+        for (int i = 0; i < AGM_ITERATIONS; ++i)
         {
             T a2 = (a + b) / static_cast<T>(2);
             T b2 = gcem::sqrt(a * b);
@@ -81,7 +95,7 @@ class Elliptic : public AnalogFilter<T, N, Method>
     // Convert a power ratio in dB to linear: 10^(x/10) = exp(x * ln10/10).
     static constexpr T from_db10(T x)
     {
-        return gcem::exp(x * static_cast<T>(0.23025850929940457));
+        return gcem::exp(x * static_cast<T>(LN10_OVER_10));
     }
 
     // Nome q from modulus k (ncauer q-series approximation).
@@ -98,8 +112,9 @@ class Elliptic : public AnalogFilter<T, N, Method>
         const T q0_5 = q0_4 * q0;
         const T q0_9 = q0_5 * q0_4;
         const T q0_13 = q0_9 * q0_4;
-        return q0 + static_cast<T>(2) * q0_5 + static_cast<T>(15) * q0_9 +
-               static_cast<T>(150) * q0_13;
+        return q0 + static_cast<T>(NOME_COEFF_Q0_5) * q0_5 +
+               static_cast<T>(NOME_COEFF_Q0_9) * q0_9 +
+               static_cast<T>(NOME_COEFF_Q0_13) * q0_13;
     }
 
     // Recover modulus k from nome q via Jacobi theta functions.
@@ -114,7 +129,7 @@ class Elliptic : public AnalogFilter<T, N, Method>
         T theta2 = static_cast<T>(0);
         T qpow = static_cast<T>(1); // q^(n*(n+1))
         T q_2n = static_cast<T>(1);
-        for (int n = 0; n <= 30; ++n)
+        for (int n = 0; n <= SERIES_TERMS; ++n)
         {
             if (n > 0)
             {
@@ -128,7 +143,7 @@ class Elliptic : public AnalogFilter<T, N, Method>
         T theta3 = static_cast<T>(1);
         T qpow3 = q; // q^(n^2), starting at q^1
         T q_2n1 = q; // q^(2n-1), starting at q^1
-        for (int n = 1; n <= 30; ++n)
+        for (int n = 1; n <= SERIES_TERMS; ++n)
         {
             if (n > 1)
             {
@@ -163,7 +178,7 @@ class Elliptic : public AnalogFilter<T, N, Method>
         T sig01 = static_cast<T>(0);
         T qpow1 = static_cast<T>(1); // q^(m*(m+1)), starts at q^0
         T q_2m = static_cast<T>(1);  // q^(2m), updated before use
-        for (int m = 0; m <= 30; ++m)
+        for (int m = 0; m <= SERIES_TERMS; ++m)
         {
             if (m > 0)
             {
@@ -182,7 +197,7 @@ class Elliptic : public AnalogFilter<T, N, Method>
         T sig02 = static_cast<T>(0);
         T qpow2 = q; // q^(1^2) = q
         T q_2m1 = q; // q^(2*1-1) = q
-        for (int m = 1; m <= 30; ++m)
+        for (int m = 1; m <= SERIES_TERMS; ++m)
         {
             if (m > 1)
             {
@@ -223,7 +238,7 @@ class Elliptic : public AnalogFilter<T, N, Method>
         T soma1 = static_cast<T>(0);
         T qpow1 = static_cast<T>(1);
         T q_2m = static_cast<T>(1);
-        for (int m = 0; m <= 30; ++m)
+        for (int m = 0; m <= SERIES_TERMS; ++m)
         {
             if (m > 0)
             {
@@ -241,7 +256,7 @@ class Elliptic : public AnalogFilter<T, N, Method>
         T soma2 = static_cast<T>(0);
         T qpow2 = q;
         T q_2m1 = q;
-        for (int m = 1; m <= 30; ++m)
+        for (int m = 1; m <= SERIES_TERMS; ++m)
         {
             if (m > 1)
             {

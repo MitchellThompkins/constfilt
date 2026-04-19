@@ -43,6 +43,11 @@ $(BUILD_PREFIX)/$(BUILD_FILE):
 	cd $(BUILD_PREFIX) && \
 	cmake .. $(CMAKE_OPTIONS); \
 
+.PHONY: deps
+deps:
+	./scripts/fetch_consteig.sh
+	./scripts/fetch_gcem.sh
+
 .PHONY: generate-reference
 generate-reference:
 	octave --no-gui octave/generate_butterworth_tests.m
@@ -53,13 +58,17 @@ remove:
 
 .PHONY: format
 format:
-	find . \( -path "./test_dependencies/googletest" -o -path "./build*" \) -prune \
+	find . \( -path "./test_dependencies/googletest" \
+		-o -path "./include/constfilt/dependencies" \
+		-o -path "./build*" \) -prune \
 		-o -type f \( -name "*.hpp" -o -name "*.cpp" \) -print \
 		| xargs clang-format -i
 
 .PHONY: check-format
 check-format:
-	find . \( -path "./test_dependencies/googletest" -o -path "./build*" \) -prune \
+	find . \( -path "./test_dependencies/googletest" \
+		-o -path "./include/constfilt/dependencies" \
+		-o -path "./build*" \) -prune \
 		-o -type f \( -name "*.hpp" -o -name "*.cpp" \) -print \
 		| xargs clang-format --dry-run --Werror
 

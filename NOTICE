@@ -1,5 +1,16 @@
 constfilt
 Copyright 2026 Timothy Mitchell Thompkins
 
-This product includes software from consteig (https://github.com/MitchellThompkins/consteig),
-Copyright 2026 Timothy Mitchell Thompkins, licensed under the Apache License, Version 2.0.
+This product includes software from consteig
+(https://github.com/MitchellThompkins/consteig),
+Copyright 2026 Timothy Mitchell Thompkins, licensed under the
+Apache License, Version 2.0.
+
+  Certain mathematical functions (sqrt, exp, pow, abs, sgn) within
+  consteig were derived from GCE-Math (https://github.com/kthohr/gcem),
+  Copyright Keith O'Hara, licensed under the Apache License, Version 2.0.
+
+This product includes software from gcem
+(https://github.com/MitchellThompkins/gcem), derived from GCE-Math
+(https://github.com/kthohr/gcem), Copyright Keith O'Hara, licensed
+under the Apache License, Version 2.0.

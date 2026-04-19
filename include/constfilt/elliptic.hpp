@@ -44,7 +44,7 @@ class Elliptic : public AnalogFilter<T, N, Method>
     }
 
   private:
-    using Cx = consteig::Complex<T>;
+    using Complex = consteig::Complex<T>;
 
     // Number of complex-conjugate pole/zero pairs: floor(N/2).
     static constexpr consteig::Size M = N / 2u;
@@ -262,12 +262,12 @@ class Elliptic : public AnalogFilter<T, N, Method>
     // In-place multiply polynomial poly (ascending order, currently degree
     // deg-1) by (s - root), bringing it to degree deg.
     // =========================================================================
-    static constexpr void poly_mul_root(Cx (&poly)[N + 1u], consteig::Size deg,
-                                        Cx root)
+    static constexpr void poly_mul_root(Complex (&poly)[N + 1u], consteig::Size deg,
+                                        Complex root)
     {
         for (consteig::Size j = deg; j > 0u; --j)
             poly[j] = poly[j - 1u] - root * poly[j];
-        poly[0] = Cx{static_cast<T>(0), static_cast<T>(0)} - root * poly[0];
+        poly[0] = Complex{static_cast<T>(0), static_cast<T>(0)} - root * poly[0];
     }
 
     // =========================================================================
@@ -310,10 +310,10 @@ class Elliptic : public AnalogFilter<T, N, Method>
                                (static_cast<T>(1) + sig0 * sig0 / k));
 
         // Ascending-order polynomials: poly[i] = coefficient of s^i.
-        Cx poly_a[N + 1u]{};
-        Cx poly_b[N + 1u]{};
-        poly_a[0] = Cx{static_cast<T>(1), static_cast<T>(0)};
-        poly_b[0] = Cx{static_cast<T>(1), static_cast<T>(0)};
+        Complex poly_a[N + 1u]{};
+        Complex poly_b[N + 1u]{};
+        poly_a[0] = Complex{static_cast<T>(1), static_cast<T>(0)};
+        poly_b[0] = Complex{static_cast<T>(1), static_cast<T>(0)};
 
         consteig::Size deg_a = 0u;
         consteig::Size deg_b = 0u;
@@ -327,9 +327,9 @@ class Elliptic : public AnalogFilter<T, N, Method>
             // Zeros (scaled): +/-j * sqrt(ws) / wi
             const T omega_z = sqrt_ws / wi;
             ++deg_b;
-            poly_mul_root(poly_b, deg_b, Cx{static_cast<T>(0), omega_z});
+            poly_mul_root(poly_b, deg_b, Complex{static_cast<T>(0), omega_z});
             ++deg_b;
-            poly_mul_root(poly_b, deg_b, Cx{static_cast<T>(0), -omega_z});
+            poly_mul_root(poly_b, deg_b, Complex{static_cast<T>(0), -omega_z});
 
             // Poles (scaled): sqrt(ws)*(-sig0*Vi +/- j*wi*w)/(1+sig0^2*wi^2)
             const T denom = static_cast<T>(1) + sig0 * sig0 * wi * wi;
@@ -337,9 +337,9 @@ class Elliptic : public AnalogFilter<T, N, Method>
             const T p_im = sqrt_ws * (wi * w) / denom;
 
             ++deg_a;
-            poly_mul_root(poly_a, deg_a, Cx{p_re, p_im});
+            poly_mul_root(poly_a, deg_a, Complex{p_re, p_im});
             ++deg_a;
-            poly_mul_root(poly_a, deg_a, Cx{p_re, -p_im});
+            poly_mul_root(poly_a, deg_a, Complex{p_re, -p_im});
         }
 
         // Real pole for odd N: -sig0 * sqrt(ws).
@@ -347,7 +347,7 @@ class Elliptic : public AnalogFilter<T, N, Method>
         {
             ++deg_a;
             poly_mul_root(poly_a, deg_a,
-                          Cx{-sig0 * sqrt_ws, static_cast<T>(0)});
+                          Complex{-sig0 * sqrt_ws, static_cast<T>(0)});
         }
 
         // Convert ascending -> descending; take real parts (imag ~ 0).

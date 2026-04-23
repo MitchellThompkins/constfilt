@@ -193,3 +193,110 @@ TEST(EllipticHP, N3_Rp10_Rs60_fc200_fs4000_RealTime)
             << "step[" << i << "] mismatch";
     }
 }
+
+
+// ============================================================================
+// Impulse response tests — Octave impz reference
+// ============================================================================
+
+TEST(EllipticLP, N2_Rp05_Rs40_fc100_fs1000_ImpulseResponse)
+{
+    using Ref = el_ref::lp_2_5rp_40rs_100Hz_1000Hz;
+    constfilt::Elliptic<double, 2> filt(100.0, 0.5, 40.0, 1000.0);
+
+    EXPECT_NEAR(filt(1.0), Ref::impulse[0], CONSTFILT_STEP_TOL) << "impulse[0]";
+    for (unsigned int i = 1; i < 32u; ++i)
+        EXPECT_NEAR(filt(0.0), Ref::impulse[i], CONSTFILT_STEP_TOL)
+            << "impulse[" << i << "]";
+}
+
+TEST(EllipticLP, N4_Rp05_Rs40_fc100_fs1000_ImpulseResponse)
+{
+    using Ref = el_ref::lp_4_5rp_40rs_100Hz_1000Hz;
+    constfilt::Elliptic<double, 4> filt(100.0, 0.5, 40.0, 1000.0);
+
+    EXPECT_NEAR(filt(1.0), Ref::impulse[0], CONSTFILT_STEP_TOL) << "impulse[0]";
+    for (unsigned int i = 1; i < 32u; ++i)
+        EXPECT_NEAR(filt(0.0), Ref::impulse[i], CONSTFILT_STEP_TOL)
+            << "impulse[" << i << "]";
+}
+
+TEST(EllipticLP, N3_Rp10_Rs60_fc200_fs4000_ImpulseResponse)
+{
+    using Ref = el_ref::lp_3_10rp_60rs_200Hz_4000Hz;
+    constfilt::Elliptic<double, 3> filt(200.0, 1.0, 60.0, 4000.0);
+
+    EXPECT_NEAR(filt(1.0), Ref::impulse[0], CONSTFILT_STEP_TOL) << "impulse[0]";
+    for (unsigned int i = 1; i < 32u; ++i)
+        EXPECT_NEAR(filt(0.0), Ref::impulse[i], CONSTFILT_STEP_TOL)
+            << "impulse[" << i << "]";
+}
+
+TEST(EllipticHP, N2_Rp05_Rs40_fc100_fs1000_ImpulseResponse)
+{
+    using Ref = el_ref::hp_2_5rp_40rs_100Hz_1000Hz;
+    constfilt::Elliptic<double, 2, constfilt::ZOH, constfilt::HighPass> filt(
+        100.0, 0.5, 40.0, 1000.0);
+
+    EXPECT_NEAR(filt(1.0), Ref::impulse[0], CONSTFILT_STEP_TOL) << "impulse[0]";
+    for (unsigned int i = 1; i < 32u; ++i)
+        EXPECT_NEAR(filt(0.0), Ref::impulse[i], CONSTFILT_STEP_TOL)
+            << "impulse[" << i << "]";
+}
+
+TEST(EllipticHP, N3_Rp10_Rs60_fc200_fs4000_ImpulseResponse)
+{
+    using Ref = el_ref::hp_3_10rp_60rs_200Hz_4000Hz;
+    constfilt::Elliptic<double, 3, constfilt::ZOH, constfilt::HighPass> filt(
+        200.0, 1.0, 60.0, 4000.0);
+
+    EXPECT_NEAR(filt(1.0), Ref::impulse[0], CONSTFILT_STEP_TOL) << "impulse[0]";
+    for (unsigned int i = 1; i < 32u; ++i)
+        EXPECT_NEAR(filt(0.0), Ref::impulse[i], CONSTFILT_STEP_TOL)
+            << "impulse[" << i << "]";
+}
+
+// ============================================================================
+// Chirp (frequency sweep) tests — Octave filter(b,a,chirp) reference
+// ============================================================================
+
+TEST(EllipticLP, N2_Rp05_Rs40_fc100_fs1000_Chirp)
+{
+    using Ref = el_ref::lp_2_5rp_40rs_100Hz_1000Hz;
+    constfilt::Elliptic<double, 2> filt(100.0, 0.5, 40.0, 1000.0);
+
+    for (unsigned int i = 0; i < 256u; ++i)
+        EXPECT_NEAR(filt(Ref::chirp_in[i]), Ref::chirp[i], CONSTFILT_STEP_TOL)
+            << "chirp[" << i << "]";
+}
+
+TEST(EllipticLP, N4_Rp05_Rs40_fc100_fs1000_Chirp)
+{
+    using Ref = el_ref::lp_4_5rp_40rs_100Hz_1000Hz;
+    constfilt::Elliptic<double, 4> filt(100.0, 0.5, 40.0, 1000.0);
+
+    for (unsigned int i = 0; i < 256u; ++i)
+        EXPECT_NEAR(filt(Ref::chirp_in[i]), Ref::chirp[i], CONSTFILT_STEP_TOL)
+            << "chirp[" << i << "]";
+}
+
+TEST(EllipticLP, N3_Rp10_Rs60_fc200_fs4000_Chirp)
+{
+    using Ref = el_ref::lp_3_10rp_60rs_200Hz_4000Hz;
+    constfilt::Elliptic<double, 3> filt(200.0, 1.0, 60.0, 4000.0);
+
+    for (unsigned int i = 0; i < 256u; ++i)
+        EXPECT_NEAR(filt(Ref::chirp_in[i]), Ref::chirp[i], CONSTFILT_STEP_TOL)
+            << "chirp[" << i << "]";
+}
+
+TEST(EllipticHP, N2_Rp05_Rs40_fc100_fs1000_Chirp)
+{
+    using Ref = el_ref::hp_2_5rp_40rs_100Hz_1000Hz;
+    constfilt::Elliptic<double, 2, constfilt::ZOH, constfilt::HighPass> filt(
+        100.0, 0.5, 40.0, 1000.0);
+
+    for (unsigned int i = 0; i < 256u; ++i)
+        EXPECT_NEAR(filt(Ref::chirp_in[i]), Ref::chirp[i], CONSTFILT_STEP_TOL)
+            << "chirp[" << i << "]";
+}

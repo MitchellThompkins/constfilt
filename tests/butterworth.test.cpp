@@ -401,3 +401,209 @@ TEST(ButterworthMatchedZ, N3_fc200_fs4000_RealTime)
             << "step[" << i << "] mismatch";
     }
 }
+
+
+// ============================================================================
+// Impulse response tests — Octave impz reference
+// ============================================================================
+
+TEST(Butterworth, N2_fc100_fs1000_ImpulseResponse)
+{
+    using Ref = bw_ref::case_2_100Hz_1000Hz;
+    constfilt::Butterworth<double, 2> filt(100.0, 1000.0);
+
+    EXPECT_NEAR(filt(1.0), Ref::impulse[0], CONSTFILT_STEP_TOL) << "impulse[0]";
+    for (unsigned int i = 1; i < 32u; ++i)
+        EXPECT_NEAR(filt(0.0), Ref::impulse[i], CONSTFILT_STEP_TOL)
+            << "impulse[" << i << "]";
+}
+
+TEST(Butterworth, N4_fc100_fs1000_ImpulseResponse)
+{
+    using Ref = bw_ref::case_4_100Hz_1000Hz;
+    constfilt::Butterworth<double, 4> filt(100.0, 1000.0);
+
+    EXPECT_NEAR(filt(1.0), Ref::impulse[0], CONSTFILT_STEP_TOL) << "impulse[0]";
+    for (unsigned int i = 1; i < 32u; ++i)
+        EXPECT_NEAR(filt(0.0), Ref::impulse[i], CONSTFILT_STEP_TOL)
+            << "impulse[" << i << "]";
+}
+
+TEST(Butterworth, N2_fc500_fs8000_ImpulseResponse)
+{
+    using Ref = bw_ref::case_2_500Hz_8000Hz;
+    constfilt::Butterworth<double, 2> filt(500.0, 8000.0);
+
+    EXPECT_NEAR(filt(1.0), Ref::impulse[0], CONSTFILT_STEP_TOL) << "impulse[0]";
+    for (unsigned int i = 1; i < 32u; ++i)
+        EXPECT_NEAR(filt(0.0), Ref::impulse[i], CONSTFILT_STEP_TOL)
+            << "impulse[" << i << "]";
+}
+
+TEST(Butterworth, N3_fc200_fs4000_ImpulseResponse)
+{
+    using Ref = bw_ref::case_3_200Hz_4000Hz;
+    constfilt::Butterworth<double, 3> filt(200.0, 4000.0);
+
+    EXPECT_NEAR(filt(1.0), Ref::impulse[0], CONSTFILT_STEP_TOL) << "impulse[0]";
+    for (unsigned int i = 1; i < 32u; ++i)
+        EXPECT_NEAR(filt(0.0), Ref::impulse[i], CONSTFILT_STEP_TOL)
+            << "impulse[" << i << "]";
+}
+
+TEST(ButterworthHPF, N2_fc100_fs1000_ImpulseResponse)
+{
+    using Ref = bw_ref::case_hp_2_100Hz_1000Hz;
+    constfilt::Butterworth<double, 2, constfilt::ZOH, constfilt::HighPass> filt(
+        100.0, 1000.0);
+
+    EXPECT_NEAR(filt(1.0), Ref::impulse[0], CONSTFILT_STEP_TOL) << "impulse[0]";
+    for (unsigned int i = 1; i < 32u; ++i)
+        EXPECT_NEAR(filt(0.0), Ref::impulse[i], CONSTFILT_STEP_TOL)
+            << "impulse[" << i << "]";
+}
+
+TEST(ButterworthHPF, N4_fc100_fs1000_ImpulseResponse)
+{
+    using Ref = bw_ref::case_hp_4_100Hz_1000Hz;
+    constfilt::Butterworth<double, 4, constfilt::ZOH, constfilt::HighPass> filt(
+        100.0, 1000.0);
+
+    EXPECT_NEAR(filt(1.0), Ref::impulse[0], CONSTFILT_STEP_TOL) << "impulse[0]";
+    for (unsigned int i = 1; i < 32u; ++i)
+        EXPECT_NEAR(filt(0.0), Ref::impulse[i], CONSTFILT_STEP_TOL)
+            << "impulse[" << i << "]";
+}
+
+TEST(ButterworthHPF, N2_fc500_fs8000_ImpulseResponse)
+{
+    using Ref = bw_ref::case_hp_2_500Hz_8000Hz;
+    constfilt::Butterworth<double, 2, constfilt::ZOH, constfilt::HighPass> filt(
+        500.0, 8000.0);
+
+    EXPECT_NEAR(filt(1.0), Ref::impulse[0], CONSTFILT_STEP_TOL) << "impulse[0]";
+    for (unsigned int i = 1; i < 32u; ++i)
+        EXPECT_NEAR(filt(0.0), Ref::impulse[i], CONSTFILT_STEP_TOL)
+            << "impulse[" << i << "]";
+}
+
+TEST(ButterworthHPF, N3_fc200_fs4000_ImpulseResponse)
+{
+    using Ref = bw_ref::case_hp_3_200Hz_4000Hz;
+    constfilt::Butterworth<double, 3, constfilt::ZOH, constfilt::HighPass> filt(
+        200.0, 4000.0);
+
+    EXPECT_NEAR(filt(1.0), Ref::impulse[0], CONSTFILT_STEP_TOL) << "impulse[0]";
+    for (unsigned int i = 1; i < 32u; ++i)
+        EXPECT_NEAR(filt(0.0), Ref::impulse[i], CONSTFILT_STEP_TOL)
+            << "impulse[" << i << "]";
+}
+
+TEST(ButterworthMatchedZ, N2_fc100_fs1000_ImpulseResponse)
+{
+    using Ref = bw_ref::case_mz_2_100Hz_1000Hz;
+    constfilt::Butterworth<double, 2, constfilt::MatchedZ> filt(100.0, 1000.0);
+
+    EXPECT_NEAR(filt(1.0), Ref::impulse[0], CONSTFILT_STEP_TOL) << "impulse[0]";
+    for (unsigned int i = 1; i < 32u; ++i)
+        EXPECT_NEAR(filt(0.0), Ref::impulse[i], CONSTFILT_STEP_TOL)
+            << "impulse[" << i << "]";
+}
+
+TEST(ButterworthMatchedZ, N4_fc100_fs1000_ImpulseResponse)
+{
+    using Ref = bw_ref::case_mz_4_100Hz_1000Hz;
+    constfilt::Butterworth<double, 4, constfilt::MatchedZ> filt(100.0, 1000.0);
+
+    EXPECT_NEAR(filt(1.0), Ref::impulse[0], CONSTFILT_STEP_TOL) << "impulse[0]";
+    for (unsigned int i = 1; i < 32u; ++i)
+        EXPECT_NEAR(filt(0.0), Ref::impulse[i], CONSTFILT_STEP_TOL)
+            << "impulse[" << i << "]";
+}
+
+TEST(ButterworthMatchedZ, N2_fc500_fs8000_ImpulseResponse)
+{
+    using Ref = bw_ref::case_mz_2_500Hz_8000Hz;
+    constfilt::Butterworth<double, 2, constfilt::MatchedZ> filt(500.0, 8000.0);
+
+    EXPECT_NEAR(filt(1.0), Ref::impulse[0], CONSTFILT_STEP_TOL) << "impulse[0]";
+    for (unsigned int i = 1; i < 32u; ++i)
+        EXPECT_NEAR(filt(0.0), Ref::impulse[i], CONSTFILT_STEP_TOL)
+            << "impulse[" << i << "]";
+}
+
+TEST(ButterworthMatchedZ, N3_fc200_fs4000_ImpulseResponse)
+{
+    using Ref = bw_ref::case_mz_3_200Hz_4000Hz;
+    constfilt::Butterworth<double, 3, constfilt::MatchedZ> filt(200.0, 4000.0);
+
+    EXPECT_NEAR(filt(1.0), Ref::impulse[0], CONSTFILT_STEP_TOL) << "impulse[0]";
+    for (unsigned int i = 1; i < 32u; ++i)
+        EXPECT_NEAR(filt(0.0), Ref::impulse[i], CONSTFILT_STEP_TOL)
+            << "impulse[" << i << "]";
+}
+
+// ============================================================================
+// Chirp (frequency sweep) tests — Octave filter(b,a,chirp) reference
+// ============================================================================
+
+TEST(Butterworth, N2_fc100_fs1000_Chirp)
+{
+    using Ref = bw_ref::case_2_100Hz_1000Hz;
+    constfilt::Butterworth<double, 2> filt(100.0, 1000.0);
+
+    for (unsigned int i = 0; i < 256u; ++i)
+        EXPECT_NEAR(filt(Ref::chirp_in[i]), Ref::chirp[i], CONSTFILT_STEP_TOL)
+            << "chirp[" << i << "]";
+}
+
+TEST(Butterworth, N4_fc100_fs1000_Chirp)
+{
+    using Ref = bw_ref::case_4_100Hz_1000Hz;
+    constfilt::Butterworth<double, 4> filt(100.0, 1000.0);
+
+    for (unsigned int i = 0; i < 256u; ++i)
+        EXPECT_NEAR(filt(Ref::chirp_in[i]), Ref::chirp[i], CONSTFILT_STEP_TOL)
+            << "chirp[" << i << "]";
+}
+
+TEST(Butterworth, N2_fc500_fs8000_Chirp)
+{
+    using Ref = bw_ref::case_2_500Hz_8000Hz;
+    constfilt::Butterworth<double, 2> filt(500.0, 8000.0);
+
+    for (unsigned int i = 0; i < 256u; ++i)
+        EXPECT_NEAR(filt(Ref::chirp_in[i]), Ref::chirp[i], CONSTFILT_STEP_TOL)
+            << "chirp[" << i << "]";
+}
+
+TEST(Butterworth, N3_fc200_fs4000_Chirp)
+{
+    using Ref = bw_ref::case_3_200Hz_4000Hz;
+    constfilt::Butterworth<double, 3> filt(200.0, 4000.0);
+
+    for (unsigned int i = 0; i < 256u; ++i)
+        EXPECT_NEAR(filt(Ref::chirp_in[i]), Ref::chirp[i], CONSTFILT_STEP_TOL)
+            << "chirp[" << i << "]";
+}
+
+TEST(ButterworthHPF, N2_fc100_fs1000_Chirp)
+{
+    using Ref = bw_ref::case_hp_2_100Hz_1000Hz;
+    constfilt::Butterworth<double, 2, constfilt::ZOH, constfilt::HighPass> filt(
+        100.0, 1000.0);
+
+    for (unsigned int i = 0; i < 256u; ++i)
+        EXPECT_NEAR(filt(Ref::chirp_in[i]), Ref::chirp[i], CONSTFILT_STEP_TOL)
+            << "chirp[" << i << "]";
+}
+
+TEST(ButterworthMatchedZ, N2_fc100_fs1000_Chirp)
+{
+    using Ref = bw_ref::case_mz_2_100Hz_1000Hz;
+    constfilt::Butterworth<double, 2, constfilt::MatchedZ> filt(100.0, 1000.0);
+
+    for (unsigned int i = 0; i < 256u; ++i)
+        EXPECT_NEAR(filt(Ref::chirp_in[i]), Ref::chirp[i], CONSTFILT_STEP_TOL)
+            << "chirp[" << i << "]";
+}

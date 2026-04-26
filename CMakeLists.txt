@@ -57,7 +57,7 @@ if(NOT TARGET consteig::consteig)
     FetchContent_Declare(
         gcem
         GIT_REPOSITORY https://github.com/MitchellThompkins/gcem
-        GIT_TAG        add-optional-no-stdlib
+        GIT_TAG        v.1.19.0-consteig.1
     )
     FetchContent_MakeAvailable(gcem)
     unset(CMAKE_POLICY_VERSION_MINIMUM CACHE)

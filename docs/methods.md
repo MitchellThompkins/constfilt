@@ -56,6 +56,54 @@ D          = 0
 
 ---
 
+## Transfer function to state-space
+
+Given the standard state-space equations for a continuous-time system:
+
+$$\dot{x}(t) = A_c x(t) + B_c u(t), \qquad y(t) = C_c x(t) + D_c u(t)$$
+
+where $x \in \mathbb{R}^N$ is the state vector, $u$ is the scalar input, and $y$ is the scalar output, we need to choose $(A_c, B_c, C_c, D_c)$ so that the input-output transfer function matches a given $H(s)$.
+
+For an all-pole filter with numerator gain $b_0$:
+
+$$H(s) = \frac{b_0}{s^N + p_{N-1} s^{N-1} + \cdots + p_1 s + p_0}$$
+
+**Controllable canonical form** assigns the denominator coefficients directly to the last row of $A_c$:
+
+$$A_c = \begin{bmatrix}
+0      & 1      & 0      & \cdots & 0 \\
+0      & 0      & 1      & \cdots & 0 \\
+\vdots &        &        & \ddots & \vdots \\
+0      & 0      & 0      & \cdots & 1 \\
+-p_0   & -p_1   & -p_2   & \cdots & -p_{N-1}
+\end{bmatrix}$$
+
+$$B_c = \begin{bmatrix} 0 \\ \vdots \\ 0 \\ b_0 \end{bmatrix}, \qquad
+C_c = \begin{bmatrix} 1 & 0 & \cdots & 0 \end{bmatrix}, \qquad
+D_c = 0$$
+
+The characteristic polynomial of $A_c$ is $\det(sI - A_c) = s^N + p_{N-1}s^{N-1} + \cdots + p_0$, so the poles of $H(s)$ are exactly the eigenvalues of $A_c$.
+
+### 3rd-order Butterworth example
+
+The normalized 3rd-order Butterworth denominator is $(s + 1)(s^2 + s + 1) = s^3 + 2s^2 + 2s + 1$. Scaling to cutoff $\omega_c$:
+
+$$H(s) = \frac{\omega_c^3}{s^3 + 2\omega_c s^2 + 2\omega_c^2 s + \omega_c^3}$$
+
+Reading off $p_0 = \omega_c^3$, $p_1 = 2\omega_c^2$, $p_2 = 2\omega_c$, $b_0 = \omega_c^3$:
+
+$$A_c = \begin{bmatrix}
+0           & 1           & 0        \\
+0           & 0           & 1        \\
+-\omega_c^3 & -2\omega_c^2 & -2\omega_c
+\end{bmatrix}, \qquad
+B_c = \begin{bmatrix} 0 \\ 0 \\ \omega_c^3 \end{bmatrix}, \qquad
+C_c = \begin{bmatrix} 1 & 0 & 0 \end{bmatrix}, \qquad D_c = 0$$
+
+The three eigenvalues of $A_c$ are the three Butterworth poles (one real at $-\omega_c$, one conjugate pair), and the transfer function $C_c(sI - A_c)^{-1}B_c$ recovers $H(s)$ exactly.
+
+---
+
 ## Discretization
 
 With a continuous state-space model in hand, the goal is a discrete state-space

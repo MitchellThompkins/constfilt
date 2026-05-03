@@ -15,7 +15,7 @@ namespace constfilt
 //   coeff[0]*s^N + coeff[1]*s^{N-1} + ... + coeff[N]
 //
 // Template parameters:
-//   T         - numeric type (float, double, …)
+//   T         - numeric type (float, double, ...)
 //   N         - filter order (degree of denominator)
 //   Method    - ZOH (default) or MatchedZ
 //   CheckStab - when true (default), throws at construction (a compile-time

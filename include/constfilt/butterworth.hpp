@@ -66,7 +66,7 @@ class Butterworth : public AnalogFilter<T, N, Method>
     //
     // Numerator: b[0] = 1, all other b[k] = 0  (high-frequency gain = 1)
     //
-    // Denominator: a[k] = p[N-k] * wc^k — the normalized Butterworth
+    // Denominator: a[k] = p[N-k] * wc^k - the normalized Butterworth
     // coefficients in reversed order, scaled by wc^k (p[0] = 1 so a[0] = 1,
     // keeping the denominator monic).
     static constexpr void continuous_tf(T wc, T (&b)[N + 1u], T (&a)[N + 1u],
@@ -121,6 +121,13 @@ class Butterworth : public AnalogFilter<T, N, Method>
         }
     }
 };
+
+// Convenience aliases for first-order RC-equivalent filters.
+template <typename T, typename Method = ZOH>
+using FirstOrderLowPass = Butterworth<T, 1u, Method, LowPass>;
+
+template <typename T, typename Method = ZOH>
+using FirstOrderHighPass = Butterworth<T, 1u, Method, HighPass>;
 
 } // namespace constfilt
 

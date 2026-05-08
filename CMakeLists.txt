@@ -57,7 +57,7 @@ if(NOT TARGET consteig::consteig)
     FetchContent_Declare(
         gcem
         GIT_REPOSITORY https://github.com/MitchellThompkins/gcem
-        GIT_TAG        add-optional-no-stdlib
+        GIT_TAG        v.1.19.0-consteig.1
     )
     FetchContent_MakeAvailable(gcem)
     unset(CMAKE_POLICY_VERSION_MINIMUM CACHE)
@@ -80,6 +80,9 @@ target_link_libraries(constfilt INTERFACE
 ################################################################################
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     option(CONSTFILT_BUILD_TESTS "Build constfilt tests" OFF)
+    option(CONSTFILT_COMPILE_ONLY
+           "Build tests as object libraries only (no run, no link to gtest); used for ARM cross-compile constexpr verification."
+           OFF)
 
     set(CMAKE_CXX_STANDARD 17)
     set(CMAKE_CXX_STANDARD_REQUIRED ON)

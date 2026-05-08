@@ -4,400 +4,159 @@
 #include "test_tools.hpp"
 #include <constfilt/constfilt.hpp>
 
-// --- Case 1: N=2, fc=100Hz, fs=1000Hz ----------------------------------------
+using namespace bw_ref;
 
-TEST(Butterworth, N2_fc100_fs1000_Coefficients)
-{
-    using Ref = bw_ref::case_2_100Hz_1000Hz;
-    static constexpr constfilt::Butterworth<double, 2> filt(100.0, 1000.0);
+// =============================================================================
+// Butterworth low-pass, ZOH discretization
+// =============================================================================
 
-    for (unsigned int i = 0; i <= 2u; ++i)
-    {
-        EXPECT_NEAR(filt.coeffs_b()[i], Ref::b[i], CONSTFILT_COEFF_TOL)
-            << "b[" << i << "] mismatch";
-        EXPECT_NEAR(filt.coeffs_a()[i], Ref::a[i], CONSTFILT_COEFF_TOL)
-            << "a[" << i << "] mismatch";
-    }
-}
+FULL_MATRIX(Butterworth, case_1_100Hz_1000Hz,
+            constfilt::Butterworth<double, 1>(100.0, 1000.0))
 
-TEST(Butterworth, N2_fc100_fs1000_Batch)
-{
-    using Ref = bw_ref::case_2_100Hz_1000Hz;
-    static constexpr constfilt::Butterworth<double, 2> filt(100.0, 1000.0);
-    double step[32]{};
-    for (unsigned int i = 0; i < 32u; ++i)
-        step[i] = 1.0;
-    double y[32]{};
-    filt(step, y);
+FULL_MATRIX(Butterworth, case_2_100Hz_1000Hz,
+            constfilt::Butterworth<double, 2>(100.0, 1000.0))
 
-    for (unsigned int i = 0; i < 32u; ++i)
-    {
-        EXPECT_NEAR(y[i], Ref::step[i], CONSTFILT_STEP_TOL)
-            << "step[" << i << "] mismatch";
-    }
-}
+FULL_MATRIX(Butterworth, case_4_100Hz_1000Hz,
+            constfilt::Butterworth<double, 4>(100.0, 1000.0))
 
-TEST(Butterworth, N2_fc100_fs1000_RealTime)
-{
-    using Ref = bw_ref::case_2_100Hz_1000Hz;
-    constfilt::Butterworth<double, 2> filt(100.0, 1000.0);
+FULL_MATRIX(Butterworth, case_5_100Hz_1000Hz,
+            constfilt::Butterworth<double, 5>(100.0, 1000.0))
 
-    for (unsigned int i = 0; i < 32u; ++i)
-    {
-        double y = filt(1.0);
-        EXPECT_NEAR(y, Ref::step[i], CONSTFILT_STEP_TOL)
-            << "step[" << i << "] mismatch";
-    }
-}
+FULL_MATRIX(Butterworth, case_6_100Hz_1000Hz,
+            constfilt::Butterworth<double, 6>(100.0, 1000.0))
 
-// --- Case 2: N=4, fc=100Hz, fs=1000Hz ----------------------------------------
+FULL_MATRIX(Butterworth, case_7_100Hz_1000Hz,
+            constfilt::Butterworth<double, 7>(100.0, 1000.0))
 
-TEST(Butterworth, N4_fc100_fs1000_Coefficients)
-{
-    using Ref = bw_ref::case_4_100Hz_1000Hz;
-    static constexpr constfilt::Butterworth<double, 4> filt(100.0, 1000.0);
+FULL_MATRIX(Butterworth, case_8_100Hz_1000Hz,
+            constfilt::Butterworth<double, 8>(100.0, 1000.0))
 
-    for (unsigned int i = 0; i <= 4u; ++i)
-    {
-        EXPECT_NEAR(filt.coeffs_b()[i], Ref::b[i], CONSTFILT_COEFF_TOL)
-            << "b[" << i << "] mismatch";
-        EXPECT_NEAR(filt.coeffs_a()[i], Ref::a[i], CONSTFILT_COEFF_TOL)
-            << "a[" << i << "] mismatch";
-    }
-}
+FULL_MATRIX(Butterworth, case_2_500Hz_8000Hz,
+            constfilt::Butterworth<double, 2>(500.0, 8000.0))
 
-TEST(Butterworth, N4_fc100_fs1000_Batch)
-{
-    using Ref = bw_ref::case_4_100Hz_1000Hz;
-    static constexpr constfilt::Butterworth<double, 4> filt(100.0, 1000.0);
-    double step[32]{};
-    for (unsigned int i = 0; i < 32u; ++i)
-        step[i] = 1.0;
-    double y[32]{};
-    filt(step, y);
+FULL_MATRIX(Butterworth, case_3_200Hz_4000Hz,
+            constfilt::Butterworth<double, 3>(200.0, 4000.0))
 
-    for (unsigned int i = 0; i < 32u; ++i)
-    {
-        EXPECT_NEAR(y[i], Ref::step[i], CONSTFILT_STEP_TOL)
-            << "step[" << i << "] mismatch";
-    }
-}
+// =============================================================================
+// Butterworth high-pass, ZOH discretization
+// =============================================================================
 
-TEST(Butterworth, N4_fc100_fs1000_RealTime)
-{
-    using Ref = bw_ref::case_4_100Hz_1000Hz;
-    constfilt::Butterworth<double, 4> filt(100.0, 1000.0);
+FULL_MATRIX(ButterworthHPF, case_hp_1_100Hz_1000Hz,
+            constfilt::Butterworth<double, 1, constfilt::ZOH,
+                                   constfilt::HighPass>(100.0, 1000.0))
 
-    for (unsigned int i = 0; i < 32u; ++i)
-    {
-        double y = filt(1.0);
-        EXPECT_NEAR(y, Ref::step[i], CONSTFILT_STEP_TOL)
-            << "step[" << i << "] mismatch";
-    }
-}
+FULL_MATRIX(ButterworthHPF, case_hp_2_100Hz_1000Hz,
+            constfilt::Butterworth<double, 2, constfilt::ZOH,
+                                   constfilt::HighPass>(100.0, 1000.0))
 
-// --- Case 3: N=2, fc=500Hz, fs=8000Hz ----------------------------------------
+FULL_MATRIX(ButterworthHPF, case_hp_4_100Hz_1000Hz,
+            constfilt::Butterworth<double, 4, constfilt::ZOH,
+                                   constfilt::HighPass>(100.0, 1000.0))
 
-TEST(Butterworth, N2_fc500_fs8000_Coefficients)
-{
-    using Ref = bw_ref::case_2_500Hz_8000Hz;
-    static constexpr constfilt::Butterworth<double, 2> filt(500.0, 8000.0);
+FULL_MATRIX(ButterworthHPF, case_hp_5_100Hz_1000Hz,
+            constfilt::Butterworth<double, 5, constfilt::ZOH,
+                                   constfilt::HighPass>(100.0, 1000.0))
 
-    for (unsigned int i = 0; i <= 2u; ++i)
-    {
-        EXPECT_NEAR(filt.coeffs_b()[i], Ref::b[i], CONSTFILT_COEFF_TOL)
-            << "b[" << i << "] mismatch";
-        EXPECT_NEAR(filt.coeffs_a()[i], Ref::a[i], CONSTFILT_COEFF_TOL)
-            << "a[" << i << "] mismatch";
-    }
-}
+FULL_MATRIX(ButterworthHPF, case_hp_6_100Hz_1000Hz,
+            constfilt::Butterworth<double, 6, constfilt::ZOH,
+                                   constfilt::HighPass>(100.0, 1000.0))
 
-TEST(Butterworth, N2_fc500_fs8000_RealTime)
-{
-    using Ref = bw_ref::case_2_500Hz_8000Hz;
-    constfilt::Butterworth<double, 2> filt(500.0, 8000.0);
+FULL_MATRIX(ButterworthHPF, case_hp_7_100Hz_1000Hz,
+            constfilt::Butterworth<double, 7, constfilt::ZOH,
+                                   constfilt::HighPass>(100.0, 1000.0))
 
-    for (unsigned int i = 0; i < 32u; ++i)
-    {
-        double y = filt(1.0);
-        EXPECT_NEAR(y, Ref::step[i], CONSTFILT_STEP_TOL)
-            << "step[" << i << "] mismatch";
-    }
-}
+FULL_MATRIX(ButterworthHPF, case_hp_8_100Hz_1000Hz,
+            constfilt::Butterworth<double, 8, constfilt::ZOH,
+                                   constfilt::HighPass>(100.0, 1000.0))
 
-// --- Case 4: N=3, fc=200Hz, fs=4000Hz ----------------------------------------
+FULL_MATRIX(ButterworthHPF, case_hp_2_500Hz_8000Hz,
+            constfilt::Butterworth<double, 2, constfilt::ZOH,
+                                   constfilt::HighPass>(500.0, 8000.0))
 
-TEST(Butterworth, N3_fc200_fs4000_Coefficients)
-{
-    using Ref = bw_ref::case_3_200Hz_4000Hz;
-    static constexpr constfilt::Butterworth<double, 3> filt(200.0, 4000.0);
+FULL_MATRIX(ButterworthHPF, case_hp_3_200Hz_4000Hz,
+            constfilt::Butterworth<double, 3, constfilt::ZOH,
+                                   constfilt::HighPass>(200.0, 4000.0))
 
-    for (unsigned int i = 0; i <= 3u; ++i)
-    {
-        EXPECT_NEAR(filt.coeffs_b()[i], Ref::b[i], CONSTFILT_COEFF_TOL)
-            << "b[" << i << "] mismatch";
-        EXPECT_NEAR(filt.coeffs_a()[i], Ref::a[i], CONSTFILT_COEFF_TOL)
-            << "a[" << i << "] mismatch";
-    }
-}
+// =============================================================================
+// Butterworth high-pass, Matched-Z discretization
+// =============================================================================
+//
+// TODO(issue #16): HP Butterworth has N zeros at s=0 which map to z=1 under
+// matched-Z, but matched_z_discretize hardcodes zeros at z=-1 and ignores
+// finite analog zeros. Strip the DISABLED_ prefix once #16 is fixed.
 
-TEST(Butterworth, N3_fc200_fs4000_RealTime)
-{
-    using Ref = bw_ref::case_3_200Hz_4000Hz;
-    constfilt::Butterworth<double, 3> filt(200.0, 4000.0);
+FULL_MATRIX(DISABLED_ButterworthMatchedZHPF, case_mz_hp_1_100Hz_1000Hz,
+            constfilt::Butterworth<double, 1, constfilt::MatchedZ,
+                                   constfilt::HighPass>(100.0, 1000.0))
 
-    for (unsigned int i = 0; i < 32u; ++i)
-    {
-        double y = filt(1.0);
-        EXPECT_NEAR(y, Ref::step[i], CONSTFILT_STEP_TOL)
-            << "step[" << i << "] mismatch";
-    }
-}
+FULL_MATRIX(DISABLED_ButterworthMatchedZHPF, case_mz_hp_2_100Hz_1000Hz,
+            constfilt::Butterworth<double, 2, constfilt::MatchedZ,
+                                   constfilt::HighPass>(100.0, 1000.0))
 
-// --- HPF: N=2, fc=100Hz, fs=1000Hz -------------------------------------------
+FULL_MATRIX(DISABLED_ButterworthMatchedZHPF, case_mz_hp_4_100Hz_1000Hz,
+            constfilt::Butterworth<double, 4, constfilt::MatchedZ,
+                                   constfilt::HighPass>(100.0, 1000.0))
 
-TEST(ButterworthHPF, N2_fc100_fs1000_Coefficients)
-{
-    using Ref = bw_ref::case_hp_2_100Hz_1000Hz;
-    static constexpr constfilt::Butterworth<double, 2, constfilt::ZOH,
-                                            constfilt::HighPass>
-        filt(100.0, 1000.0);
+FULL_MATRIX(DISABLED_ButterworthMatchedZHPF, case_mz_hp_5_100Hz_1000Hz,
+            constfilt::Butterworth<double, 5, constfilt::MatchedZ,
+                                   constfilt::HighPass>(100.0, 1000.0))
 
-    for (unsigned int i = 0; i <= 2u; ++i)
-    {
-        EXPECT_NEAR(filt.coeffs_b()[i], Ref::b[i], CONSTFILT_COEFF_TOL)
-            << "b[" << i << "] mismatch";
-        EXPECT_NEAR(filt.coeffs_a()[i], Ref::a[i], CONSTFILT_COEFF_TOL)
-            << "a[" << i << "] mismatch";
-    }
-}
+FULL_MATRIX(DISABLED_ButterworthMatchedZHPF, case_mz_hp_6_100Hz_1000Hz,
+            constfilt::Butterworth<double, 6, constfilt::MatchedZ,
+                                   constfilt::HighPass>(100.0, 1000.0))
 
-TEST(ButterworthHPF, N2_fc100_fs1000_RealTime)
-{
-    using Ref = bw_ref::case_hp_2_100Hz_1000Hz;
-    constfilt::Butterworth<double, 2, constfilt::ZOH, constfilt::HighPass> filt(
-        100.0, 1000.0);
+FULL_MATRIX(DISABLED_ButterworthMatchedZHPF, case_mz_hp_7_100Hz_1000Hz,
+            constfilt::Butterworth<double, 7, constfilt::MatchedZ,
+                                   constfilt::HighPass>(100.0, 1000.0))
 
-    for (unsigned int i = 0; i < 32u; ++i)
-    {
-        double y = filt(1.0);
-        EXPECT_NEAR(y, Ref::step[i], CONSTFILT_STEP_TOL)
-            << "step[" << i << "] mismatch";
-    }
-}
+FULL_MATRIX(DISABLED_ButterworthMatchedZHPF, case_mz_hp_8_100Hz_1000Hz,
+            constfilt::Butterworth<double, 8, constfilt::MatchedZ,
+                                   constfilt::HighPass>(100.0, 1000.0))
 
-// --- HPF: N=4, fc=100Hz, fs=1000Hz -------------------------------------------
+FULL_MATRIX(DISABLED_ButterworthMatchedZHPF, case_mz_hp_2_500Hz_8000Hz,
+            constfilt::Butterworth<double, 2, constfilt::MatchedZ,
+                                   constfilt::HighPass>(500.0, 8000.0))
 
-TEST(ButterworthHPF, N4_fc100_fs1000_Coefficients)
-{
-    using Ref = bw_ref::case_hp_4_100Hz_1000Hz;
-    static constexpr constfilt::Butterworth<double, 4, constfilt::ZOH,
-                                            constfilt::HighPass>
-        filt(100.0, 1000.0);
+FULL_MATRIX(DISABLED_ButterworthMatchedZHPF, case_mz_hp_3_200Hz_4000Hz,
+            constfilt::Butterworth<double, 3, constfilt::MatchedZ,
+                                   constfilt::HighPass>(200.0, 4000.0))
 
-    for (unsigned int i = 0; i <= 4u; ++i)
-    {
-        EXPECT_NEAR(filt.coeffs_b()[i], Ref::b[i], CONSTFILT_COEFF_TOL)
-            << "b[" << i << "] mismatch";
-        EXPECT_NEAR(filt.coeffs_a()[i], Ref::a[i], CONSTFILT_COEFF_TOL)
-            << "a[" << i << "] mismatch";
-    }
-}
+// =============================================================================
+// Butterworth low-pass, Matched-Z discretization
+// =============================================================================
 
-TEST(ButterworthHPF, N4_fc100_fs1000_RealTime)
-{
-    using Ref = bw_ref::case_hp_4_100Hz_1000Hz;
-    constfilt::Butterworth<double, 4, constfilt::ZOH, constfilt::HighPass> filt(
-        100.0, 1000.0);
+FULL_MATRIX(ButterworthMatchedZ, case_mz_1_100Hz_1000Hz,
+            constfilt::Butterworth<double, 1, constfilt::MatchedZ>(100.0,
+                                                                   1000.0))
 
-    for (unsigned int i = 0; i < 32u; ++i)
-    {
-        double y = filt(1.0);
-        EXPECT_NEAR(y, Ref::step[i], CONSTFILT_STEP_TOL)
-            << "step[" << i << "] mismatch";
-    }
-}
+FULL_MATRIX(ButterworthMatchedZ, case_mz_2_100Hz_1000Hz,
+            constfilt::Butterworth<double, 2, constfilt::MatchedZ>(100.0,
+                                                                   1000.0))
 
-// --- HPF: N=2, fc=500Hz, fs=8000Hz -------------------------------------------
+FULL_MATRIX(ButterworthMatchedZ, case_mz_4_100Hz_1000Hz,
+            constfilt::Butterworth<double, 4, constfilt::MatchedZ>(100.0,
+                                                                   1000.0))
 
-TEST(ButterworthHPF, N2_fc500_fs8000_Coefficients)
-{
-    using Ref = bw_ref::case_hp_2_500Hz_8000Hz;
-    static constexpr constfilt::Butterworth<double, 2, constfilt::ZOH,
-                                            constfilt::HighPass>
-        filt(500.0, 8000.0);
+FULL_MATRIX(ButterworthMatchedZ, case_mz_5_100Hz_1000Hz,
+            constfilt::Butterworth<double, 5, constfilt::MatchedZ>(100.0,
+                                                                   1000.0))
 
-    for (unsigned int i = 0; i <= 2u; ++i)
-    {
-        EXPECT_NEAR(filt.coeffs_b()[i], Ref::b[i], CONSTFILT_COEFF_TOL)
-            << "b[" << i << "] mismatch";
-        EXPECT_NEAR(filt.coeffs_a()[i], Ref::a[i], CONSTFILT_COEFF_TOL)
-            << "a[" << i << "] mismatch";
-    }
-}
+FULL_MATRIX(ButterworthMatchedZ, case_mz_6_100Hz_1000Hz,
+            constfilt::Butterworth<double, 6, constfilt::MatchedZ>(100.0,
+                                                                   1000.0))
 
-TEST(ButterworthHPF, N2_fc500_fs8000_RealTime)
-{
-    using Ref = bw_ref::case_hp_2_500Hz_8000Hz;
-    constfilt::Butterworth<double, 2, constfilt::ZOH, constfilt::HighPass> filt(
-        500.0, 8000.0);
+FULL_MATRIX(ButterworthMatchedZ, case_mz_7_100Hz_1000Hz,
+            constfilt::Butterworth<double, 7, constfilt::MatchedZ>(100.0,
+                                                                   1000.0))
 
-    for (unsigned int i = 0; i < 32u; ++i)
-    {
-        double y = filt(1.0);
-        EXPECT_NEAR(y, Ref::step[i], CONSTFILT_STEP_TOL)
-            << "step[" << i << "] mismatch";
-    }
-}
+FULL_MATRIX(ButterworthMatchedZ, case_mz_8_100Hz_1000Hz,
+            constfilt::Butterworth<double, 8, constfilt::MatchedZ>(100.0,
+                                                                   1000.0))
 
-// --- HPF: N=3, fc=200Hz, fs=4000Hz -------------------------------------------
+FULL_MATRIX(ButterworthMatchedZ, case_mz_2_500Hz_8000Hz,
+            constfilt::Butterworth<double, 2, constfilt::MatchedZ>(500.0,
+                                                                   8000.0))
 
-TEST(ButterworthHPF, N3_fc200_fs4000_Coefficients)
-{
-    using Ref = bw_ref::case_hp_3_200Hz_4000Hz;
-    static constexpr constfilt::Butterworth<double, 3, constfilt::ZOH,
-                                            constfilt::HighPass>
-        filt(200.0, 4000.0);
-
-    for (unsigned int i = 0; i <= 3u; ++i)
-    {
-        EXPECT_NEAR(filt.coeffs_b()[i], Ref::b[i], CONSTFILT_COEFF_TOL)
-            << "b[" << i << "] mismatch";
-        EXPECT_NEAR(filt.coeffs_a()[i], Ref::a[i], CONSTFILT_COEFF_TOL)
-            << "a[" << i << "] mismatch";
-    }
-}
-
-TEST(ButterworthHPF, N3_fc200_fs4000_RealTime)
-{
-    using Ref = bw_ref::case_hp_3_200Hz_4000Hz;
-    constfilt::Butterworth<double, 3, constfilt::ZOH, constfilt::HighPass> filt(
-        200.0, 4000.0);
-
-    for (unsigned int i = 0; i < 32u; ++i)
-    {
-        double y = filt(1.0);
-        EXPECT_NEAR(y, Ref::step[i], CONSTFILT_STEP_TOL)
-            << "step[" << i << "] mismatch";
-    }
-}
-
-// --- Matched-Z: N=2, fc=100Hz, fs=1000Hz -------------------------------------
-
-TEST(ButterworthMatchedZ, N2_fc100_fs1000_Coefficients)
-{
-    using Ref = bw_ref::case_mz_2_100Hz_1000Hz;
-    static constexpr constfilt::Butterworth<double, 2, constfilt::MatchedZ>
-        filt(100.0, 1000.0);
-
-    for (unsigned int i = 0; i <= 2u; ++i)
-    {
-        EXPECT_NEAR(filt.coeffs_b()[i], Ref::b[i], CONSTFILT_COEFF_TOL)
-            << "b[" << i << "] mismatch";
-        EXPECT_NEAR(filt.coeffs_a()[i], Ref::a[i], CONSTFILT_COEFF_TOL)
-            << "a[" << i << "] mismatch";
-    }
-}
-
-TEST(ButterworthMatchedZ, N2_fc100_fs1000_RealTime)
-{
-    using Ref = bw_ref::case_mz_2_100Hz_1000Hz;
-    constfilt::Butterworth<double, 2, constfilt::MatchedZ> filt(100.0, 1000.0);
-
-    for (unsigned int i = 0; i < 32u; ++i)
-    {
-        double y = filt(1.0);
-        EXPECT_NEAR(y, Ref::step[i], CONSTFILT_STEP_TOL)
-            << "step[" << i << "] mismatch";
-    }
-}
-
-// --- Matched-Z: N=4, fc=100Hz, fs=1000Hz -------------------------------------
-
-TEST(ButterworthMatchedZ, N4_fc100_fs1000_Coefficients)
-{
-    using Ref = bw_ref::case_mz_4_100Hz_1000Hz;
-    static constexpr constfilt::Butterworth<double, 4, constfilt::MatchedZ>
-        filt(100.0, 1000.0);
-
-    for (unsigned int i = 0; i <= 4u; ++i)
-    {
-        EXPECT_NEAR(filt.coeffs_b()[i], Ref::b[i], CONSTFILT_COEFF_TOL)
-            << "b[" << i << "] mismatch";
-        EXPECT_NEAR(filt.coeffs_a()[i], Ref::a[i], CONSTFILT_COEFF_TOL)
-            << "a[" << i << "] mismatch";
-    }
-}
-
-TEST(ButterworthMatchedZ, N4_fc100_fs1000_RealTime)
-{
-    using Ref = bw_ref::case_mz_4_100Hz_1000Hz;
-    constfilt::Butterworth<double, 4, constfilt::MatchedZ> filt(100.0, 1000.0);
-
-    for (unsigned int i = 0; i < 32u; ++i)
-    {
-        double y = filt(1.0);
-        EXPECT_NEAR(y, Ref::step[i], CONSTFILT_STEP_TOL)
-            << "step[" << i << "] mismatch";
-    }
-}
-
-// --- Matched-Z: N=2, fc=500Hz, fs=8000Hz -------------------------------------
-
-TEST(ButterworthMatchedZ, N2_fc500_fs8000_Coefficients)
-{
-    using Ref = bw_ref::case_mz_2_500Hz_8000Hz;
-    static constexpr constfilt::Butterworth<double, 2, constfilt::MatchedZ>
-        filt(500.0, 8000.0);
-
-    for (unsigned int i = 0; i <= 2u; ++i)
-    {
-        EXPECT_NEAR(filt.coeffs_b()[i], Ref::b[i], CONSTFILT_COEFF_TOL)
-            << "b[" << i << "] mismatch";
-        EXPECT_NEAR(filt.coeffs_a()[i], Ref::a[i], CONSTFILT_COEFF_TOL)
-            << "a[" << i << "] mismatch";
-    }
-}
-
-TEST(ButterworthMatchedZ, N2_fc500_fs8000_RealTime)
-{
-    using Ref = bw_ref::case_mz_2_500Hz_8000Hz;
-    constfilt::Butterworth<double, 2, constfilt::MatchedZ> filt(500.0, 8000.0);
-
-    for (unsigned int i = 0; i < 32u; ++i)
-    {
-        double y = filt(1.0);
-        EXPECT_NEAR(y, Ref::step[i], CONSTFILT_STEP_TOL)
-            << "step[" << i << "] mismatch";
-    }
-}
-
-// --- Matched-Z: N=3, fc=200Hz, fs=4000Hz -------------------------------------
-
-TEST(ButterworthMatchedZ, N3_fc200_fs4000_Coefficients)
-{
-    using Ref = bw_ref::case_mz_3_200Hz_4000Hz;
-    static constexpr constfilt::Butterworth<double, 3, constfilt::MatchedZ>
-        filt(200.0, 4000.0);
-
-    for (unsigned int i = 0; i <= 3u; ++i)
-    {
-        EXPECT_NEAR(filt.coeffs_b()[i], Ref::b[i], CONSTFILT_COEFF_TOL)
-            << "b[" << i << "] mismatch";
-        EXPECT_NEAR(filt.coeffs_a()[i], Ref::a[i], CONSTFILT_COEFF_TOL)
-            << "a[" << i << "] mismatch";
-    }
-}
-
-TEST(ButterworthMatchedZ, N3_fc200_fs4000_RealTime)
-{
-    using Ref = bw_ref::case_mz_3_200Hz_4000Hz;
-    constfilt::Butterworth<double, 3, constfilt::MatchedZ> filt(200.0, 4000.0);
-
-    for (unsigned int i = 0; i < 32u; ++i)
-    {
-        double y = filt(1.0);
-        EXPECT_NEAR(y, Ref::step[i], CONSTFILT_STEP_TOL)
-            << "step[" << i << "] mismatch";
-    }
-}
+FULL_MATRIX(ButterworthMatchedZ, case_mz_3_200Hz_4000Hz,
+            constfilt::Butterworth<double, 3, constfilt::MatchedZ>(200.0,
+                                                                   4000.0))

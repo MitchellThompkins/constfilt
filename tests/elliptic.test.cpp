@@ -4,192 +4,130 @@
 #include "test_tools.hpp"
 #include <constfilt/constfilt.hpp>
 
-// --- LP: N=2, Rp=0.5, Rs=40, fc=100Hz, fs=1000Hz ----------------------------
+using namespace el_ref;
 
-TEST(EllipticLP, N2_Rp05_Rs40_fc100_fs1000_Coefficients)
-{
-    using Ref = el_ref::lp_2_5rp_40rs_100Hz_1000Hz;
-    static constexpr constfilt::Elliptic<double, 2> filt(100.0, 0.5, 40.0,
-                                                         1000.0);
+// =============================================================================
+// Elliptic low-pass, ZOH discretization
+// =============================================================================
 
-    for (unsigned int i = 0; i <= 2u; ++i)
-    {
-        EXPECT_NEAR(filt.coeffs_b()[i], Ref::b[i], CONSTFILT_COEFF_TOL)
-            << "b[" << i << "] mismatch";
-        EXPECT_NEAR(filt.coeffs_a()[i], Ref::a[i], CONSTFILT_COEFF_TOL)
-            << "a[" << i << "] mismatch";
-    }
-}
+FULL_MATRIX(EllipticLP, lp_2_5rp_40rs_100Hz_1000Hz,
+            constfilt::Elliptic<double, 2>(100.0, 0.5, 40.0, 1000.0))
 
-TEST(EllipticLP, N2_Rp05_Rs40_fc100_fs1000_Batch)
-{
-    using Ref = el_ref::lp_2_5rp_40rs_100Hz_1000Hz;
-    static constexpr constfilt::Elliptic<double, 2> filt(100.0, 0.5, 40.0,
-                                                         1000.0);
-    double step[32]{};
-    for (unsigned int i = 0; i < 32u; ++i)
-        step[i] = 1.0;
-    double y[32]{};
-    filt(step, y);
+FULL_MATRIX(EllipticLP, lp_4_5rp_40rs_100Hz_1000Hz,
+            constfilt::Elliptic<double, 4>(100.0, 0.5, 40.0, 1000.0))
 
-    for (unsigned int i = 0; i < 32u; ++i)
-    {
-        EXPECT_NEAR(y[i], Ref::step[i], CONSTFILT_STEP_TOL)
-            << "step[" << i << "] mismatch";
-    }
-}
+FULL_MATRIX(EllipticLP, lp_5_5rp_40rs_100Hz_1000Hz,
+            constfilt::Elliptic<double, 5>(100.0, 0.5, 40.0, 1000.0))
 
-TEST(EllipticLP, N2_Rp05_Rs40_fc100_fs1000_RealTime)
-{
-    using Ref = el_ref::lp_2_5rp_40rs_100Hz_1000Hz;
-    constfilt::Elliptic<double, 2> filt(100.0, 0.5, 40.0, 1000.0);
+FULL_MATRIX(EllipticLP, lp_6_5rp_40rs_100Hz_1000Hz,
+            constfilt::Elliptic<double, 6>(100.0, 0.5, 40.0, 1000.0))
 
-    for (unsigned int i = 0; i < 32u; ++i)
-    {
-        double y = filt(1.0);
-        EXPECT_NEAR(y, Ref::step[i], CONSTFILT_STEP_TOL)
-            << "step[" << i << "] mismatch";
-    }
-}
+FULL_MATRIX(EllipticLP, lp_7_5rp_40rs_100Hz_1000Hz,
+            constfilt::Elliptic<double, 7>(100.0, 0.5, 40.0, 1000.0))
 
-// --- LP: N=4, Rp=0.5, Rs=40, fc=100Hz, fs=1000Hz ----------------------------
+FULL_MATRIX(EllipticLP, lp_8_5rp_40rs_100Hz_1000Hz,
+            constfilt::Elliptic<double, 8>(100.0, 0.5, 40.0, 1000.0))
 
-TEST(EllipticLP, N4_Rp05_Rs40_fc100_fs1000_Coefficients)
-{
-    using Ref = el_ref::lp_4_5rp_40rs_100Hz_1000Hz;
-    static constexpr constfilt::Elliptic<double, 4> filt(100.0, 0.5, 40.0,
-                                                         1000.0);
+FULL_MATRIX(EllipticLP, lp_3_10rp_60rs_200Hz_4000Hz,
+            constfilt::Elliptic<double, 3>(200.0, 1.0, 60.0, 4000.0))
 
-    for (unsigned int i = 0; i <= 4u; ++i)
-    {
-        EXPECT_NEAR(filt.coeffs_b()[i], Ref::b[i], CONSTFILT_COEFF_TOL)
-            << "b[" << i << "] mismatch";
-        EXPECT_NEAR(filt.coeffs_a()[i], Ref::a[i], CONSTFILT_COEFF_TOL)
-            << "a[" << i << "] mismatch";
-    }
-}
+// =============================================================================
+// Elliptic high-pass, ZOH discretization
+// =============================================================================
 
-TEST(EllipticLP, N4_Rp05_Rs40_fc100_fs1000_Batch)
-{
-    using Ref = el_ref::lp_4_5rp_40rs_100Hz_1000Hz;
-    static constexpr constfilt::Elliptic<double, 4> filt(100.0, 0.5, 40.0,
-                                                         1000.0);
-    double step[32]{};
-    for (unsigned int i = 0; i < 32u; ++i)
-        step[i] = 1.0;
-    double y[32]{};
-    filt(step, y);
+FULL_MATRIX(EllipticHP, hp_2_5rp_40rs_100Hz_1000Hz,
+            constfilt::Elliptic<double, 2, constfilt::ZOH, constfilt::HighPass>(
+                100.0, 0.5, 40.0, 1000.0))
 
-    for (unsigned int i = 0; i < 32u; ++i)
-    {
-        EXPECT_NEAR(y[i], Ref::step[i], CONSTFILT_STEP_TOL)
-            << "step[" << i << "] mismatch";
-    }
-}
+FULL_MATRIX(EllipticHP, hp_4_5rp_40rs_100Hz_1000Hz,
+            constfilt::Elliptic<double, 4, constfilt::ZOH, constfilt::HighPass>(
+                100.0, 0.5, 40.0, 1000.0))
 
-TEST(EllipticLP, N4_Rp05_Rs40_fc100_fs1000_RealTime)
-{
-    using Ref = el_ref::lp_4_5rp_40rs_100Hz_1000Hz;
-    constfilt::Elliptic<double, 4> filt(100.0, 0.5, 40.0, 1000.0);
+FULL_MATRIX(EllipticHP, hp_5_5rp_40rs_100Hz_1000Hz,
+            constfilt::Elliptic<double, 5, constfilt::ZOH, constfilt::HighPass>(
+                100.0, 0.5, 40.0, 1000.0))
 
-    for (unsigned int i = 0; i < 32u; ++i)
-    {
-        double y = filt(1.0);
-        EXPECT_NEAR(y, Ref::step[i], CONSTFILT_STEP_TOL)
-            << "step[" << i << "] mismatch";
-    }
-}
+FULL_MATRIX(EllipticHP, hp_6_5rp_40rs_100Hz_1000Hz,
+            constfilt::Elliptic<double, 6, constfilt::ZOH, constfilt::HighPass>(
+                100.0, 0.5, 40.0, 1000.0))
 
-// --- LP: N=3, Rp=1.0, Rs=60, fc=200Hz, fs=4000Hz ----------------------------
+FULL_MATRIX(EllipticHP, hp_7_5rp_40rs_100Hz_1000Hz,
+            constfilt::Elliptic<double, 7, constfilt::ZOH, constfilt::HighPass>(
+                100.0, 0.5, 40.0, 1000.0))
 
-TEST(EllipticLP, N3_Rp10_Rs60_fc200_fs4000_Coefficients)
-{
-    using Ref = el_ref::lp_3_10rp_60rs_200Hz_4000Hz;
-    static constexpr constfilt::Elliptic<double, 3> filt(200.0, 1.0, 60.0,
-                                                         4000.0);
+FULL_MATRIX(EllipticHP, hp_8_5rp_40rs_100Hz_1000Hz,
+            constfilt::Elliptic<double, 8, constfilt::ZOH, constfilt::HighPass>(
+                100.0, 0.5, 40.0, 1000.0))
 
-    for (unsigned int i = 0; i <= 3u; ++i)
-    {
-        EXPECT_NEAR(filt.coeffs_b()[i], Ref::b[i], CONSTFILT_COEFF_TOL)
-            << "b[" << i << "] mismatch";
-        EXPECT_NEAR(filt.coeffs_a()[i], Ref::a[i], CONSTFILT_COEFF_TOL)
-            << "a[" << i << "] mismatch";
-    }
-}
+FULL_MATRIX(EllipticHP, hp_3_10rp_60rs_200Hz_4000Hz,
+            constfilt::Elliptic<double, 3, constfilt::ZOH, constfilt::HighPass>(
+                200.0, 1.0, 60.0, 4000.0))
 
-TEST(EllipticLP, N3_Rp10_Rs60_fc200_fs4000_RealTime)
-{
-    using Ref = el_ref::lp_3_10rp_60rs_200Hz_4000Hz;
-    constfilt::Elliptic<double, 3> filt(200.0, 1.0, 60.0, 4000.0);
+// =============================================================================
+// Elliptic + Matched-Z discretization
+// =============================================================================
+//
+// TODO(issue #16): matched_z_discretize hardcodes the discrete numerator as
+// (z+1)^(N-1) and ignores the analog system's finite zeros. Elliptic has
+// imaginary-axis zeros, so MatchedZ produces incorrect output. The reference
+// data in elliptic_reference.hpp (lp_mz_*, hp_mz_*) is correct -- it is
+// generated by Octave's matched-Z, which maps both poles AND zeros via
+// z = exp(s*Ts). Once #16 is fixed in include/constfilt/discretize.hpp,
+// strip the DISABLED_ prefix from the suite names below and these tests will
+// activate against the existing reference data.
 
-    for (unsigned int i = 0; i < 32u; ++i)
-    {
-        double y = filt(1.0);
-        EXPECT_NEAR(y, Ref::step[i], CONSTFILT_STEP_TOL)
-            << "step[" << i << "] mismatch";
-    }
-}
+FULL_MATRIX(DISABLED_EllipticLPMatchedZ, lp_mz_2_5rp_40rs_100Hz_1000Hz,
+            constfilt::Elliptic<double, 2, constfilt::MatchedZ>(100.0, 0.5,
+                                                                40.0, 1000.0))
 
-// --- HP: N=2, Rp=0.5, Rs=40, fc=100Hz, fs=1000Hz ----------------------------
+FULL_MATRIX(DISABLED_EllipticLPMatchedZ, lp_mz_4_5rp_40rs_100Hz_1000Hz,
+            constfilt::Elliptic<double, 4, constfilt::MatchedZ>(100.0, 0.5,
+                                                                40.0, 1000.0))
 
-TEST(EllipticHP, N2_Rp05_Rs40_fc100_fs1000_Coefficients)
-{
-    using Ref = el_ref::hp_2_5rp_40rs_100Hz_1000Hz;
-    static constexpr constfilt::Elliptic<double, 2, constfilt::ZOH,
-                                         constfilt::HighPass>
-        filt(100.0, 0.5, 40.0, 1000.0);
+FULL_MATRIX(DISABLED_EllipticLPMatchedZ, lp_mz_5_5rp_40rs_100Hz_1000Hz,
+            constfilt::Elliptic<double, 5, constfilt::MatchedZ>(100.0, 0.5,
+                                                                40.0, 1000.0))
 
-    for (unsigned int i = 0; i <= 2u; ++i)
-    {
-        EXPECT_NEAR(filt.coeffs_b()[i], Ref::b[i], CONSTFILT_COEFF_TOL)
-            << "b[" << i << "] mismatch";
-        EXPECT_NEAR(filt.coeffs_a()[i], Ref::a[i], CONSTFILT_COEFF_TOL)
-            << "a[" << i << "] mismatch";
-    }
-}
+FULL_MATRIX(DISABLED_EllipticLPMatchedZ, lp_mz_6_5rp_40rs_100Hz_1000Hz,
+            constfilt::Elliptic<double, 6, constfilt::MatchedZ>(100.0, 0.5,
+                                                                40.0, 1000.0))
 
-TEST(EllipticHP, N2_Rp05_Rs40_fc100_fs1000_RealTime)
-{
-    using Ref = el_ref::hp_2_5rp_40rs_100Hz_1000Hz;
-    constfilt::Elliptic<double, 2, constfilt::ZOH, constfilt::HighPass> filt(
-        100.0, 0.5, 40.0, 1000.0);
+FULL_MATRIX(DISABLED_EllipticLPMatchedZ, lp_mz_7_5rp_40rs_100Hz_1000Hz,
+            constfilt::Elliptic<double, 7, constfilt::MatchedZ>(100.0, 0.5,
+                                                                40.0, 1000.0))
 
-    for (unsigned int i = 0; i < 32u; ++i)
-    {
-        double y = filt(1.0);
-        EXPECT_NEAR(y, Ref::step[i], CONSTFILT_STEP_TOL)
-            << "step[" << i << "] mismatch";
-    }
-}
+FULL_MATRIX(DISABLED_EllipticLPMatchedZ, lp_mz_8_5rp_40rs_100Hz_1000Hz,
+            constfilt::Elliptic<double, 8, constfilt::MatchedZ>(100.0, 0.5,
+                                                                40.0, 1000.0))
 
-// --- HP: N=3, Rp=1.0, Rs=60, fc=200Hz, fs=4000Hz ----------------------------
+FULL_MATRIX(DISABLED_EllipticLPMatchedZ, lp_mz_3_10rp_60rs_200Hz_4000Hz,
+            constfilt::Elliptic<double, 3, constfilt::MatchedZ>(200.0, 1.0,
+                                                                60.0, 4000.0))
 
-TEST(EllipticHP, N3_Rp10_Rs60_fc200_fs4000_Coefficients)
-{
-    using Ref = el_ref::hp_3_10rp_60rs_200Hz_4000Hz;
-    static constexpr constfilt::Elliptic<double, 3, constfilt::ZOH,
-                                         constfilt::HighPass>
-        filt(200.0, 1.0, 60.0, 4000.0);
+FULL_MATRIX(DISABLED_EllipticHPMatchedZ, hp_mz_2_5rp_40rs_100Hz_1000Hz,
+            constfilt::Elliptic<double, 2, constfilt::MatchedZ,
+                                constfilt::HighPass>(100.0, 0.5, 40.0, 1000.0))
 
-    for (unsigned int i = 0; i <= 3u; ++i)
-    {
-        EXPECT_NEAR(filt.coeffs_b()[i], Ref::b[i], CONSTFILT_COEFF_TOL)
-            << "b[" << i << "] mismatch";
-        EXPECT_NEAR(filt.coeffs_a()[i], Ref::a[i], CONSTFILT_COEFF_TOL)
-            << "a[" << i << "] mismatch";
-    }
-}
+FULL_MATRIX(DISABLED_EllipticHPMatchedZ, hp_mz_4_5rp_40rs_100Hz_1000Hz,
+            constfilt::Elliptic<double, 4, constfilt::MatchedZ,
+                                constfilt::HighPass>(100.0, 0.5, 40.0, 1000.0))
 
-TEST(EllipticHP, N3_Rp10_Rs60_fc200_fs4000_RealTime)
-{
-    using Ref = el_ref::hp_3_10rp_60rs_200Hz_4000Hz;
-    constfilt::Elliptic<double, 3, constfilt::ZOH, constfilt::HighPass> filt(
-        200.0, 1.0, 60.0, 4000.0);
+FULL_MATRIX(DISABLED_EllipticHPMatchedZ, hp_mz_5_5rp_40rs_100Hz_1000Hz,
+            constfilt::Elliptic<double, 5, constfilt::MatchedZ,
+                                constfilt::HighPass>(100.0, 0.5, 40.0, 1000.0))
 
-    for (unsigned int i = 0; i < 32u; ++i)
-    {
-        double y = filt(1.0);
-        EXPECT_NEAR(y, Ref::step[i], CONSTFILT_STEP_TOL)
-            << "step[" << i << "] mismatch";
-    }
-}
+FULL_MATRIX(DISABLED_EllipticHPMatchedZ, hp_mz_6_5rp_40rs_100Hz_1000Hz,
+            constfilt::Elliptic<double, 6, constfilt::MatchedZ,
+                                constfilt::HighPass>(100.0, 0.5, 40.0, 1000.0))
+
+FULL_MATRIX(DISABLED_EllipticHPMatchedZ, hp_mz_7_5rp_40rs_100Hz_1000Hz,
+            constfilt::Elliptic<double, 7, constfilt::MatchedZ,
+                                constfilt::HighPass>(100.0, 0.5, 40.0, 1000.0))
+
+FULL_MATRIX(DISABLED_EllipticHPMatchedZ, hp_mz_8_5rp_40rs_100Hz_1000Hz,
+            constfilt::Elliptic<double, 8, constfilt::MatchedZ,
+                                constfilt::HighPass>(100.0, 0.5, 40.0, 1000.0))
+
+FULL_MATRIX(DISABLED_EllipticHPMatchedZ, hp_mz_3_10rp_60rs_200Hz_4000Hz,
+            constfilt::Elliptic<double, 3, constfilt::MatchedZ,
+                                constfilt::HighPass>(200.0, 1.0, 60.0, 4000.0))

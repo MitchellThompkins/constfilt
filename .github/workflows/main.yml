@@ -46,3 +46,30 @@ jobs:
 
       - name: Build and test
         run: make test.${{ matrix.compiler }}
+
+  cross-compile:
+    name: cross.${{ matrix.target }}
+    needs: lint
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/mitchellthompkins/consteig_dev_image:latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [arm-gcc, arm-clang]
+    steps:
+      - name: Checkout
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git init .
+          git remote add origin "$(echo "$GITHUB_SERVER_URL" | sed 's|://|://x-access-token:'"$TOKEN"'@|')/$GITHUB_REPOSITORY"
+          git fetch --depth=1 origin "$GITHUB_SHA"
+          git checkout FETCH_HEAD
+
+      - name: Checkout consteig dependency
+        run: git clone --depth=1 --recurse-submodules https://github.com/mitchellthompkins/consteig ../consteig
+
+      - name: Cross-compile (static_assert is the test)
+        run: make cross.${{ matrix.target }}

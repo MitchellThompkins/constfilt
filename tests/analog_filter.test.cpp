@@ -4,6 +4,8 @@
 #include "test_tools.hpp"
 #include <constfilt/constfilt.hpp>
 
+using namespace ctf_ref;
+
 namespace
 {
 
@@ -150,127 +152,27 @@ TEST(Stability, UnstableSystem_RepeatedImaginaryAxisPole)
     EXPECT_EQ(stab, constfilt::Stability::Unstable);
 }
 
-// --- AnalogFilter: 1st-order, ZOH, coefficients
-// ---------------------------------
+// --- AnalogFilter: full matrix per case
+// -------------------------------------
+// Each FULL_MATRIX expansion generates 8 tests: Coefficients, Batch_Step,
+// RealTime_Step, Batch_Impulse, RealTime_Impulse, Batch_Chirp, RealTime_Chirp,
+// Batch_RealTime_Equivalence.
 
-TEST(AnalogFilter, Case1_ZOH_Coefficients)
-{
-    using Ref = ctf_ref::case_1_zoh_fs10;
-    static constexpr constfilt::AnalogFilter<double, 1u> filt(
-        Ref::b_s, Ref::a_s, Ref::sample_rate_hz);
+FULL_MATRIX(AnalogFilter, case_1_zoh_fs10,
+            constfilt::AnalogFilter<double, 1u>(Ref::b_s, Ref::a_s,
+                                                Ref::sample_rate_hz))
 
-    EXPECT_NEAR(filt.coeffs_b()[0], Ref::b[0], CONSTFILT_COEFF_TOL);
-    EXPECT_NEAR(filt.coeffs_b()[1], Ref::b[1], CONSTFILT_COEFF_TOL);
-    EXPECT_NEAR(filt.coeffs_a()[0], Ref::a[0], CONSTFILT_COEFF_TOL);
-    EXPECT_NEAR(filt.coeffs_a()[1], Ref::a[1], CONSTFILT_COEFF_TOL);
-}
+FULL_MATRIX(AnalogFilter, case_2_zoh_fs10,
+            constfilt::AnalogFilter<double, 2u>(Ref::b_s, Ref::a_s,
+                                                Ref::sample_rate_hz))
 
-TEST(AnalogFilter, Case1_ZOH_StepResponse)
-{
-    using Ref = ctf_ref::case_1_zoh_fs10;
-    constfilt::AnalogFilter<double, 1u> filt(Ref::b_s, Ref::a_s,
-                                             Ref::sample_rate_hz);
+FULL_MATRIX(AnalogFilter, case_3_proper_zoh_fs10,
+            constfilt::AnalogFilter<double, 1u>(Ref::b_s, Ref::a_s,
+                                                Ref::sample_rate_hz))
 
-    for (unsigned int i = 0; i < 32u; ++i)
-    {
-        double y = filt(1.0);
-        EXPECT_NEAR(y, Ref::step[i], CONSTFILT_STEP_TOL)
-            << "step[" << i << "] mismatch";
-    }
-}
-
-// --- AnalogFilter: 2nd-order, ZOH, coefficients and step response
-// ---------------
-
-TEST(AnalogFilter, Case2_ZOH_Coefficients)
-{
-    using Ref = ctf_ref::case_2_zoh_fs10;
-    static constexpr constfilt::AnalogFilter<double, 2u> filt(
-        Ref::b_s, Ref::a_s, Ref::sample_rate_hz);
-
-    for (unsigned int i = 0; i <= 2u; ++i)
-    {
-        EXPECT_NEAR(filt.coeffs_b()[i], Ref::b[i], CONSTFILT_COEFF_TOL)
-            << "b[" << i << "] mismatch";
-        EXPECT_NEAR(filt.coeffs_a()[i], Ref::a[i], CONSTFILT_COEFF_TOL)
-            << "a[" << i << "] mismatch";
-    }
-}
-
-TEST(AnalogFilter, Case2_ZOH_StepResponse)
-{
-    using Ref = ctf_ref::case_2_zoh_fs10;
-    constfilt::AnalogFilter<double, 2u> filt(Ref::b_s, Ref::a_s,
-                                             Ref::sample_rate_hz);
-
-    for (unsigned int i = 0; i < 32u; ++i)
-    {
-        double y = filt(1.0);
-        EXPECT_NEAR(y, Ref::step[i], CONSTFILT_STEP_TOL)
-            << "step[" << i << "] mismatch";
-    }
-}
-
-// --- AnalogFilter: proper TF (D != 0), ZOH
-// --------------------------------------
-
-TEST(AnalogFilter, Case3_Proper_ZOH_Coefficients)
-{
-    using Ref = ctf_ref::case_3_proper_zoh_fs10;
-    static constexpr constfilt::AnalogFilter<double, 1u> filt(
-        Ref::b_s, Ref::a_s, Ref::sample_rate_hz);
-
-    EXPECT_NEAR(filt.coeffs_b()[0], Ref::b[0], CONSTFILT_COEFF_TOL);
-    EXPECT_NEAR(filt.coeffs_b()[1], Ref::b[1], CONSTFILT_COEFF_TOL);
-    EXPECT_NEAR(filt.coeffs_a()[0], Ref::a[0], CONSTFILT_COEFF_TOL);
-    EXPECT_NEAR(filt.coeffs_a()[1], Ref::a[1], CONSTFILT_COEFF_TOL);
-}
-
-TEST(AnalogFilter, Case3_Proper_ZOH_StepResponse)
-{
-    using Ref = ctf_ref::case_3_proper_zoh_fs10;
-    constfilt::AnalogFilter<double, 1u> filt(Ref::b_s, Ref::a_s,
-                                             Ref::sample_rate_hz);
-
-    for (unsigned int i = 0; i < 32u; ++i)
-    {
-        double y = filt(1.0);
-        EXPECT_NEAR(y, Ref::step[i], CONSTFILT_STEP_TOL)
-            << "step[" << i << "] mismatch";
-    }
-}
-
-// --- AnalogFilter: 2nd-order MatchedZ
-// -------------------------------------------
-
-TEST(AnalogFilter, Case4_MatchedZ_Coefficients)
-{
-    using Ref = ctf_ref::case_4_mz_fs10;
-    static constexpr constfilt::AnalogFilter<double, 2u, constfilt::MatchedZ>
-        filt(Ref::b_s, Ref::a_s, Ref::sample_rate_hz);
-
-    for (unsigned int i = 0; i <= 2u; ++i)
-    {
-        EXPECT_NEAR(filt.coeffs_b()[i], Ref::b[i], CONSTFILT_COEFF_TOL)
-            << "b[" << i << "] mismatch";
-        EXPECT_NEAR(filt.coeffs_a()[i], Ref::a[i], CONSTFILT_COEFF_TOL)
-            << "a[" << i << "] mismatch";
-    }
-}
-
-TEST(AnalogFilter, Case4_MatchedZ_StepResponse)
-{
-    using Ref = ctf_ref::case_4_mz_fs10;
-    constfilt::AnalogFilter<double, 2u, constfilt::MatchedZ> filt(
-        Ref::b_s, Ref::a_s, Ref::sample_rate_hz);
-
-    for (unsigned int i = 0; i < 32u; ++i)
-    {
-        double y = filt(1.0);
-        EXPECT_NEAR(y, Ref::step[i], CONSTFILT_STEP_TOL)
-            << "step[" << i << "] mismatch";
-    }
-}
+FULL_MATRIX(AnalogFilter, case_4_mz_fs10,
+            constfilt::AnalogFilter<double, 2u, constfilt::MatchedZ>(
+                Ref::b_s, Ref::a_s, Ref::sample_rate_hz))
 
 // --- AnalogFilter: stability check disabled allows unstable filter
 // ---------------

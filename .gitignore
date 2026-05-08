@@ -1,7 +1,5 @@
 # Build directories
-build/
-build-gcc/
-build-clang/
+build*/
 
 # CMake
 compile_commands.json

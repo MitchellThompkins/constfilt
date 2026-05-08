@@ -80,44 +80,40 @@ FULL_MATRIX(ButterworthHPF, case_hp_3_200Hz_4000Hz,
 // =============================================================================
 // Butterworth high-pass, Matched-Z discretization
 // =============================================================================
-//
-// TODO(issue #16): HP Butterworth has N zeros at s=0 which map to z=1 under
-// matched-Z, but matched_z_discretize hardcodes zeros at z=-1 and ignores
-// finite analog zeros. Strip the DISABLED_ prefix once #16 is fixed.
 
-FULL_MATRIX(DISABLED_ButterworthMatchedZHPF, case_mz_hp_1_100Hz_1000Hz,
+FULL_MATRIX(ButterworthMatchedZHPF, case_mz_hp_1_100Hz_1000Hz,
             constfilt::Butterworth<double, 1, constfilt::MatchedZ,
                                    constfilt::HighPass>(100.0, 1000.0))
 
-FULL_MATRIX(DISABLED_ButterworthMatchedZHPF, case_mz_hp_2_100Hz_1000Hz,
+FULL_MATRIX(ButterworthMatchedZHPF, case_mz_hp_2_100Hz_1000Hz,
             constfilt::Butterworth<double, 2, constfilt::MatchedZ,
                                    constfilt::HighPass>(100.0, 1000.0))
 
-FULL_MATRIX(DISABLED_ButterworthMatchedZHPF, case_mz_hp_4_100Hz_1000Hz,
+FULL_MATRIX(ButterworthMatchedZHPF, case_mz_hp_4_100Hz_1000Hz,
             constfilt::Butterworth<double, 4, constfilt::MatchedZ,
                                    constfilt::HighPass>(100.0, 1000.0))
 
-FULL_MATRIX(DISABLED_ButterworthMatchedZHPF, case_mz_hp_5_100Hz_1000Hz,
+FULL_MATRIX(ButterworthMatchedZHPF, case_mz_hp_5_100Hz_1000Hz,
             constfilt::Butterworth<double, 5, constfilt::MatchedZ,
                                    constfilt::HighPass>(100.0, 1000.0))
 
-FULL_MATRIX(DISABLED_ButterworthMatchedZHPF, case_mz_hp_6_100Hz_1000Hz,
+FULL_MATRIX(ButterworthMatchedZHPF, case_mz_hp_6_100Hz_1000Hz,
             constfilt::Butterworth<double, 6, constfilt::MatchedZ,
                                    constfilt::HighPass>(100.0, 1000.0))
 
-FULL_MATRIX(DISABLED_ButterworthMatchedZHPF, case_mz_hp_7_100Hz_1000Hz,
+FULL_MATRIX(ButterworthMatchedZHPF, case_mz_hp_7_100Hz_1000Hz,
             constfilt::Butterworth<double, 7, constfilt::MatchedZ,
                                    constfilt::HighPass>(100.0, 1000.0))
 
-FULL_MATRIX(DISABLED_ButterworthMatchedZHPF, case_mz_hp_8_100Hz_1000Hz,
+FULL_MATRIX(ButterworthMatchedZHPF, case_mz_hp_8_100Hz_1000Hz,
             constfilt::Butterworth<double, 8, constfilt::MatchedZ,
                                    constfilt::HighPass>(100.0, 1000.0))
 
-FULL_MATRIX(DISABLED_ButterworthMatchedZHPF, case_mz_hp_2_500Hz_8000Hz,
+FULL_MATRIX(ButterworthMatchedZHPF, case_mz_hp_2_500Hz_8000Hz,
             constfilt::Butterworth<double, 2, constfilt::MatchedZ,
                                    constfilt::HighPass>(500.0, 8000.0))
 
-FULL_MATRIX(DISABLED_ButterworthMatchedZHPF, case_mz_hp_3_200Hz_4000Hz,
+FULL_MATRIX(ButterworthMatchedZHPF, case_mz_hp_3_200Hz_4000Hz,
             constfilt::Butterworth<double, 3, constfilt::MatchedZ,
                                    constfilt::HighPass>(200.0, 4000.0))
 

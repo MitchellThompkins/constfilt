@@ -309,10 +309,206 @@ constexpr StateSpace<T, N> tf_to_ss(const T (&b)[N + 1u], const T (&a)[N + 1u])
     return sys;
 }
 
-// --------------------------- analog_to_digital
-// --------------------------------
+// --- Matched-Z discretization (TF entry point) ------------------------------
 
-// Discretize a continuous-time state-space via ZOH and extract the (b, a) TF.
+// Full matched-Z from analog transfer function coefficients.
+// Maps each finite analog zero via z = exp(s*Ts), pads with zeros at z = -1
+// for strictly proper systems, and matches gain at a test frequency w_c.
+// Reference: Octave control pkg @tf/__c2d__.m, lines 32-66.
+template <typename T, consteig::Size N>
+constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_discretize_tf(
+    const T (&b_c)[N + 1u], const T (&a_c)[N + 1u], T Ts, MatchedZ /*tag*/)
+{
+    using Cx = consteig::Complex<T>;
+
+    // Step 1: count leading zeros in b_c; derive nz (finite analog zero count).
+    consteig::Size d_b = 0;
+    while (d_b <= N && b_c[d_b] == static_cast<T>(0))
+        ++d_b;
+    const consteig::Size nz = (d_b > N) ? 0u : N - d_b;
+
+    // Step 2: continuous leading-coefficient gain.
+    const T k_c = (d_b > N) ? static_cast<T>(0) : b_c[d_b] / a_c[0];
+
+    // Step 3: find analog poles (roots of a_c) via companion matrix.
+    // consteig exposes eigenvalues, not polynomial roots; a companion matrix
+    // has eigenvalues equal to the polynomial roots by construction.
+    consteig::Matrix<T, N, N> A_pole{};
+    for (consteig::Size i = 0; i < N - 1u; ++i)
+        A_pole(i + 1u, i) = static_cast<T>(1);
+    for (consteig::Size i = 0; i < N; ++i)
+        A_pole(i, N - 1u) = -(a_c[N - i] / a_c[0]);
+    const auto p_c_evals = consteig::eigenvalues(A_pole);
+
+    // Step 4: map poles to z-domain; build monic denominator polynomial.
+    Cx p_d_vals[N]{};
+    Cx pole_poly[N + 1u]{};
+    pole_poly[0] = Cx{static_cast<T>(1), static_cast<T>(0)};
+    for (consteig::Size k = 0; k < N; ++k)
+    {
+        p_d_vals[k] =
+            consteig::exp(p_c_evals(k, 0) * Cx{Ts, static_cast<T>(0)});
+        const Cx zk = p_d_vals[k];
+        pole_poly[k + 1u] =
+            Cx{static_cast<T>(0), static_cast<T>(0)} - zk * pole_poly[k];
+        for (consteig::Size i = k; i > 0u; --i)
+            pole_poly[i] = pole_poly[i] - zk * pole_poly[i - 1u];
+    }
+
+    // Steps 5-7: find analog zeros (roots of b_c) via companion matrix,
+    // same trick as above. Embedded in NxN so consteig::eigenvalues can be
+    // called with a fixed size; the top-left nz x nz block holds the actual
+    // companion, the remaining entries are 0, producing d_b spurious
+    // eigenvalues at the origin that are discarded afterward.
+    Cx z_c_finite[N]{};
+    Cx z_d_finite[N]{};
+    Cx zero_poly[N + 1u]{};
+    zero_poly[0] = Cx{static_cast<T>(1), static_cast<T>(0)};
+
+    if (nz > 0u)
+    {
+        consteig::Matrix<T, N, N> A_zero{};
+        for (consteig::Size i = 0; i + 1u < nz; ++i)
+            A_zero(i + 1u, i) = static_cast<T>(1);
+        for (consteig::Size i = 0; i < nz; ++i)
+            A_zero(i, nz - 1u) = -(b_c[d_b + (nz - i)] / b_c[d_b]);
+        const auto z_c_evals = consteig::eigenvalues(A_zero);
+
+        // Mark d_b spurious eigenvalues (smallest magnitude = from zero block).
+        bool spurious[N]{};
+        for (consteig::Size m = 0; m < d_b; ++m)
+        {
+            consteig::Size min_idx = 0;
+            T min_mag_sq = static_cast<T>(-1);
+            for (consteig::Size i = 0; i < N; ++i)
+            {
+                if (!spurious[i])
+                {
+                    const T mag_sq =
+                        z_c_evals(i, 0).real * z_c_evals(i, 0).real +
+                        z_c_evals(i, 0).imag * z_c_evals(i, 0).imag;
+                    if (min_mag_sq < static_cast<T>(0) || mag_sq < min_mag_sq)
+                    {
+                        min_mag_sq = mag_sq;
+                        min_idx = i;
+                    }
+                }
+            }
+            spurious[min_idx] = true;
+        }
+
+        // Collect finite zeros and build zero polynomial prod(z - z_d_k).
+        consteig::Size nz_cnt = 0u;
+        for (consteig::Size k = 0; k < N; ++k)
+        {
+            if (!spurious[k])
+            {
+                z_c_finite[nz_cnt] = z_c_evals(k, 0);
+                z_d_finite[nz_cnt] =
+                    consteig::exp(z_c_evals(k, 0) * Cx{Ts, static_cast<T>(0)});
+                const Cx zk = z_d_finite[nz_cnt];
+                zero_poly[nz_cnt + 1u] =
+                    Cx{static_cast<T>(0), static_cast<T>(0)} -
+                    zk * zero_poly[nz_cnt];
+                for (consteig::Size i = nz_cnt; i > 0u; --i)
+                    zero_poly[i] = zero_poly[i] - zk * zero_poly[i - 1u];
+                ++nz_cnt;
+            }
+        }
+    }
+
+    // Step 8: pad with zeros at z = -1 to reach numerator degree N-1.
+    const consteig::Size n_extra = (nz + 1u < N) ? (N - nz - 1u) : 0u;
+    for (consteig::Size e = 0; e < n_extra; ++e)
+    {
+        const consteig::Size cur_deg = nz + e;
+        zero_poly[cur_deg + 1u] = zero_poly[cur_deg + 1u] + zero_poly[cur_deg];
+        for (consteig::Size i = cur_deg; i > 0u; --i)
+            zero_poly[i] = zero_poly[i] + zero_poly[i - 1u];
+    }
+    const consteig::Size num_deg = nz + n_extra;
+
+    // Step 9: find matching frequency w_c (avoid collision with poles/zeros).
+    const T tol = static_cast<T>(1.49e-8);
+    T w_c = static_cast<T>(0);
+    for (consteig::Size attempt = 0; attempt < 1000u; ++attempt)
+    {
+        bool collision = false;
+        for (consteig::Size i = 0; i < N && !collision; ++i)
+        {
+            const T dr = w_c - p_c_evals(i, 0).real;
+            const T di = p_c_evals(i, 0).imag;
+            if (dr * dr + di * di < tol * tol)
+                collision = true;
+        }
+        for (consteig::Size i = 0; i < nz && !collision; ++i)
+        {
+            const T dr = w_c - z_c_finite[i].real;
+            const T di = z_c_finite[i].imag;
+            if (dr * dr + di * di < tol * tol)
+                collision = true;
+        }
+        if (!collision)
+            break;
+        w_c += static_cast<T>(0.1) / Ts;
+    }
+
+    // Step 10: compute discrete gain k_d matching H_d(w_d) = H_c(w_c).
+    const Cx w_c_cx{w_c, static_cast<T>(0)};
+    const Cx w_d_cx = consteig::exp(w_c_cx * Cx{Ts, static_cast<T>(0)});
+
+    Cx num_c_cx{static_cast<T>(1), static_cast<T>(0)};
+    for (consteig::Size i = 0; i < nz; ++i)
+        num_c_cx = num_c_cx * (w_c_cx - z_c_finite[i]);
+
+    Cx den_c_cx{static_cast<T>(1), static_cast<T>(0)};
+    for (consteig::Size i = 0; i < N; ++i)
+        den_c_cx = den_c_cx * (w_c_cx - p_c_evals(i, 0));
+
+    Cx num_d_cx{static_cast<T>(1), static_cast<T>(0)};
+    for (consteig::Size i = 0; i < N; ++i)
+        num_d_cx = num_d_cx * (w_d_cx - p_d_vals[i]);
+
+    Cx den_d_cx{static_cast<T>(1), static_cast<T>(0)};
+    for (consteig::Size i = 0; i < nz; ++i)
+        den_d_cx = den_d_cx * (w_d_cx - z_d_finite[i]);
+    for (consteig::Size e = 0; e < n_extra; ++e)
+        den_d_cx =
+            den_d_cx * (w_d_cx - Cx{static_cast<T>(-1), static_cast<T>(0)});
+
+    const Cx gain_num = Cx{k_c, static_cast<T>(0)} * num_c_cx * num_d_cx;
+    const Cx gain_den = den_c_cx * den_d_cx;
+    const T gain_den_sq =
+        gain_den.real * gain_den.real + gain_den.imag * gain_den.imag;
+    const T k_d =
+        (gain_num.real * gain_den.real + gain_num.imag * gain_den.imag) /
+        gain_den_sq;
+
+    // Step 11: assemble output TF.
+    TransferFunction<T, N + 1u, N + 1u> tf{};
+    for (consteig::Size i = 0; i <= N; ++i)
+        tf.a[i] = pole_poly[i].real;
+    const consteig::Size pad = N - num_deg;
+    for (consteig::Size i = 0; i <= num_deg; ++i)
+        tf.b[pad + i] = k_d * zero_poly[i].real;
+
+    return tf;
+}
+
+// Backward-compatible wrapper: recovers (b_c, a_c) from SS and delegates.
+template <typename T, consteig::Size N>
+constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_discretize(
+    const StateSpace<T, N> &sys_c, T Ts, MatchedZ /*tag*/)
+{
+    T a_c[N + 1u]{};
+    char_poly(sys_c.A, a_c);
+    T b_c[N + 1u]{};
+    markov_numerator(sys_c, a_c, b_c);
+    return matched_z_discretize_tf<T, N>(b_c, a_c, Ts, MatchedZ{});
+}
+
+// --------------------------- analog_to_digital (state-space overloads) -------
+
 template <typename T, consteig::Size N>
 constexpr TransferFunction<T, N + 1u, N + 1u> analog_to_digital(
     const StateSpace<T, N> &sys_c, T Ts, ZOH)
@@ -320,8 +516,6 @@ constexpr TransferFunction<T, N + 1u, N + 1u> analog_to_digital(
     return ss_to_tf(zoh_discretize(sys_c, Ts, ZOH{}));
 }
 
-// Discretize a continuous-time state-space via matched-Z and extract the (b, a)
-// TF.
 template <typename T, consteig::Size N>
 constexpr TransferFunction<T, N + 1u, N + 1u> analog_to_digital(
     const StateSpace<T, N> &sys_c, T Ts, MatchedZ)
@@ -329,78 +523,20 @@ constexpr TransferFunction<T, N + 1u, N + 1u> analog_to_digital(
     return matched_z_discretize(sys_c, Ts, MatchedZ{});
 }
 
-// --- Matched-Z discretization -----------------------------------------------
+// --------------------------- analog_to_digital (TF overloads) ----------------
 
-// Matched-Z: discrete poles at z_k = exp(s_k * Ts).
-// For all-pole continuous systems (no finite zeros), places N-1 zeros at
-// z = -1 with b[0] = 0, and matches DC gain: H_d(1) = H_c(0).
-//
-// Steps:
-//   1. s_k = eigenvalues(Ac)               -- continuous poles
-//   2. z_k = exp(s_k * Ts)                 -- map poles to z-domain directly
-//   3. a  = prod(z - z_k)                  -- discrete denominator
-//   4. H_c(0) = D - C * Ac^{-1} * B       -- continuous DC gain
-//   5. b[0] = 0
-//      b[k] = K * C(N-1, k-1)  for k = 1..N  (coefficients of (z+1)^{N-1})
-//      where K = H_c(0) * a(1) / 2^{N-1}
 template <typename T, consteig::Size N>
-constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_discretize(
-    const StateSpace<T, N> &sys_c, T Ts, MatchedZ /*tag*/)
+constexpr TransferFunction<T, N + 1u, N + 1u> analog_to_digital(
+    const T (&b_c)[N + 1u], const T (&a_c)[N + 1u], T Ts, ZOH)
 {
-    using Cx = consteig::Complex<T>;
+    return ss_to_tf(zoh_discretize(tf_to_ss<T, N>(b_c, a_c), Ts, ZOH{}));
+}
 
-    // 1-2. Continuous poles s_k; map directly to discrete z_k = exp(s_k * Ts).
-    //      Build denominator polynomial prod(z - z_k) in complex arithmetic.
-    auto evals_c = consteig::eigenvalues(sys_c.A);
-
-    Cx p[N + 1u]{};
-    p[0] = Cx{static_cast<T>(1), static_cast<T>(0)};
-    for (consteig::Size k = 0; k < N; ++k)
-    {
-        const Cx z_k = consteig::exp(evals_c(k, 0) * Cx{Ts, static_cast<T>(0)});
-        p[k + 1u] = Cx{static_cast<T>(0), static_cast<T>(0)} - z_k * p[k];
-        for (consteig::Size i = k; i > 0u; --i)
-            p[i] = p[i] - z_k * p[i - 1u];
-        // p[0] unchanged (stays 1)
-    }
-
-    TransferFunction<T, N + 1u, N + 1u> tf{};
-
-    // 3. Extract real part of denominator
-    for (consteig::Size i = 0; i <= N; ++i)
-        tf.a[i] = p[i].real;
-
-    // 4. Continuous DC gain: solve Ac*x = B, then H_c(0) = D - C*x
-    auto lu_Ac = consteig::lu(sys_c.A);
-    auto x = consteig::lu_solve(lu_Ac, sys_c.B);
-    T dc_gain = sys_c.D;
-    for (consteig::Size col = 0; col < N; ++col)
-        dc_gain -= sys_c.C(0, col) * x(col, 0);
-
-    // 5. a(1) = sum of denominator coefficients
-    T a_at_1 = static_cast<T>(0);
-    for (consteig::Size k = 0; k <= N; ++k)
-        a_at_1 += tf.a[k];
-
-    // 6. 2^{N-1}
-    T two_pow_Nm1 = static_cast<T>(1);
-    for (consteig::Size k = 0; k < N - 1u; ++k)
-        two_pow_Nm1 *= static_cast<T>(2);
-
-    // 7. Scale: K = dc_gain * a(1) / 2^{N-1}
-    const T K = dc_gain * a_at_1 / two_pow_Nm1;
-
-    // 8. b[0] = 0; b[k] = K * C(N-1, k-1) for k = 1..N
-    tf.b[0] = static_cast<T>(0);
-    T binom = static_cast<T>(1);
-    for (consteig::Size k = 1u; k <= N; ++k)
-    {
-        tf.b[k] = K * binom;
-        if (k < N)
-            binom = binom * static_cast<T>(N - k) / static_cast<T>(k);
-    }
-
-    return tf;
+template <typename T, consteig::Size N>
+constexpr TransferFunction<T, N + 1u, N + 1u> analog_to_digital(
+    const T (&b_c)[N + 1u], const T (&a_c)[N + 1u], T Ts, MatchedZ)
+{
+    return matched_z_discretize_tf<T, N>(b_c, a_c, Ts, MatchedZ{});
 }
 
 } // namespace constfilt

@@ -1,102 +1,47 @@
 ![ci](https://github.com/mitchellthompkins/constfilt/actions/workflows/main.yml/badge.svg)
+[![Documentation](https://img.shields.io/badge/docs-online-blue)](https://mitchellthompkins.github.io/constfilt/)
 
 # constfilt
 
-A header-only C++17 library for designing IIR digital filters at compile time.
-Filter coefficients are computed via `constexpr` from filter specifications, with no
-offline tools (MATLAB, Python, etc.) required and no runtime cost for coefficient
-computation.
+constfilt is a header-only C++17 `constexpr` template library for designing IIR
+digital filters at compile time. Coefficients are computed by the compiler from
+the filter specification (cutoff, sample rate, ripple, etc...) and stored as
+`static constexpr` values, so no processor time is spent computing them at
+runtime and no offline tool (MATLAB, Python, SciPy, Octave, etc...) is needed to
+generate them. The coefficients live directly in the program binary. If the
+parameters change, the compiler recomputes them.
 
-Built on [consteig](https://github.com/mitchellthompkins/consteig) for all
-compile-time math (eigendecomposition, LU solve, matrix exponential).
-
-## What It Does
+constfilt depends only on two other header-only libraries both of which are
+vendored with constfilt:
+1. [consteig](https://github.com/MitchellThompkins/consteig) (compile-time
+   linear algebra)
+2. [gcem](https://github.com/MitchellThompkins/gcem) (compile-time math)
 
 All at compile time, constfilt supports:
 
-- **ZOH discretization** of continuous-time state-space models via matrix
-  exponential (`expm`) computed through eigendecomposition.
-- **Butterworth lowpass and highpass filters**, orders 1-8, from cutoff frequency
-  and sample rate alone.
-- **Elliptic (Cauer) lowpass and highpass filters**, orders 1+, from cutoff
-  frequency, passband ripple, and stopband attenuation.
-- **Direct Form II Transposed** filtering, with both a real-time sample-by-sample
-  path and a `constexpr`-capable batch path.
+- Butterworth lowpass and highpass filters of arbitrary order, from cutoff
+  frequency and sample rate.
+- Elliptic (Cauer) lowpass and highpass filters of arbitrary order, from
+  cutoff frequency, passband ripple, and stopband attenuation.
+- ZOH and Matched-Z discretization of arbitrary continuous-time
+  transfer functions, via matrix exponential through eigendecomposition.
+- Direct Form II Transposed filter implementation, with both a real-time
+  sample-by-sample interface and a `constexpr`-capable batch interface.
 
-## Quick Start
+Full documentation can be found at
+[documentation](https://mitchellthompkins.github.io/constfilt/).
+
+# Usage
+
+Simply `#include <constfilt/constfilt.hpp>` (optionally consume via CMake with
+`add_subdirectory` or `FetchContent`). Requires C++17.
 
 ```cpp
-#include "constfilt.hpp"
+#include <constfilt/constfilt.hpp>
 
-// Butterworth: all coefficient computation happens at compile time.
-static constexpr constfilt::Butterworth<double, 2> bw(100.0, 1000.0);
-//                                              order ^    fc ^    fs ^
-
-// Elliptic: specify passband ripple and stopband attenuation.
-static constexpr constfilt::Elliptic<double, 4> ell(100.0, 0.5, 60.0, 1000.0);
-//                                           order ^    fc ^  Rp ^  Rs ^    fs ^
-
-// Compile-time batch filtering:
-static constexpr consteig::Array<double, 32> input = { /* ... */ };
-static constexpr auto output = bw(input);
-
-// Real-time sample-by-sample (mutates internal state):
-constfilt::Butterworth<double, 2> rt_filt(100.0, 1000.0);
-double y = rt_filt(x);
+static constexpr constfilt::Butterworth<double, 4> bw(100.0, 1000.0);
+static constexpr constfilt::Elliptic<double, 4>    el(100.0, 0.5, 60.0, 1000.0);
 ```
 
-`constfilt` is header-only. Add it to your project with `#include "constfilt.hpp"`.
-Requires C++17. Both consteig and gcem are fetched automatically via CMake
-`FetchContent`.
-
-## CMake
-
-```cmake
-add_subdirectory(constfilt)
-target_link_libraries(your_target constfilt)
-```
-
-constfilt pulls in consteig and gcem automatically via `FetchContent`.
-
-## Building and Testing
-
-Tests run inside the same dev container as consteig. From the `constfilt/` directory:
-
-```sh
-# GCC
-make test.gcc
-
-# Clang
-make test.clang
-
-# Start an interactive container shell
-make container.start
-```
-
-The container image is pulled automatically on first use.
-
-## Options
-
-| Macro | Default | Description |
-|---|---|---|
-| `CONSTFILT_PI` | `3.14159...` | Value of pi used in frequency conversions. Override before including `constfilt.hpp`. |
-
-## Supported Filters
-
-| Filter | Type | Orders | Discretization |
-|---|---|---|---|
-| Butterworth | lowpass, highpass | 1-8 | ZOH (default), MatchedZ |
-| Elliptic | lowpass, highpass | 1+ | ZOH (default), MatchedZ |
-
-Pass `constfilt::HighPass` as the fourth template parameter to get a highpass
-variant. Pass `constfilt::MatchedZ` as the third to change discretization method.
-
-## Tolerances (vs. Octave reference)
-
-| Quantity | Tolerance |
-|---|---|
-| Transfer function coefficients | < 1e-9 |
-| Step response (32 samples) | < 1e-7 |
-
-Reference values are generated by Octave scripts in `octave/` and committed to
-`tests/butterworth_reference.hpp` and `tests/elliptic_reference.hpp`.
+For a quick reference on getting started, including examples, see
+[getting-started](https://mitchellthompkins.github.io/constfilt/getting-started/).

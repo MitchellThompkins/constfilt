@@ -1,0 +1,72 @@
+name: docs
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build-docs:
+    if: github.server_url == 'https://github.com'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Graphviz
+        run: sudo apt-get install -y graphviz
+
+      # Ubuntu 24.04 packages Doxygen 1.9.8 which generates HTML that loads from
+      # the compromised polyfill.io domain. The fix landed in 1.10.0. Install
+      # from upstream until Ubuntu ships a patched version.
+      # See: https://bugs.launchpad.net/ubuntu/+source/doxygen/+bug/2154796
+      - name: Install Doxygen 1.10.0 from upstream
+        run: |
+          wget -q https://github.com/doxygen/doxygen/releases/download/Release_1_10_0/doxygen-1.10.0.linux.bin.tar.gz
+          echo "dcfc9aa4cc05aef1f0407817612ad9e9201d9bf2ce67cecf95a024bba7d39747  doxygen-1.10.0.linux.bin.tar.gz" | sha256sum -c -
+          tar -xzf doxygen-1.10.0.linux.bin.tar.gz
+          sudo cp doxygen-1.10.0/bin/doxygen /usr/local/bin/doxygen
+
+      - name: Generate Doxygen HTML
+        run: doxygen docs/Doxyfile
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install MkDocs and extensions
+        run: pip install mkdocs-material pymdown-extensions
+
+      - name: Build MkDocs site
+        run: mkdocs build --config-file docs/mkdocs.yml --site-dir ../site
+
+      - name: Copy Doxygen output into site
+        run: cp -r docs/api/ site/api/
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/
+
+  deploy:
+    needs: build-docs
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

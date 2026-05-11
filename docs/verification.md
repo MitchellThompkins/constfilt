@@ -1,34 +1,45 @@
 # Verification
 
-constfilt uses three GoogleTest suites that together cover the library from
-individual math primitives up through end-to-end filter output. The goal is to
-catch numerical errors and regressions at the level where they originate -
-without relying on any single reference being infallible.
+constfilt is verified by a layered set of GoogleTest suites that together
+cover the library from individual math primitives up through end-to-end
+filter output. The goal is to catch numerical errors and regressions at the
+level where they originate — without relying on any single reference being
+infallible.
+
+The layers, from the inside out:
+
+| Layer | Scope |
+|---|---|
+| DF2T state machine | The runtime filter in isolation: stored coefficients, batch output, sample-by-sample output, state reset. |
+| Math primitives & discretization | `expm`, `char_poly`, `ss_to_tf`, ZOH, Matched-Z — checked against closed-form analytic results. |
+| Analog front end | Continuous-time transfer function → state-space conversion and stability classification. |
+| End-to-end Butterworth | Pole computation → continuous state-space → discretization → DF2T filtering, lowpass and highpass, ZOH and Matched-Z. |
+| End-to-end Elliptic | The nome-series algorithm (see [elliptic.md](elliptic.md)) → discretization → DF2T filtering, lowpass and highpass, ZOH and Matched-Z. |
 
 ---
 
 ## Philosophy
 
 **Test against independent references.** The primary source of truth for
-Butterworth filter coefficients and step-response values is Octave's `c2d`
-function. An Octave script (`octave/generate_butterworth_tests.m`) generates
-these values and writes them to a committed C++ header
-(`tests/butterworth_reference.hpp`). constfilt's output must agree with Octave
-within the declared tolerances; any discrepancy indicates a bug in the
-implementation.
+filter coefficients and step-response values is Octave. Octave scripts
+generate the values and write them to committed C++ headers that the test
+suite consumes directly; this means CI does not need an Octave installation,
+and any disagreement between constfilt and Octave shows up as a hard test
+failure. See [building.md](building.md#regenerating-reference-data) for how
+the references are regenerated.
 
-**Test at each level of the pipeline.** `butterworth.test.cpp` confirms the
-full end-to-end result, but errors can be hidden when everything is tested only
-at the top. `discretize.test.cpp` tests `expm`, `char_poly`, ZOH, and
-Matched-Z against analytic results that require no external tool. `filter.test.cpp`
-tests the DF2T state machine against a hand-traced reference. This layering
-means a bug in `expm` shows up in `discretize.test`, not buried in a
-coefficient mismatch.
+**Test at each level of the pipeline.** End-to-end suites confirm the full
+result, but errors can be hidden when everything is tested only at the top.
+The discretization-primitive suite tests `expm`, `char_poly`, ZOH, and
+Matched-Z against analytic results that require no external tool. The DF2T
+suite tests the filter state machine against a hand-traced reference. With
+this layering, a bug in `expm` shows up as an `expm` failure, not as a
+buried coefficient mismatch.
 
 **Use analytic references where possible.** For simple first-order systems,
 the correct ZOH and Matched-Z results have closed-form expressions. These are
 the sharpest possible tests because there is no numerical reference error to
-absorb - the expected values are exact.
+absorb — the expected values are exact.
 
 **Separate coefficient accuracy from filter accuracy.** Transfer-function
 coefficients and step-response samples carry different numerical sensitivities.
@@ -38,124 +49,78 @@ floating-point error over 32 samples of recursive filtering.
 
 ---
 
-## Test Suites
+## What each layer checks
 
-### `filter.test` - Direct Form II Transposed state machine
+### DF2T state machine
 
-Tests the `Filter<T, NB, NA>` implementation in isolation using a hand-chosen
-second-order IIR with known rational coefficients:
+A hand-chosen second-order IIR with rational coefficients
+(`b = [0.25, 0.5, 0.25]`, `a = [1, -0.5, 0.0625]`) drives:
 
-```
-b = [0.25, 0.5, 0.25]
-a = [1.0, -0.5, 0.0625]
-```
+- Stored-coefficient round-trip via `coeffs_b()` / `coeffs_a()`.
+- Batch output on a short unit step, compared against a DF2T recurrence
+  traced by hand. Because all inputs and coefficients are exactly
+  representable in `double`, agreement to ~1e-14 is achievable.
+- Sample-by-sample output, compared against the batch path to ensure both
+  evaluation paths produce identical numbers.
+- `reset()` returns the filter to its freshly-constructed state.
 
-| Test | What it checks |
-|---|---|
-| `FilterCoeffs::StoresB` | `coeffs_b()` returns the stored numerator coefficients |
-| `FilterCoeffs::StoresA` | `coeffs_a()` returns the stored denominator coefficients |
-| `FilterBatch::StepResponse4` | Batch output on a 4-sample unit step matches a hand-traced DF2T calculation (tolerance 1e-14) |
-| `FilterRealTime::MatchesBatch` | Sample-by-sample output over 8 samples matches the batch path (tolerance 1e-13) |
-| `FilterReset::StateIsZeroedAfterReset` | After `reset()`, the first output equals the first output from a freshly constructed filter |
+### Math primitives & discretization
 
-The step-response reference values in `FilterBatch::StepResponse4` are derived
-by tracing the DF2T recurrences by hand. Because the inputs and coefficients
-are all rational numbers with exact `double` representations, agreement to
-1e-14 is achievable.
+- **ZOH, first-order.** For $H(s) = 1/(s+a)$ the analytic ZOH result is
+  $A_d = e^{-aT_s}$, $B_d = (1 - e^{-aT_s})/a$, $C_d = 1$, $D_d = 0$.
+  Multiple $(a, T_s)$ pairs are checked.
+- **Matrix exponential.** A 1×1 case ($e^{[-2]}$) is the simplest non-trivial
+  test of the full eigendecomposition path.
+- **Characteristic polynomial.** A diagonal matrix gives a closed-form
+  characteristic polynomial against which `char_poly` is checked.
+- **State-space → transfer function.** A first-order discrete system with
+  hand-chosen $(A, B, C, D)$ is converted to its known $(b, a)$.
+- **Matched-Z, first-order.** For $H(s) = 1/(s+1)$ at $T_s = 0.1$ the pole,
+  zero, coefficients, and DC gain ($H_d(z=1) = 1$) are all checked
+  independently.
 
----
+### Analog front end
 
-### `discretize.test` - Math primitives and discretization methods
+- Continuous-time transfer functions are converted to controllable-canonical
+  state-space form. Strictly-proper and proper (non-zero `D`) cases are
+  covered for both first- and second-order systems, including the case where
+  the denominator is unnormalized ($a[0] \neq 1$).
+- The stability classifier is exercised against stable, unstable,
+  marginally-stable (simple imaginary-axis poles), and unstable
+  (repeated imaginary-axis poles) systems.
+- End-to-end analog → digital discretization is checked against Octave-
+  generated references for several continuous-time transfer functions
+  (some strictly proper, some proper) under both ZOH and Matched-Z.
+- The `CheckStab = false` escape hatch is exercised on an unstable system.
 
-Tests `expm`, `char_poly`, `zoh_discretize`, `ss_to_tf`, and
-`matched_z_discretize` against analytic references.
+### End-to-end Butterworth
 
-**ZOH - first-order systems**
+The full pipeline — pole computation, continuous state-space construction,
+discretization, and DF2T filtering — is checked against Octave references
+for a matrix of $(N, f_c, f_s)$ cases spanning different orders and
+$f_c/f_s$ ratios. For each case, three checks run:
 
-For $H(s) = 1/(s+a)$ the analytic ZOH result is:
+- **Coefficients** — each $b[i]$ and $a[i]$ against the reference
+  (tolerance `1e-9`).
+- **Batch** — 32-sample unit-step response from the batch `operator()`
+  against Octave's `filter()` output (tolerance `1e-7`).
+- **Real-time** — the same 32-sample step processed sample-by-sample
+  (tolerance `1e-7`).
 
-$$A_d = e^{-aT_s}, \quad B_d = \frac{1 - e^{-aT_s}}{a}, \quad C_d = 1, \quad D_d = 0$$
+Lowpass and highpass variants are covered, as are ZOH and Matched-Z
+discretization.
 
-Two cases are tested (tolerance 1e-10):
+### End-to-end Elliptic
 
-| Test | $a$ | $T_s$ |
-|---|---|---|
-| `ZOH::FirstOrder_a1_T0p1` | 1 | 0.1 |
-| `ZOH::FirstOrder_a5_T0p01` | 5 | 0.01 |
+The nome-series algorithm (see [elliptic.md](elliptic.md)) is exercised for
+a matrix of cases spanning multiple orders, two passband-ripple / stopband-
+attenuation specifications, and both lowpass/highpass and ZOH/Matched-Z
+variants. Each case runs the same coefficient / batch / real-time triple as
+Butterworth.
 
-**Matrix exponential**
-
-`Expm::Scalar` checks $e^{[-2]} = [e^{-2}] \approx 0.13533528$ (tolerance 1e-10).
-A 1x1 matrix is the simplest non-trivial case and exercises the full
-eigendecomposition path.
-
-**Characteristic polynomial**
-
-`CharPoly::DiagonalMatrix` checks `char_poly(diag(2,3))` returns
-`[1, -5, 6]`, which is $(\lambda-2)(\lambda-3)$ expanded (tolerance 1e-12).
-
-**State-space to transfer function**
-
-`SsToTf::FirstOrder` checks a first-order discrete system
-`A=[0.9], B=[0.1], C=[1], D=0` produces `a=[1, -0.9]`, `b=[0, 0.1]`
-(tolerance 1e-12).
-
-**Matched-Z - first-order system**
-
-For $H(s) = 1/(s+1)$ with $T_s = 0.1$, the expected result is:
-
-$$\text{pole: } z = e^{-0.1}, \quad \text{zero: } z = -1$$
-
-$$b = \left[\frac{1 - e^{-0.1}}{2},\ \frac{1 - e^{-0.1}}{2}\right], \quad a = [1,\ -e^{-0.1}]$$
-
-| Test | What it checks |
-|---|---|
-| `MatchedZ::FirstOrder_a1_T0p1` | Pole, zero, and coefficient values (tolerance 1e-10) |
-| `MatchedZ::FirstOrder_DCGain` | $H_d(z=1) = (b[0]+b[1]) / (a[0]+a[1])$ equals 1.0 (tolerance 1e-10) |
-
-The DC gain test is independent of the coefficient test and verifies the
-gain-matching constraint directly.
-
----
-
-### `butterworth.test` - End-to-end Butterworth filter
-
-Tests the full pipeline - pole computation, continuous state-space
-construction, ZOH discretization, and DF2T filtering - against Octave reference
-values. Four cases span different filter orders and frequency ratios:
-
-| Case | Order | Cutoff | Sample rate | $f_c/f_s$ |
-|---|---|---|---|---|
-| 1 | 2 | 100 Hz | 1000 Hz | 0.10 |
-| 2 | 4 | 100 Hz | 1000 Hz | 0.10 |
-| 3 | 2 | 500 Hz | 8000 Hz | 0.0625 |
-| 4 | 3 | 200 Hz | 4000 Hz | 0.05 |
-
-For each case, up to three tests are run:
-
-- **Coefficients** - each `b[i]` and `a[i]` compared against the Octave
-  reference (tolerance `1e-9`).
-- **Batch** - 32-sample unit step response computed via the batch
-  `operator()` compared against Octave's `filter()` output (tolerance `1e-7`).
-- **Real-time** - same 32-sample step processed sample-by-sample compared
-  against the same Octave reference (tolerance `1e-7`).
-
-Cases 3 and 4 omit the explicit batch test because the real-time test covers
-both paths (the real-time and batch paths are independently verified to produce
-identical output in `filter.test`).
-
----
-
-## Reference Data Generation
-
-`octave/generate_butterworth_tests.m` produces `tests/butterworth_reference.hpp`.
-The script uses Octave's `buttap`, `zp2tf`, and `c2d(..., 'zoh')` to design
-and discretize each filter, then writes `constexpr` C++ structs with the
-coefficient arrays and step-response values. The generated file is committed so
-tests can run without an Octave installation.
-
-To regenerate after changing test cases, run the script in Octave and commit
-the updated header.
+An order-3, $R_p=10\,$dB, $R_s=60\,$dB case is included specifically to
+verify that non-power-of-two orders and aggressive stopband attenuation are
+handled correctly.
 
 ---
 

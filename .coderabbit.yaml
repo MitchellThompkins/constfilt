@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: "en-US"
+tone_instructions: "Post all suggestions as inline review comments that can be resolved, not as nits embedded in the walkthrough summary."
+early_access: false
+reviews:
+  profile: "assertive"
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  review_details: true
+  auto_review:
+    enabled: true
+    auto_incremental_review: true
+    drafts: false
+  path_filters:
+    - "!**/vendor/consteig/**"
+    - "!**/vendor/gcem/**"
+  path_instructions:
+    - path: "**/*.hpp"
+      instructions: |
+        This is a constexpr C++17 header-only filter design library. Focus on:
+        - Correctness of constexpr computations and static_assert usage
+        - Type consistency (float vs double tolerances must match the filter's numeric type)
+        - No standard library dependencies in core library code (freestanding constraint)
+        - Correct use of vendored consteig (matrix ops) and gcem (math functions) via the wrapper
+        - Headers named *_reference.hpp contain precomputed test data — do not suggest algorithmic changes to their values
+    - path: "**/tests/**"
+      instructions: |
+        These are compile-time and runtime tests. Check:
+        - static_assert failures = build failures = test failures (treat equally)
+        - Tests are split into individual .cpp files intentionally to avoid constexpr budget exhaustion
+        - Do not suggest merging test files
+        - Reference values live in *_reference.hpp headers — do not suggest hardcoding tolerances inline
+    - path: "**/vendor/gcem_wrapper.hpp"
+      instructions: |
+        This wrapper fixes three include-ordering bugs in upstream gcem (tracked in
+        an open issue): is_finite before is_nan/is_inf, is_even before is_odd, and exp
+        before pow_integral. It also suppresses -Wconversion from gcem::round_int.
+        Defining _gcem_HPP is intentional — it prevents any stray #include "gcem.hpp"
+        from re-including gcem_options.hpp. Do not suggest reverting any of this.
+    - path: "octave/**"
+      instructions: |
+        GNU Octave/MATLAB scripts for test generation and algorithm prototyping.
+        Generated reference output is checked in — do not suggest regenerating unless filter parameters change.
+chat:
+  auto_reply: true

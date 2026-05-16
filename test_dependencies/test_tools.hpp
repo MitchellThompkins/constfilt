@@ -79,12 +79,16 @@ template <typename T> static constexpr bool withinTol(T a, T b, T tol)
         constexpr unsigned LEN = CONSTFILT_DETAIL_LEN_OF(Ref::step);           \
         double input[LEN]{};                                                   \
         for (unsigned i = 0; i < LEN; ++i)                                     \
+        {                                                                      \
             input[i] = 1.0;                                                    \
+        }                                                                      \
         double output[LEN]{};                                                  \
         filt(input, output);                                                   \
         for (unsigned i = 0; i < LEN; ++i)                                     \
+        {                                                                      \
             EXPECT_NEAR(output[i], Ref::step[i], CONSTFILT_STEP_TOL)           \
                 << "step[" << i << "]";                                        \
+        }                                                                      \
     }
 
 #define REALTIME_STEP_TEST(suite, ref, ...)                                    \
@@ -112,8 +116,10 @@ template <typename T> static constexpr bool withinTol(T a, T b, T tol)
         double output[LEN]{};                                                  \
         filt(input, output);                                                   \
         for (unsigned i = 0; i < LEN; ++i)                                     \
+        {                                                                      \
             EXPECT_NEAR(output[i], Ref::impulse[i], CONSTFILT_STEP_TOL)        \
                 << "impulse[" << i << "]";                                     \
+        }                                                                      \
     }
 
 #define REALTIME_IMPULSE_TEST(suite, ref, ...)                                 \
@@ -125,8 +131,10 @@ template <typename T> static constexpr bool withinTol(T a, T b, T tol)
         EXPECT_NEAR(filt(1.0), Ref::impulse[0], CONSTFILT_STEP_TOL)            \
             << "impulse[0]";                                                   \
         for (unsigned i = 1; i < LEN; ++i)                                     \
+        {                                                                      \
             EXPECT_NEAR(filt(0.0), Ref::impulse[i], CONSTFILT_STEP_TOL)        \
                 << "impulse[" << i << "]";                                     \
+        }                                                                      \
     }
 
 #define BATCH_CHIRP_TEST(suite, ref, ...)                                      \
@@ -137,12 +145,16 @@ template <typename T> static constexpr bool withinTol(T a, T b, T tol)
         constexpr unsigned LEN = CONSTFILT_DETAIL_LEN_OF(Ref::chirp);          \
         double input[LEN]{};                                                   \
         for (unsigned i = 0; i < LEN; ++i)                                     \
+        {                                                                      \
             input[i] = Ref::chirp_in[i];                                       \
+        }                                                                      \
         double output[LEN]{};                                                  \
         filt(input, output);                                                   \
         for (unsigned i = 0; i < LEN; ++i)                                     \
+        {                                                                      \
             EXPECT_NEAR(output[i], Ref::chirp[i], CONSTFILT_STEP_TOL)          \
                 << "chirp[" << i << "]";                                       \
+        }                                                                      \
     }
 
 #define REALTIME_CHIRP_TEST(suite, ref, ...)                                   \
@@ -152,9 +164,11 @@ template <typename T> static constexpr bool withinTol(T a, T b, T tol)
         auto filt = __VA_ARGS__;                                               \
         constexpr unsigned LEN = CONSTFILT_DETAIL_LEN_OF(Ref::chirp);          \
         for (unsigned i = 0; i < LEN; ++i)                                     \
+        {                                                                      \
             EXPECT_NEAR(filt(Ref::chirp_in[i]), Ref::chirp[i],                 \
                         CONSTFILT_STEP_TOL)                                    \
                 << "chirp[" << i << "]";                                       \
+        }                                                                      \
     }
 
 // Cross-check: drive the same filter through both paths on the chirp signal
@@ -168,7 +182,9 @@ template <typename T> static constexpr bool withinTol(T a, T b, T tol)
         constexpr unsigned LEN = CONSTFILT_DETAIL_LEN_OF(Ref::chirp);          \
         double input[LEN]{};                                                   \
         for (unsigned i = 0; i < LEN; ++i)                                     \
+        {                                                                      \
             input[i] = Ref::chirp_in[i];                                       \
+        }                                                                      \
         double batch_out[LEN]{};                                               \
         {                                                                      \
             auto filt = __VA_ARGS__;                                           \

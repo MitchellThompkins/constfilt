@@ -47,7 +47,9 @@ constexpr bool array_near_eq(const double (&a)[N], const double (&b)[N],
     {
         double d = a[i] - b[i];
         if ((d < 0 ? -d : d) >= tol)
+        {
             return false;
+        }
     }
     return true;
 }

@@ -1,8 +1,9 @@
 #ifndef CONSTFILT_STABILITY_HPP
 #define CONSTFILT_STABILITY_HPP
 
+#include "constfilt_options.hpp"
 #include "discretize.hpp"
-#include <consteig/consteig.hpp>
+#include "vendor/consteig/consteig.hpp"
 
 namespace constfilt
 {
@@ -35,9 +36,13 @@ constexpr Stability check_stability(const StateSpace<T, N> &sys)
     {
         const T re = evals(i, 0).real;
         if (re > tol)
+        {
             return Stability::Unstable;
+        }
         if (re > -tol)
+        {
             has_imag_axis = true;
+        }
     }
 
     if (has_imag_axis)

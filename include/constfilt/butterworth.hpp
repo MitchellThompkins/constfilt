@@ -3,7 +3,7 @@
 
 #include "analog_filter.hpp"
 #include "constfilt_options.hpp"
-#include <consteig/consteig.hpp>
+#include "vendor/consteig/consteig.hpp"
 
 namespace constfilt
 {
@@ -56,7 +56,9 @@ class Butterworth : public AnalogFilter<T, N, Method>
         T p[N + 1u]{};
         butterworth_poly_coeffs(p);
         for (consteig::Size k = 0; k <= N; ++k)
+        {
             a[k] = p[k] * consteig::pow(wc, static_cast<int>(k));
+        }
     }
 
     // --- High-pass
@@ -77,7 +79,9 @@ class Butterworth : public AnalogFilter<T, N, Method>
         T p[N + 1u]{};
         butterworth_poly_coeffs(p);
         for (consteig::Size k = 0; k <= N; ++k)
+        {
             a[k] = p[N - k] * consteig::pow(wc, static_cast<int>(k));
+        }
     }
 
     // Normalized Butterworth denominator coefficients (wc=1, monic).
@@ -90,19 +94,19 @@ class Butterworth : public AnalogFilter<T, N, Method>
     // or are real for odd N).
     static constexpr void butterworth_poly_coeffs(T (&result)[N + 1u])
     {
-        using Cx = consteig::Complex<T>;
+        using Complex = consteig::Complex<T>;
 
         // poly[i] holds the coefficient of s^i (ascending order).
         // Start with the constant polynomial 1.
-        Cx poly[N + 1u]{};
-        poly[0] = Cx{static_cast<T>(1), static_cast<T>(0)};
+        Complex poly[N + 1u]{};
+        poly[0] = Complex{static_cast<T>(1), static_cast<T>(0)};
 
         // Multiply by (s - p_k) for k = 1..N.
         for (consteig::Size k = 1u; k <= N; ++k)
         {
             T theta = static_cast<T>(CONSTFILT_PI) *
                       static_cast<T>(2u * k + N - 1u) / static_cast<T>(2u * N);
-            Cx pole{consteig::cos(theta), consteig::sin(theta)};
+            Complex pole{consteig::cos(theta), consteig::sin(theta)};
 
             // In-place multiply by (s - pole), traversing backwards
             // to avoid overwriting values still needed this iteration.
@@ -110,7 +114,8 @@ class Butterworth : public AnalogFilter<T, N, Method>
             {
                 poly[j] = poly[j - 1u] - pole * poly[j];
             }
-            poly[0] = Cx{static_cast<T>(0), static_cast<T>(0)} - pole * poly[0];
+            poly[0] =
+                Complex{static_cast<T>(0), static_cast<T>(0)} - pole * poly[0];
         }
 
         // Convert ascending-order complex to descending-order real.

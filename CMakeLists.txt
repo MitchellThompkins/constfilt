@@ -41,38 +41,33 @@ target_compile_features(constfilt INTERFACE cxx_std_17)
 add_library(constfilt::constfilt ALIAS constfilt)
 
 ################################################################################
-# consteig dependency
+# consteig + gcem (vendored under include/constfilt/vendor/)
+# To update: run scripts/vendor_consteig.sh
 ################################################################################
+set(_constfilt_vendor "${CMAKE_CURRENT_SOURCE_DIR}/include/constfilt/vendor")
+
 if(NOT TARGET consteig::consteig)
-    include(FetchContent)
-    FetchContent_Declare(
-        consteig
-        GIT_REPOSITORY https://github.com/MitchellThompkins/consteig
-        GIT_TAG        1.0.0
-        GIT_SHALLOW    TRUE
+    add_library(consteig INTERFACE)
+    target_include_directories(consteig SYSTEM INTERFACE
+        $<BUILD_INTERFACE:${_constfilt_vendor}>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/constfilt/vendor>
     )
-    FetchContent_MakeAvailable(consteig)
+    add_library(consteig::consteig ALIAS consteig)
+endif()
 
-    set(CMAKE_POLICY_VERSION_MINIMUM 3.5 CACHE STRING "" FORCE)
-    FetchContent_Declare(
-        gcem
-        GIT_REPOSITORY https://github.com/MitchellThompkins/gcem
-        GIT_TAG        v.1.19.0-consteig.1
+if(NOT TARGET gcem::gcem)
+    add_library(gcem INTERFACE)
+    target_include_directories(gcem SYSTEM INTERFACE
+        $<BUILD_INTERFACE:${_constfilt_vendor}/gcem>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/constfilt/vendor/gcem>
     )
-    FetchContent_MakeAvailable(gcem)
-    unset(CMAKE_POLICY_VERSION_MINIMUM CACHE)
-
-    # Use gcem in no-stdlib (builtin) mode and suppress third-party warnings.
     target_compile_definitions(gcem INTERFACE GCEM_TRAITS_BUILTIN)
-    get_target_property(_gcem_inc gcem INTERFACE_INCLUDE_DIRECTORIES)
-    set_target_properties(gcem PROPERTIES
-        INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${_gcem_inc}"
-    )
+    add_library(gcem::gcem ALIAS gcem)
 endif()
 
 target_link_libraries(constfilt INTERFACE
-    $<BUILD_INTERFACE:consteig::consteig>
-    $<BUILD_INTERFACE:gcem>
+    consteig::consteig
+    gcem
 )
 
 ################################################################################
@@ -129,7 +124,7 @@ endif()
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     include(CMakePackageConfigHelpers)
 
-    install(TARGETS constfilt EXPORT constfiltTargets)
+    install(TARGETS constfilt consteig gcem EXPORT constfiltTargets)
     install(DIRECTORY include/constfilt DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
     install(EXPORT constfiltTargets

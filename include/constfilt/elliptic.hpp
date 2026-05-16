@@ -3,8 +3,8 @@
 
 #include "analog_filter.hpp"
 #include "constfilt_options.hpp"
-#include <consteig/consteig.hpp>
-#include <gcem.hpp>
+#include "vendor/consteig/consteig.hpp"
+#include "vendor/gcem_wrapper.hpp"
 
 namespace constfilt
 {
@@ -305,7 +305,9 @@ class Elliptic : public AnalogFilter<T, N, Method>
                                         consteig::Size deg, Complex root)
     {
         for (consteig::Size j = deg; j > 0u; --j)
+        {
             poly[j] = poly[j - 1u] - root * poly[j];
+        }
         poly[0] =
             Complex{static_cast<T>(0), static_cast<T>(0)} - root * poly[0];
     }
@@ -420,7 +422,9 @@ class Elliptic : public AnalogFilter<T, N, Method>
         const T H0 = (N % 2u == 1u) ? static_cast<T>(1) : Gp;
         const T gain = H0 * a[N] / b[N];
         for (consteig::Size i = 0u; i <= N; ++i)
+        {
             b[i] *= gain;
+        }
 
         // Step 7: scale for passband cutoff wc.
         //   Substituting s -> s/wc multiplies the coefficient of s^(N-i) by

@@ -1,7 +1,8 @@
 #ifndef CONSTFILT_FILTER_HPP
 #define CONSTFILT_FILTER_HPP
 
-#include <consteig/consteig.hpp>
+#include "constfilt_options.hpp"
+#include "vendor/consteig/consteig.hpp"
 
 namespace constfilt
 {
@@ -23,9 +24,13 @@ template <typename T, consteig::Size NB, consteig::Size NA> class Filter
     constexpr Filter(const T (&b)[NB], const T (&a)[NA])
     {
         for (consteig::Size i = 0; i < NB; ++i)
+        {
             _b[i] = b[i];
+        }
         for (consteig::Size i = 0; i < NA; ++i)
+        {
             _a[i] = a[i];
+        }
     }
 
   public:

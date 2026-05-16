@@ -55,13 +55,13 @@ remove:
 
 .PHONY: format
 format:
-	find . \( -path "./test_dependencies/googletest" -o -path "./build*" \) -prune \
+	find . \( -path "./test_dependencies/googletest" -o -path "./build*" -o -path "./include/constfilt/vendor/*" \) -prune \
 		-o -type f \( -name "*.hpp" -o -name "*.cpp" \) ! -name "*_reference.hpp" -print \
 		| xargs clang-format -i
 
 .PHONY: check-format
 check-format:
-	find . \( -path "./test_dependencies/googletest" -o -path "./build*" \) -prune \
+	find . \( -path "./test_dependencies/googletest" -o -path "./build*" -o -path "./include/constfilt/vendor/*" \) -prune \
 		-o -type f \( -name "*.hpp" -o -name "*.cpp" \) ! -name "*_reference.hpp" -print \
 		| xargs clang-format --dry-run --Werror
 

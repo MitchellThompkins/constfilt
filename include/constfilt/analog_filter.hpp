@@ -64,7 +64,9 @@ class AnalogFilter : public Filter<T, N + 1u, N + 1u>
     {
         if (CheckStab &&
             check_stability(tf_to_ss<T, N>(b_c, a_c)) == Stability::Unstable)
+        {
             throw "constfilt: unstable analog filter";
+        }
         return analog_to_digital<T, N>(
             b_c, a_c, static_cast<T>(1) / sample_rate_hz, Method{});
     }

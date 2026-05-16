@@ -1,7 +1,8 @@
 #ifndef CONSTFILT_DISCRETIZE_HPP
 #define CONSTFILT_DISCRETIZE_HPP
 
-#include <consteig/consteig.hpp>
+#include "constfilt_options.hpp"
+#include "vendor/consteig/consteig.hpp"
 
 namespace constfilt
 {
@@ -43,22 +44,22 @@ template <typename T, consteig::Size N>
 constexpr consteig::Matrix<T, N, N> matrix_exp(
     const consteig::Matrix<T, N, N> &A)
 {
-    using Cx = consteig::Complex<T>;
-    using CxMat_NN = consteig::Matrix<Cx, N, N>;
-    using CxMat_N1 = consteig::Matrix<Cx, N, 1>;
+    using Complex = consteig::Complex<T>;
+    using ComplexMat_NN = consteig::Matrix<Complex, N, N>;
+    using ComplexMat_N1 = consteig::Matrix<Complex, N, 1>;
 
     // 1. Eigenvalues and eigenvectors
-    auto evals = consteig::eigenvalues(A);     // Matrix<Cx, N, 1>
-    auto V = consteig::eigenvectors(A, evals); // Matrix<Cx, N, N>
+    auto evals = consteig::eigenvalues(A);     // Matrix<Complex, N, 1>
+    auto V = consteig::eigenvectors(A, evals); // Matrix<Complex, N, N>
 
     // 2. Invert V column-by-column via LU
     auto lu_V = consteig::lu(V);
 
-    CxMat_NN V_inv{};
+    ComplexMat_NN V_inv{};
     for (consteig::Size col = 0; col < N; ++col)
     {
-        CxMat_N1 e_col{};
-        e_col(col, 0) = Cx{static_cast<T>(1), static_cast<T>(0)};
+        ComplexMat_N1 e_col{};
+        e_col(col, 0) = Complex{static_cast<T>(1), static_cast<T>(0)};
         auto col_vec = consteig::lu_solve(lu_V, e_col);
         for (consteig::Size row = 0; row < N; ++row)
         {
@@ -68,10 +69,10 @@ constexpr consteig::Matrix<T, N, N> matrix_exp(
 
     // 3. Accumulate: matrix_exp = sum_i exp(lam_i) * v_i * w_i^T
     //    where v_i = column i of V, w_i^T = row i of V_inv
-    CxMat_NN result_c{};
+    ComplexMat_NN result_c{};
     for (consteig::Size i = 0; i < N; ++i)
     {
-        Cx exp_lambda = consteig::exp(evals(i, 0));
+        Complex exp_lambda = consteig::exp(evals(i, 0));
         for (consteig::Size r = 0; r < N; ++r)
         {
             for (consteig::Size c = 0; c < N; ++c)
@@ -159,26 +160,30 @@ template <typename T, consteig::Size N>
 constexpr void char_poly(const consteig::Matrix<T, N, N> &Ad,
                          T (&coeffs)[N + 1u])
 {
-    using Cx = consteig::Complex<T>;
+    using Complex = consteig::Complex<T>;
 
-    auto evals = consteig::eigenvalues(Ad); // Matrix<Cx, N, 1>
+    auto evals = consteig::eigenvalues(Ad); // Matrix<Complex, N, 1>
 
     // p[0..k] holds the monic polynomial of degree k after k iterations.
-    Cx p[N + 1u]{};
-    p[0] = Cx{static_cast<T>(1), static_cast<T>(0)};
+    Complex p[N + 1u]{};
+    p[0] = Complex{static_cast<T>(1), static_cast<T>(0)};
 
     for (consteig::Size k = 0; k < N; ++k)
     {
-        const Cx lam = evals(k, 0);
+        const Complex lam = evals(k, 0);
         // Multiply degree-k poly by (z - lam), working high-to-low in-place.
-        p[k + 1u] = Cx{static_cast<T>(0), static_cast<T>(0)} - lam * p[k];
+        p[k + 1u] = Complex{static_cast<T>(0), static_cast<T>(0)} - lam * p[k];
         for (consteig::Size i = k; i > 0u; --i)
+        {
             p[i] = p[i] - lam * p[i - 1u];
+        }
         // p[0] is unchanged (stays 1)
     }
 
     for (consteig::Size i = 0; i <= N; ++i)
+    {
         coeffs[i] = p[i].real;
+    }
 }
 
 // --------------------------- Markov numerator --------------------------------
@@ -289,22 +294,30 @@ constexpr StateSpace<T, N> tf_to_ss(const T (&b)[N + 1u], const T (&a)[N + 1u])
     // Numerator residual: e[k] = b[k]/a[0] - D*(a[k]/a[0])  for k=1..N
     T e[N + 1u]{};
     for (consteig::Size k = 1u; k <= N; ++k)
+    {
         e[k] = b[k] * inv_a0 - sys.D * (a[k] * inv_a0);
+    }
 
     // A: super-diagonal
     for (consteig::Size row = 0; row < N - 1u; ++row)
+    {
         sys.A(row, row + 1u) = static_cast<T>(1);
+    }
 
     // A: last row = -a[N-k]/a[0]  for k=0..N-1
     for (consteig::Size k = 0; k < N; ++k)
+    {
         sys.A(N - 1u, k) = -(a[N - k] * inv_a0);
+    }
 
     // B: last entry = 1
     sys.B(N - 1u, 0) = static_cast<T>(1);
 
     // C: C[0][k] = e[N-k]
     for (consteig::Size k = 0; k < N; ++k)
+    {
         sys.C(0, k) = e[N - k];
+    }
 
     return sys;
 }
@@ -319,12 +332,14 @@ template <typename T, consteig::Size N>
 constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_discretize_tf(
     const T (&b_c)[N + 1u], const T (&a_c)[N + 1u], T Ts, MatchedZ /*tag*/)
 {
-    using Cx = consteig::Complex<T>;
+    using Complex = consteig::Complex<T>;
 
     // Step 1: count leading zeros in b_c; derive nz (finite analog zero count).
     consteig::Size d_b = 0;
     while (d_b <= N && b_c[d_b] == static_cast<T>(0))
+    {
         ++d_b;
+    }
     const consteig::Size nz = (d_b > N) ? 0u : N - d_b;
 
     // Step 2: continuous leading-coefficient gain.
@@ -341,18 +356,20 @@ constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_discretize_tf(
     const auto p_c_evals = consteig::eigenvalues(A_pole);
 
     // Step 4: map poles to z-domain; build monic denominator polynomial.
-    Cx p_d_vals[N]{};
-    Cx pole_poly[N + 1u]{};
-    pole_poly[0] = Cx{static_cast<T>(1), static_cast<T>(0)};
+    Complex p_d_vals[N]{};
+    Complex pole_poly[N + 1u]{};
+    pole_poly[0] = Complex{static_cast<T>(1), static_cast<T>(0)};
     for (consteig::Size k = 0; k < N; ++k)
     {
         p_d_vals[k] =
-            consteig::exp(p_c_evals(k, 0) * Cx{Ts, static_cast<T>(0)});
-        const Cx zk = p_d_vals[k];
+            consteig::exp(p_c_evals(k, 0) * Complex{Ts, static_cast<T>(0)});
+        const Complex zk = p_d_vals[k];
         pole_poly[k + 1u] =
-            Cx{static_cast<T>(0), static_cast<T>(0)} - zk * pole_poly[k];
+            Complex{static_cast<T>(0), static_cast<T>(0)} - zk * pole_poly[k];
         for (consteig::Size i = k; i > 0u; --i)
+        {
             pole_poly[i] = pole_poly[i] - zk * pole_poly[i - 1u];
+        }
     }
 
     // Steps 5-7: find analog zeros (roots of b_c) via companion matrix,
@@ -360,10 +377,10 @@ constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_discretize_tf(
     // called with a fixed size; the top-left nz x nz block holds the actual
     // companion, the remaining entries are 0, producing d_b spurious
     // eigenvalues at the origin that are discarded afterward.
-    Cx z_c_finite[N]{};
-    Cx z_d_finite[N]{};
-    Cx zero_poly[N + 1u]{};
-    zero_poly[0] = Cx{static_cast<T>(1), static_cast<T>(0)};
+    Complex z_c_finite[N]{};
+    Complex z_d_finite[N]{};
+    Complex zero_poly[N + 1u]{};
+    zero_poly[0] = Complex{static_cast<T>(1), static_cast<T>(0)};
 
     if (nz > 0u)
     {
@@ -404,14 +421,16 @@ constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_discretize_tf(
             if (!spurious[k])
             {
                 z_c_finite[nz_cnt] = z_c_evals(k, 0);
-                z_d_finite[nz_cnt] =
-                    consteig::exp(z_c_evals(k, 0) * Cx{Ts, static_cast<T>(0)});
-                const Cx zk = z_d_finite[nz_cnt];
+                z_d_finite[nz_cnt] = consteig::exp(
+                    z_c_evals(k, 0) * Complex{Ts, static_cast<T>(0)});
+                const Complex zk = z_d_finite[nz_cnt];
                 zero_poly[nz_cnt + 1u] =
-                    Cx{static_cast<T>(0), static_cast<T>(0)} -
+                    Complex{static_cast<T>(0), static_cast<T>(0)} -
                     zk * zero_poly[nz_cnt];
                 for (consteig::Size i = nz_cnt; i > 0u; --i)
+                {
                     zero_poly[i] = zero_poly[i] - zk * zero_poly[i - 1u];
+                }
                 ++nz_cnt;
             }
         }
@@ -424,7 +443,9 @@ constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_discretize_tf(
         const consteig::Size cur_deg = nz + e;
         zero_poly[cur_deg + 1u] = zero_poly[cur_deg + 1u] + zero_poly[cur_deg];
         for (consteig::Size i = cur_deg; i > 0u; --i)
+        {
             zero_poly[i] = zero_poly[i] + zero_poly[i - 1u];
+        }
     }
     const consteig::Size num_deg = nz + n_extra;
 
@@ -439,45 +460,63 @@ constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_discretize_tf(
             const T dr = w_c - p_c_evals(i, 0).real;
             const T di = p_c_evals(i, 0).imag;
             if (dr * dr + di * di < tol * tol)
+            {
                 collision = true;
+            }
         }
         for (consteig::Size i = 0; i < nz && !collision; ++i)
         {
             const T dr = w_c - z_c_finite[i].real;
             const T di = z_c_finite[i].imag;
             if (dr * dr + di * di < tol * tol)
+            {
                 collision = true;
+            }
         }
         if (!collision)
+        {
             break;
+        }
         w_c += static_cast<T>(0.1) / Ts;
     }
 
     // Step 10: compute discrete gain k_d matching H_d(w_d) = H_c(w_c).
-    const Cx w_c_cx{w_c, static_cast<T>(0)};
-    const Cx w_d_cx = consteig::exp(w_c_cx * Cx{Ts, static_cast<T>(0)});
+    const Complex w_c_cx{w_c, static_cast<T>(0)};
+    const Complex w_d_cx =
+        consteig::exp(w_c_cx * Complex{Ts, static_cast<T>(0)});
 
-    Cx num_c_cx{static_cast<T>(1), static_cast<T>(0)};
+    Complex num_c_cx{static_cast<T>(1), static_cast<T>(0)};
     for (consteig::Size i = 0; i < nz; ++i)
+    {
         num_c_cx = num_c_cx * (w_c_cx - z_c_finite[i]);
+    }
 
-    Cx den_c_cx{static_cast<T>(1), static_cast<T>(0)};
+    Complex den_c_cx{static_cast<T>(1), static_cast<T>(0)};
     for (consteig::Size i = 0; i < N; ++i)
+    {
         den_c_cx = den_c_cx * (w_c_cx - p_c_evals(i, 0));
+    }
 
-    Cx num_d_cx{static_cast<T>(1), static_cast<T>(0)};
+    Complex num_d_cx{static_cast<T>(1), static_cast<T>(0)};
     for (consteig::Size i = 0; i < N; ++i)
+    {
         num_d_cx = num_d_cx * (w_d_cx - p_d_vals[i]);
+    }
 
-    Cx den_d_cx{static_cast<T>(1), static_cast<T>(0)};
+    Complex den_d_cx{static_cast<T>(1), static_cast<T>(0)};
     for (consteig::Size i = 0; i < nz; ++i)
+    {
         den_d_cx = den_d_cx * (w_d_cx - z_d_finite[i]);
+    }
     for (consteig::Size e = 0; e < n_extra; ++e)
-        den_d_cx =
-            den_d_cx * (w_d_cx - Cx{static_cast<T>(-1), static_cast<T>(0)});
+    {
+        den_d_cx = den_d_cx *
+                   (w_d_cx - Complex{static_cast<T>(-1), static_cast<T>(0)});
+    }
 
-    const Cx gain_num = Cx{k_c, static_cast<T>(0)} * num_c_cx * num_d_cx;
-    const Cx gain_den = den_c_cx * den_d_cx;
+    const Complex gain_num =
+        Complex{k_c, static_cast<T>(0)} * num_c_cx * num_d_cx;
+    const Complex gain_den = den_c_cx * den_d_cx;
     const T gain_den_sq =
         gain_den.real * gain_den.real + gain_den.imag * gain_den.imag;
     const T k_d =
@@ -487,10 +526,14 @@ constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_discretize_tf(
     // Step 11: assemble output TF.
     TransferFunction<T, N + 1u, N + 1u> tf{};
     for (consteig::Size i = 0; i <= N; ++i)
+    {
         tf.a[i] = pole_poly[i].real;
+    }
     const consteig::Size pad = N - num_deg;
     for (consteig::Size i = 0; i <= num_deg; ++i)
+    {
         tf.b[pad + i] = k_d * zero_poly[i].real;
+    }
 
     return tf;
 }

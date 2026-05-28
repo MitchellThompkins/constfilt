@@ -15,7 +15,9 @@ else
 fi
 
 # 2. Create the User (if they don't exist)
-adduser -u "${MY_UID}" -G "${GROUP_NAME}" -h "/home/${USER}" -D "${USER}" || true
+if ! id -u "${USER}" > /dev/null 2>&1; then
+    adduser -u "${MY_UID}" -G "${GROUP_NAME}" -h "/home/${USER}" -D "${USER}"
+fi
 
 # 3. Fix Permissions
 chown -R "${USER}:${GROUP_NAME}" "/home/${USER}"

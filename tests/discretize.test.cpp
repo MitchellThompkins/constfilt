@@ -141,4 +141,17 @@ TEST(MatchedZ, FirstOrder_DCGain)
     EXPECT_NEAR(num / den, 1.0, 1e-10);
 }
 
+TEST(MatchedZ, FirstOrder_Float_DCGain)
+{
+    constexpr constfilt::StateSpace<float, 1u> sys_c{
+        {{{-1.0f}}}, {{{1.0f}}}, {{{1.0f}}}, 0.0f};
+    constexpr float Ts = 0.1f;
+    constexpr auto tf =
+        constfilt::matched_z_discretize(sys_c, Ts, constfilt::MatchedZ{});
+
+    constexpr float num = tf.b[0] + tf.b[1];
+    constexpr float den = tf.a[0] + tf.a[1];
+    EXPECT_NEAR(num / den, 1.0f, 1e-4f);
+}
+
 } // namespace

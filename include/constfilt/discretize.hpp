@@ -450,7 +450,7 @@ constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_discretize_tf(
     const consteig::Size num_deg = nz + n_extra;
 
     // Step 9: find matching frequency w_c (avoid collision with poles/zeros).
-    const T tol = static_cast<T>(1.49e-8);
+    const T tol = consteig::sqrt(consteig::epsilon<T>());
     T w_c = static_cast<T>(0);
     for (consteig::Size attempt = 0; attempt < 1000u; ++attempt)
     {

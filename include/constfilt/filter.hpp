@@ -33,6 +33,16 @@ template <typename T, consteig::Size NB, consteig::Size NA> class Filter
         }
     }
 
+  private:
+    constexpr T b_coeff(consteig::Size i) const
+    {
+        return i < NB ? _b[i] : T(0);
+    }
+    constexpr T a_coeff(consteig::Size i) const
+    {
+        return i < NA ? _a[i] : T(0);
+    }
+
   public:
     // Real-time: process one sample, mutate _state.
     // NOT constexpr (writes to member state).
@@ -42,9 +52,10 @@ template <typename T, consteig::Size NB, consteig::Size NA> class Filter
 
         for (consteig::Size k = 0; k < M - 1u; ++k)
         {
-            _state[k] = _b[k + 1u] * x - _a[k + 1u] * y + _state[k + 1u];
+            _state[k] =
+                b_coeff(k + 1u) * x - a_coeff(k + 1u) * y + _state[k + 1u];
         }
-        _state[M - 1u] = _b[M] * x - _a[M] * y;
+        _state[M - 1u] = b_coeff(M) * x - a_coeff(M) * y;
 
         return y;
     }
@@ -63,10 +74,10 @@ template <typename T, consteig::Size NB, consteig::Size NA> class Filter
 
             for (consteig::Size k = 0; k < M - 1u; ++k)
             {
-                local_state[k] =
-                    _b[k + 1u] * x - _a[k + 1u] * y + local_state[k + 1u];
+                local_state[k] = b_coeff(k + 1u) * x - a_coeff(k + 1u) * y +
+                                 local_state[k + 1u];
             }
-            local_state[M - 1u] = _b[M] * x - _a[M] * y;
+            local_state[M - 1u] = b_coeff(M) * x - a_coeff(M) * y;
 
             output[n] = y;
         }

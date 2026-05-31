@@ -3,45 +3,8 @@ UID          = $(shell id -u)
 GID          = $(shell id -g)
 
 BUILD_PREFIX ?= $(THIS_DIR)/build
-BUILD_TOOL   ?= make
-BUILD_FILE    = Makefile
 CMAKE_GENERATOR = "Unix Makefiles"
 JOB_FLAG     := -j 4
-
-INSTALL_PREFIX ?= $(THIS_DIR)/build
-
-ifneq "$(CC)" ""
-    CMAKE_OPTIONS += -DCMAKE_C_COMPILER=$(CC)
-endif
-ifneq "$(CXX)" ""
-    CMAKE_OPTIONS += -DCMAKE_CXX_COMPILER=$(CXX)
-endif
-
-ifeq "$(CMAKE_OPTIONS)" ""
-    CMAKE_OPTIONS := -G $(CMAKE_GENERATOR) -DCMAKE_INSTALL_PREFIX=$(INSTALL_PREFIX)
-else
-    $(shell rm -f $(BUILD_PREFIX)/$(BUILD_FILE))
-endif
-
-.PHONY: build
-build: $(BUILD_PREFIX)/$(BUILD_FILE)
-	@set -o xtrace; \
-	export CTEST_OUTPUT_ON_FAILURE=1; \
-	cmake --build $(BUILD_PREFIX) --target all -- $(JOB_FLAG) ${a}; \
-
-.PHONY: test
-test: $(BUILD_PREFIX)/$(BUILD_FILE)
-	@set -o xtrace; \
-	export CTEST_OUTPUT_ON_FAILURE=1; \
-	cmake --build $(BUILD_PREFIX) --target all -- $(JOB_FLAG); \
-	ctest --test-dir $(BUILD_PREFIX) -j$$(getconf _NPROCESSORS_ONLN); \
-
-$(BUILD_PREFIX)/$(BUILD_FILE):
-	mkdir -p $(BUILD_PREFIX)
-	touch -c $@
-	ln -sf $(BUILD_PREFIX)/compile_commands.json compile_commands.json; \
-	cd $(BUILD_PREFIX) && \
-	cmake .. $(CMAKE_OPTIONS); \
 
 .PHONY: generate-reference
 generate-reference:
@@ -131,11 +94,6 @@ container.make.%:
 	MY_UID=$(UID) MY_GID=$(GID) \
 		docker compose -f docker-compose.yml run --rm dev_env \
 		'make CC=$(CC) CXX=$(CXX) $*'
-
-%: $(BUILD_PREFIX)/$(BUILD_FILE)
-	@set -o xtrace; \
-	export CTEST_OUTPUT_ON_FAILURE=1; \
-	cmake --build $(BUILD_PREFIX) --target $@ -- $(JOB_FLAG) ${a}; \
 
 Makefile:
 	;

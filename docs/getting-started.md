@@ -109,9 +109,6 @@ constexpr double a1 = bw.coeffs_a()[1];
 
 ## Stability checking
 
-`AnalogFilter` (the base of `Butterworth` and `Elliptic`) checks the
-continuous-time poles before discretization. If the analog system is
-`Stability::Unstable`, the constructor throws a string literal at runtime, or
-fails to compile if the filter is `constexpr`. `Stable` and `MarginallyStable`
-both pass. To skip the check, use `AnalogFilter` directly with `CheckStab = false` as
-its fourth template parameter.
+`AnalogFilter` (the base of `Butterworth` and `Elliptic`) exposes a `CheckStab`
+template parameter (fourth parameter, default `true`) for stability checking
+(not yet implemented). To skip the check, pass `CheckStab = false`.

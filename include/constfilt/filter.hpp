@@ -15,6 +15,10 @@ template <typename T, consteig::Size NB, consteig::Size NA> class Filter
     // NB == NA == 1 gives H(z) = b[0]/a[0] which is a pure gain. It is
     // mathematically valid but breaks the DF2T implementation (zero-sized
     // state, unsigned underflow in loops).
+    static_assert(NB >= 1u,
+                  "Filter requires at least one numerator coefficient");
+    static_assert(NA >= 1u,
+                  "Filter requires at least one denominator coefficient");
     static_assert(M >= 1u, "Filter requires max(NB, NA) - 1 >= 1");
 
   protected:

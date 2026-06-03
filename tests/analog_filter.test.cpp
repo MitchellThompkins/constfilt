@@ -131,11 +131,11 @@ TEST(Stability, MarginallyStable_SimplePoles)
     constexpr auto stab = constfilt::check_stability(sys);
 
     static_assert(stab == constfilt::Stability::MarginallyStable,
-                  "simple imaginary-axis poles → MarginallyStable");
+                  "simple imaginary-axis poles -> MarginallyStable");
     EXPECT_EQ(stab, constfilt::Stability::MarginallyStable);
 }
 
-// --- Stability: repeated imaginary-axis pole → Unstable
+// --- Stability: repeated imaginary-axis pole -> Unstable
 // -------------------------
 //
 // H(s) = 1/s^2: double pole at the origin
@@ -148,7 +148,7 @@ TEST(Stability, UnstableSystem_RepeatedImaginaryAxisPole)
     constexpr auto stab = constfilt::check_stability(sys);
 
     static_assert(stab == constfilt::Stability::Unstable,
-                  "repeated pole at origin → Unstable");
+                  "repeated pole at origin -> Unstable");
     EXPECT_EQ(stab, constfilt::Stability::Unstable);
 }
 

@@ -2,8 +2,8 @@
 #define CONSTFILT_BUTTERWORTH_HPP
 
 #include "analog_filter.hpp"
-#include "constfilt_options.hpp"
 #include "vendor/consteig/consteig.hpp"
+#include "vendor/gcem_wrapper.hpp"
 
 namespace constfilt
 {
@@ -35,14 +35,13 @@ class Butterworth : public AnalogFilter<T, N, Method>
     static constexpr TransferFunction<T, N + 1u, N + 1u> compute_continuous_tf(
         T cutoff_hz)
     {
-        const T wc = static_cast<T>(2.0 * CONSTFILT_PI) * cutoff_hz;
+        const T wc = static_cast<T>(2) * static_cast<T>(GCEM_PI) * cutoff_hz;
         TransferFunction<T, N + 1u, N + 1u> tf{};
         continuous_tf(wc, tf.b, tf.a, FilterType{});
         return tf;
     }
 
-    // --- Low-pass
-    // -------------------------------------------------------------
+    // Low-pass
     //
     // Numerator: b[N] = wc^N, all other b[k] = 0  (DC gain = 1)
     //
@@ -61,16 +60,15 @@ class Butterworth : public AnalogFilter<T, N, Method>
         }
     }
 
-    // --- High-pass
-    // ------------------------------------------------------------
+    // High-pass
     //
-    // Derived from the LPF via the LP-to-HP frequency transformation s → wc/s.
+    // Derived from the LPF via the LP-to-HP frequency transformation s -> wc/s.
     //
     // Numerator: b[0] = 1, all other b[k] = 0  (high-frequency gain = 1)
     //
-    // Denominator: a[k] = p[N-k] * wc^k - the normalized Butterworth
-    // coefficients in reversed order, scaled by wc^k (p[0] = 1 so a[0] = 1,
-    // keeping the denominator monic).
+    // Denominator: a[k] = p[N-k] * wc^k. The normalized Butterworth
+    // coefficients appear in reversed order, each scaled by wc^k (p[0] = 1
+    // so a[0] = 1, keeping the denominator monic).
     static constexpr void continuous_tf(T wc, T (&b)[N + 1u], T (&a)[N + 1u],
                                         HighPass)
     {
@@ -104,9 +102,10 @@ class Butterworth : public AnalogFilter<T, N, Method>
         // Multiply by (s - p_k) for k = 1..N.
         for (consteig::Size k = 1u; k <= N; ++k)
         {
-            T theta = static_cast<T>(CONSTFILT_PI) *
-                      static_cast<T>(2u * k + N - 1u) / static_cast<T>(2u * N);
-            Complex pole{consteig::cos(theta), consteig::sin(theta)};
+            const T theta = static_cast<T>(GCEM_PI) *
+                            static_cast<T>(2u * k + N - 1u) /
+                            static_cast<T>(2u * N);
+            const Complex pole{consteig::cos(theta), consteig::sin(theta)};
 
             // In-place multiply by (s - pole), traversing backwards
             // to avoid overwriting values still needed this iteration.

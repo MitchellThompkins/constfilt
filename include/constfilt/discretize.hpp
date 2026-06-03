@@ -1,13 +1,12 @@
 #ifndef CONSTFILT_DISCRETIZE_HPP
 #define CONSTFILT_DISCRETIZE_HPP
 
-#include "constfilt_options.hpp"
 #include "vendor/consteig/consteig.hpp"
 
 namespace constfilt
 {
 
-// --------------------------- Tag types ---------------------------------------
+// Tag types
 
 struct ZOH
 {
@@ -17,7 +16,7 @@ struct MatchedZ
 {
 };
 
-// --------------------------- Data structures ---------------------------------
+// Data structures
 
 template <typename T, consteig::Size N> struct StateSpace
 {
@@ -34,7 +33,7 @@ struct TransferFunction
     T a[NA]{};
 };
 
-// --------------------------- Matrix exponential ------------------------------
+// Matrix exponential
 
 // matrix_exp(A) via eigendecomposition:
 //   Ad = V * diag(exp(lam_i)) * V^{-1}
@@ -49,11 +48,11 @@ constexpr consteig::Matrix<T, N, N> matrix_exp(
     using ComplexMat_N1 = consteig::Matrix<Complex, N, 1>;
 
     // 1. Eigenvalues and eigenvectors
-    auto evals = consteig::eigenvalues(A);     // Matrix<Complex, N, 1>
-    auto V = consteig::eigenvectors(A, evals); // Matrix<Complex, N, N>
+    const auto evals = consteig::eigenvalues(A);     // Matrix<Complex, N, 1>
+    const auto V = consteig::eigenvectors(A, evals); // Matrix<Complex, N, N>
 
     // 2. Invert V column-by-column via LU
-    auto lu_V = consteig::lu(V);
+    const auto lu_V = consteig::lu(V);
 
     ComplexMat_NN V_inv{};
     for (consteig::Size col = 0; col < N; ++col)
@@ -95,7 +94,7 @@ constexpr consteig::Matrix<T, N, N> matrix_exp(
     return result;
 }
 
-// --------------------------- ZOH discretization ------------------------------
+// ZOH discretization
 
 // ZOH: Ad = matrix_exp(Ac*Ts),  Bd = Ac^{-1} * (Ad - I) * Bc
 // Solve  Ac * Bd = (Ad - I) * Bc  via LU.
@@ -117,10 +116,10 @@ constexpr StateSpace<T, N> zoh_discretize(const StateSpace<T, N> &sys_c, T Ts,
         }
     }
 
-    consteig::Matrix<T, N, N> Ad = matrix_exp(AcTs);
+    const consteig::Matrix<T, N, N> Ad = matrix_exp(AcTs);
 
     // (Ad - I)
-    consteig::Matrix<T, N, N> AdmI = Ad - consteig::eye<T, N>();
+    const consteig::Matrix<T, N, N> AdmI = Ad - consteig::eye<T, N>();
 
     // (Ad - I) * Bc
     consteig::Matrix<T, N, 1> rhs{};
@@ -135,8 +134,8 @@ constexpr StateSpace<T, N> zoh_discretize(const StateSpace<T, N> &sys_c, T Ts,
     }
 
     // Bd = Ac^{-1} * rhs  ->  solve Ac * Bd = rhs
-    auto lu_Ac = consteig::lu(Ac);
-    auto Bd = consteig::lu_solve(lu_Ac, rhs);
+    const auto lu_Ac = consteig::lu(Ac);
+    const auto Bd = consteig::lu_solve(lu_Ac, rhs);
 
     StateSpace<T, N> sys_d{};
     sys_d.A = Ad;
@@ -146,23 +145,20 @@ constexpr StateSpace<T, N> zoh_discretize(const StateSpace<T, N> &sys_c, T Ts,
     return sys_d;
 }
 
-// --------------------------- Characteristic polynomial -----------------------
+// Characteristic polynomial
 
 // Fills monic characteristic polynomial of Ad:
 //   [1, c_1, c_2, ..., c_N]   (N+1 coefficients)
 // Uses consteig::eigenvalues to obtain lam_1..lam_N, then builds
 //   (z - lam_1)(z - lam_2)...(z - lam_N) in complex arithmetic.
 // Real parts are extracted at the end (imaginary parts cancel for real A).
-// Note: Faddeev-LeVerrier is an acceptable alternative if consteig were
-// unavailable; it computes the same coefficients via matrix traces without
-// eigenvalue decomposition.
 template <typename T, consteig::Size N>
 constexpr void char_poly(const consteig::Matrix<T, N, N> &Ad,
                          T (&coeffs)[N + 1u])
 {
     using Complex = consteig::Complex<T>;
 
-    auto evals = consteig::eigenvalues(Ad); // Matrix<Complex, N, 1>
+    const auto evals = consteig::eigenvalues(Ad); // Matrix<Complex, N, 1>
 
     // p[0..k] holds the monic polynomial of degree k after k iterations.
     Complex p[N + 1u]{};
@@ -186,7 +182,7 @@ constexpr void char_poly(const consteig::Matrix<T, N, N> &Ad,
     }
 }
 
-// --------------------------- Markov numerator --------------------------------
+// Markov numerator
 
 // Computes numerator polynomial b from Markov parameters and denominator a.
 //   h[0] = D
@@ -252,7 +248,7 @@ constexpr void markov_numerator(const StateSpace<T, N> &sys_d,
     }
 }
 
-// --------------------------- ss_to_tf ----------------------------------------
+// ss_to_tf
 
 // Full pipeline: discrete state-space -> (b, a) transfer function.
 template <typename T, consteig::Size N>
@@ -265,7 +261,7 @@ constexpr TransferFunction<T, N + 1u, N + 1u> ss_to_tf(
     return tf;
 }
 
-// --------------------------- tf_to_ss ----------------------------------------
+// tf_to_ss
 
 // Build controllable canonical form continuous-time state-space from
 // analog transfer function coefficients in descending power order:
@@ -322,7 +318,7 @@ constexpr StateSpace<T, N> tf_to_ss(const T (&b)[N + 1u], const T (&a)[N + 1u])
     return sys;
 }
 
-// --- Matched-Z discretization (TF entry point) ------------------------------
+// Matched-Z discretization (TF entry point)
 
 // Full matched-Z from analog transfer function coefficients.
 // Maps each finite analog zero via z = exp(s*Ts), pads with zeros at z = -1
@@ -550,7 +546,7 @@ constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_discretize(
     return matched_z_discretize_tf<T, N>(b_c, a_c, Ts, MatchedZ{});
 }
 
-// --------------------------- analog_to_digital (state-space overloads) -------
+// analog_to_digital (state-space overloads)
 
 template <typename T, consteig::Size N>
 constexpr TransferFunction<T, N + 1u, N + 1u> analog_to_digital(
@@ -566,7 +562,7 @@ constexpr TransferFunction<T, N + 1u, N + 1u> analog_to_digital(
     return matched_z_discretize(sys_c, Ts, MatchedZ{});
 }
 
-// --------------------------- analog_to_digital (TF overloads) ----------------
+// analog_to_digital (TF overloads)
 
 template <typename T, consteig::Size N>
 constexpr TransferFunction<T, N + 1u, N + 1u> analog_to_digital(

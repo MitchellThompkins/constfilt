@@ -21,7 +21,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install Graphviz
-        run: sudo apt-get install -y graphviz
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y graphviz
 
       # Ubuntu 24.04 packages Doxygen 1.9.8 which generates HTML that loads from
       # the compromised polyfill.io domain. The fix landed in 1.10.0. Install

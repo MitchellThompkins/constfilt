@@ -2,7 +2,6 @@
 #define CONSTFILT_ELLIPTIC_HPP
 
 #include "analog_filter.hpp"
-#include "constfilt_options.hpp"
 #include "vendor/consteig/consteig.hpp"
 #include "vendor/gcem_wrapper.hpp"
 
@@ -26,8 +25,8 @@ namespace constfilt
 //   attenuation_db - stopband attenuation Rs in dB (e.g. 40)
 //   sample_rate_hz - sample rate in Hz
 //
-// Algorithm follows Octave's ncauer (theta-function / q-series path), with one
-// deviation: Step 2 uses the modular identity q = q1^(1/N) instead of
+// The implementation follows Octave's ncauer (theta-function / q-series path),
+// with one deviation: Step 2 uses the modular identity q = q1^(1/N) instead of
 // ncauer's iterative degree-equation solver. Steps 1 and 3 onward are
 // identical. All coefficient math is constexpr.
 template <typename T, consteig::Size N, typename Method = ZOH,
@@ -69,15 +68,13 @@ class Elliptic : public AnalogFilter<T, N, Method>
     static constexpr TransferFunction<T, N + 1u, N + 1u> compute_continuous_tf(
         T cutoff_hz, T ripple_db, T attenuation_db)
     {
-        const T wc = static_cast<T>(2.0 * CONSTFILT_PI) * cutoff_hz;
+        const T wc = static_cast<T>(2) * static_cast<T>(GCEM_PI) * cutoff_hz;
         TransferFunction<T, N + 1u, N + 1u> tf{};
         elliptic_tf(wc, ripple_db, attenuation_db, tf.b, tf.a, FilterType{});
         return tf;
     }
 
-    // =========================================================================
     // Math helpers
-    // =========================================================================
 
     // Complete elliptic integral of the first kind K(k) via AGM
     // (https://dlmf.nist.gov/19.2#ii).
@@ -88,12 +85,12 @@ class Elliptic : public AnalogFilter<T, N, Method>
         T b = gcem::sqrt(static_cast<T>(1) - k * k);
         for (int i = 0; i < AGM_ITERATIONS; ++i)
         {
-            T a2 = (a + b) / static_cast<T>(2);
-            T b2 = gcem::sqrt(a * b);
+            const T a2 = (a + b) / static_cast<T>(2);
+            const T b2 = gcem::sqrt(a * b);
             a = a2;
             b = b2;
         }
-        return static_cast<T>(CONSTFILT_PI) / (static_cast<T>(2) * a);
+        return static_cast<T>(GCEM_PI) / (static_cast<T>(2) * a);
     }
 
     // Convert a power ratio in dB to linear: 10^(x/10) = exp(x * ln10/10).
@@ -171,14 +168,12 @@ class Elliptic : public AnalogFilter<T, N, Method>
         return ratio * ratio;
     }
 
-    // =========================================================================
     // Pole-shift parameter sig0 via theta-function series (ncauer algorithm).
     //
     //   l     = (1/(2N)) * log((10^(0.05*Rp) + 1) / (10^(0.05*Rp) - 1))
     //   sig01 = sum_{m=0..30} (-1)^m * q^(m(m+1)) * sinh((2m+1)*l)
     //   sig02 = sum_{m=1..30} (-1)^m * q^(m^2)    * cosh(2*m*l)
     //   sig0  = abs(2 * q^(1/4) * sig01 / (1 + 2*sig02))
-    // =========================================================================
     static constexpr T compute_sig0(T ripple_db, T q)
     {
         const T gain = from_db10(ripple_db / static_cast<T>(2)); // from_db10
@@ -234,27 +229,25 @@ class Elliptic : public AnalogFilter<T, N, Method>
 
         const T q14 = gcem::sqrt(gcem::sqrt(q)); // q^(1/4)
 
-        T sig0 = static_cast<T>(2) * q14 * sig01 /
-                 (static_cast<T>(1) + static_cast<T>(2) * sig02);
+        const T sig0 = static_cast<T>(2) * q14 * sig01 /
+                       (static_cast<T>(1) + static_cast<T>(2) * sig02);
 
         return (sig0 < static_cast<T>(0)) ? -sig0 : sig0;
     }
 
-    // =========================================================================
     // Compute zero position wi via theta-function series (ncauer algorithm).
     //
     //   mu = ii (odd N), mu = ii - 0.5 (even N)
     //   soma1 = sum_{m=0..30} 2*q^(1/4)*(-1)^m*q^(m(m+1))*sin((2m+1)*pi*mu/N)
     //   soma2 = sum_{m=1..30} 2*(-1)^m*q^(m^2)*cos(2*m*pi*mu/N)
     //   wi    = soma1 / (1 + soma2)
-    // =========================================================================
     static constexpr T compute_wi(consteig::Size ii, T q)
     {
         const T mu = (N % 2u == 1u) ? static_cast<T>(ii)
                                     : static_cast<T>(ii) - static_cast<T>(0.5);
         const T q14 = gcem::sqrt(gcem::sqrt(q)); // q^(1/4)
         const T q2 = q * q;
-        const T pi_mu_n = static_cast<T>(CONSTFILT_PI) * mu / static_cast<T>(N);
+        const T pi_mu_n = static_cast<T>(GCEM_PI) * mu / static_cast<T>(N);
 
         // soma1: q^(m*(m+1)) incremental.
         T soma1 = static_cast<T>(0);
@@ -295,12 +288,10 @@ class Elliptic : public AnalogFilter<T, N, Method>
         return soma1 / (static_cast<T>(1) + soma2);
     }
 
-    // =========================================================================
     // In-place multiply polynomial poly (ascending order, currently degree
     // deg-1) by (s - root), bringing it to degree deg. Builds up the full
     // polynomial one root at a time: start with (s - r1), call with r2 to get
     // (s - r1)(s - r2), call again with r3 to get (s - r1)(s - r2)(s - r3).
-    // =========================================================================
     static constexpr void poly_mul_root(Complex (&poly)[N + 1u],
                                         consteig::Size deg, Complex root)
     {
@@ -312,7 +303,6 @@ class Elliptic : public AnalogFilter<T, N, Method>
             Complex{static_cast<T>(0), static_cast<T>(0)} - root * poly[0];
     }
 
-    // =========================================================================
     // Low-pass elliptic transfer function (ncauer theta-function algorithm).
     //
     // Steps:
@@ -327,7 +317,6 @@ class Elliptic : public AnalogFilter<T, N, Method>
     // The filter is fully determined after step 4. Steps 2-4 are the elliptic
     // function machinery that places poles and zeros for equiripple in both
     // bands. Step 1 is unit conversion; steps 5-7 are extraction and scaling.
-    // =========================================================================
     static constexpr void elliptic_tf(T wc, T ripple_db, T attenuation_db,
                                       T (&b)[N + 1u], T (&a)[N + 1u], LowPass)
     {
@@ -437,13 +426,11 @@ class Elliptic : public AnalogFilter<T, N, Method>
         }
     }
 
-    // =========================================================================
     // High-pass via LP-to-HP transform.
     //
     // Computes the normalized LP prototype (wc = 1 rad/s), then:
     //   a_hp[j] = a_lp[N-j] * wc^j
     //   b_hp[j] = b_lp[N-j] * wc^j
-    // =========================================================================
     static constexpr void elliptic_tf(T wc, T ripple_db, T attenuation_db,
                                       T (&b)[N + 1u], T (&a)[N + 1u], HighPass)
     {

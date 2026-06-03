@@ -1,12 +1,12 @@
-# AGENTS.md — constfilt
+# AGENTS.md: constfilt
 
 Header-only C++17 library for compile-time IIR digital filter design.
 All coefficient math is `constexpr`, built on
 [consteig](https://github.com/mitchellthompkins/consteig) and
 [gcem](https://github.com/MitchellThompkins/gcem).
 
-User-facing documentation lives in `README.md` and the `docs/` directory —
-treat those as the source of truth for *what* the library does and how it is
+User-facing documentation lives in `README.md` and the `docs/` directory.
+Treat those as the source of truth for *what* the library does and how it is
 used. This file is a guide to working on the code.
 
 ## Repo layout (by responsibility)
@@ -14,20 +14,19 @@ used. This file is a guide to working on the code.
 The library sources live under `include/constfilt/` as a flat collection of
 headers. By responsibility:
 
-- **Umbrella include** — pulls in everything; the entry point for user code.
-- **Runtime filter** — Direct Form II Transposed implementation with both a
+- **Umbrella include**: pulls in everything; the entry point for user code.
+- **Runtime filter**: Direct Form II Transposed implementation with both a
   sample-by-sample real-time path and a `constexpr`-capable batch path.
-- **Analog front end** — converts a continuous-time transfer function to
+- **Analog front end**: converts a continuous-time transfer function to
   controllable-canonical state-space, then discretizes it. Used as a base
   class by the concrete filter designs.
-- **Discretization** — `zoh_discretize`, `matched_z_discretize`, `ss_to_tf`,
+- **Discretization**: `zoh_discretize`, `matched_z_discretize`, `ss_to_tf`,
   and the `StateSpace` struct.
-- **Concrete designs** — Butterworth and Elliptic, both supporting lowpass
+- **Concrete designs**: Butterworth and Elliptic, both supporting lowpass
   and highpass, arbitrary order (`N >= 1`), and ZOH or Matched-Z
   discretization.
-- **Stability classification** — `check_stability` and the `Stability` enum,
+- **Stability classification**: `check_stability` and the `Stability` enum,
   used by the analog front end before discretization.
-- **Options** — `CONSTFILT_PI` override.
 
 Tests live under `tests/` (GoogleTest); numerical references are committed as
 generated C++ headers next to the tests that consume them. The generators
@@ -67,7 +66,7 @@ reference-data regeneration workflow.
   hard-coded upper limits.
 - **Template parameter type:** constfilt uses `unsigned int` for order `N`;
   consteig uses `consteig::Size` (= `size_t`). Implicit conversion is fine in
-  C++17 template arguments — do not add casts unless a compiler error
+  C++17 template arguments; do not add casts unless a compiler error
   requires it.
 - **`a[0] = 1` convention:** all discrete transfer functions are
   monic-denominator. `Filter` stores `_a` with `a[0]` included for uniformity
@@ -88,8 +87,8 @@ reference-data regeneration workflow.
 |---|---|
 | `zoh_discretize` | Matrix exponential via eigendecomposition; $B_d$ via LU solve |
 | `matched_z_discretize` | Map continuous poles via $z = e^{sT_s}$; finite zeros mapped to $e^{sT_s}$, missing zeros placed at $z = -1$; gain matched at a test frequency (DC where possible) |
-| `Butterworth` | Analytic pole formula $\theta_k = \pi(2k+N-1)/(2N)$ → real polynomial coefficients via conjugate-pair multiply-out → controllable-canonical SS → discretize |
-| `Elliptic` | Nome-series Cauer design (see [docs/elliptic.md](docs/elliptic.md)) → s-domain TF → controllable-canonical SS → discretize |
-| `AnalogFilter` | s-domain TF → controllable-canonical SS → discretize → TF |
+| `Butterworth` | Analytic pole formula $\theta_k = \pi(2k+N-1)/(2N)$ -> real polynomial coefficients via conjugate-pair multiply-out -> controllable-canonical SS -> discretize |
+| `Elliptic` | Nome-series Cauer design (see [docs/elliptic.md](docs/elliptic.md)) -> s-domain TF -> controllable-canonical SS -> discretize |
+| `AnalogFilter` | s-domain TF -> controllable-canonical SS -> discretize -> TF |
 | `Filter` | Direct Form II Transposed (DF2T) |
 | Characteristic poly | Eigenvalues from `consteig::eigenvalues` expanded as $\prod_k(z - \lambda_k)$ in complex arithmetic; real parts taken at the end |

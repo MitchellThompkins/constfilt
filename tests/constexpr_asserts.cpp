@@ -37,7 +37,7 @@ constexpr bool near_eq(double a, double b, double tol)
     return (d < 0 ? -d : d) < tol;
 }
 
-// Full-array constexpr comparison — returns false on first out-of-tolerance
+// Full-array constexpr comparison, returns false on first out-of-tolerance
 // element.
 template <unsigned N>
 constexpr bool array_near_eq(const double (&a)[N], const double (&b)[N],

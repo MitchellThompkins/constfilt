@@ -107,12 +107,6 @@ constexpr double b0 = bw.coeffs_b()[0];
 constexpr double a1 = bw.coeffs_a()[1];
 ```
 
-## Configuration
-
-| Macro | Default | Description |
-|-------|---------|-------------|
-| `CONSTFILT_PI` | `3.14159265358979323846` | Value of pi used in frequency conversions. Define before including `<constfilt/constfilt.hpp>` to override. |
-
 ## Stability checking
 
 `AnalogFilter` (the base of `Butterworth` and `Elliptic`) checks the

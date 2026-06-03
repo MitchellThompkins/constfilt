@@ -66,13 +66,15 @@ class AnalogFilter : public Filter<T, N + 1u, N + 1u>
         //   throw "constfilt: unstable analog filter";
         // which serves dual purpose in C++17: a runtime exception and, when
         // evaluated in a constexpr context, a compile-time error. This is
-        // incompatible with -fno-exceptions and freestanding (no-stdlib) builds.
+        // incompatible with -fno-exceptions and freestanding (no-stdlib)
+        // builds.
         //
         // Candidate replacements, each with trade-offs:
         //   __builtin_trap()          - preserves compile-time error via the
         //                               non-constexpr call rule, but is
         //                               GCC/Clang specific.
-        //   [[noreturn]] customization point (declared, not defined) - portable,
+        //   [[noreturn]] customization point (declared, not defined) -
+        //   portable,
         //                               user supplies the handler; linker error
         //                               if forgotten; compile-time error still
         //                               works via non-constexpr call rule.

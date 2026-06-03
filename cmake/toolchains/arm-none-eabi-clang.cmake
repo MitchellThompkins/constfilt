@@ -5,8 +5,12 @@ set(CMAKE_C_COMPILER clang)
 set(CMAKE_CXX_COMPILER clang++)
 
 set(ARM_GCC_ROOT "/opt/arm-gnu-toolchain" CACHE PATH "ARM GCC root (cxx-include/, gcc-include/, arm-none-eabi/include/)")
-if(NOT EXISTS "${ARM_GCC_ROOT}/cxx-include")
-    message(FATAL_ERROR "ARM_GCC_ROOT=${ARM_GCC_ROOT} not found; set -DARM_GCC_ROOT=... to override.")
+if(NOT EXISTS "${ARM_GCC_ROOT}/cxx-include" OR
+   NOT EXISTS "${ARM_GCC_ROOT}/arm-none-eabi/include" OR
+   NOT EXISTS "${ARM_GCC_ROOT}/gcc-include")
+    message(FATAL_ERROR "ARM_GCC_ROOT=${ARM_GCC_ROOT} is missing expected subdirectories "
+                        "(cxx-include/, gcc-include/, arm-none-eabi/include/); "
+                        "set -DARM_GCC_ROOT=... to override.")
 endif()
 set(ARM_CXX_INC "${ARM_GCC_ROOT}/cxx-include")
 set(ARM_C_INC "${ARM_GCC_ROOT}/arm-none-eabi/include")

@@ -71,10 +71,10 @@ reference-data regeneration workflow.
 - **`a[0] = 1` convention:** all discrete transfer functions are
   monic-denominator. `Filter` stores `_a` with `a[0]` included for uniformity
   but the DF2T equations assume `a[0] = 1`.
-- **Stability check:** the analog front end throws a string literal at
-  runtime (or is a compile-time error) if the analog system is
-  `Stability::Unstable`. Both `Stable` and `MarginallyStable` are accepted.
-  The `CheckStab = false` template parameter skips the check.
+- **Stability check:** the analog front end has a `CheckStab` template
+  parameter (default `true`) reserved for rejecting `Stability::Unstable`
+  systems. Both `Stable` and `MarginallyStable` are accepted. The check is
+  not yet implemented; see issue #14.
 - **No new dependencies.** consteig, gcem, and googletest are the only
   external deps; consteig and gcem are vendored under `include/constfilt/vendor/`
   and wired in via CMake; googletest is fetched via `FetchContent`.

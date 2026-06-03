@@ -18,10 +18,7 @@ namespace constfilt
 //   T         - numeric type (float, double, ...)
 //   N         - filter order (degree of denominator)
 //   Method    - ZOH (default) or MatchedZ
-//   CheckStab - when true (default), throws at construction (a compile-time
-//               error for constexpr instances) if the analog system is
-//               Unstable. Both Stable and MarginallyStable are accepted.
-//               Set to false to skip.
+//   CheckStab - reserved for future use; currently has no effect (see below).
 //
 // Constructors:
 //   AnalogFilter(b_c, a_c, sample_rate_hz)
@@ -62,11 +59,33 @@ class AnalogFilter : public Filter<T, N + 1u, N + 1u>
     static constexpr TransferFunction<T, N + 1u, N + 1u> checked_discretize(
         const T (&b_c)[N + 1u], const T (&a_c)[N + 1u], T sample_rate_hz)
     {
-        if (CheckStab &&
-            check_stability(tf_to_ss<T, N>(b_c, a_c)) == Stability::Unstable)
-        {
-            throw "constfilt: unstable analog filter";
-        }
+        // Stability check is currently disabled. See:
+        // https://github.com/MitchellThompkins/constfilt/issues/14
+        //
+        // The original implementation used:
+        //   throw "constfilt: unstable analog filter";
+        // which serves dual purpose in C++17: a runtime exception and, when
+        // evaluated in a constexpr context, a compile-time error. This is
+        // incompatible with -fno-exceptions and freestanding (no-stdlib)
+        // builds.
+        //
+        // Candidate replacements, each with trade-offs:
+        //   __builtin_trap()          - preserves compile-time error via the
+        //                               non-constexpr call rule, but is
+        //                               GCC/Clang specific.
+        //   [[noreturn]] customization point (declared, not defined) -
+        //   portable,
+        //                               user supplies the handler; linker error
+        //                               if forgotten; compile-time error still
+        //                               works via non-constexpr call rule.
+        //   Remove entirely           - current state; no check at runtime or
+        //                               compile time; caller's responsibility.
+        //
+        // if (CheckStab &&
+        //     check_stability(tf_to_ss<T, N>(b_c, a_c)) == Stability::Unstable)
+        // {
+        //     throw "constfilt: unstable analog filter";
+        // }
         return analog_to_digital<T, N>(
             b_c, a_c, static_cast<T>(1) / sample_rate_hz, Method{});
     }

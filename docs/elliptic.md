@@ -59,7 +59,7 @@ $$q = q_1^{1/N} = \exp\!\left(\frac{\ln q_1}{N}\right)$$
 
 The elliptic modular equation $K'(k)/K(k) = N \cdot K'(k_1)/K(k_1)$ is equivalent in
 nome space to $q = q_1^{1/N}$. This is an exact identity, so no iteration or
-convergence criterion is needed and no error accumulates across steps.
+convergence criterion is needed and no error accumulates across iteration steps.
 
 ## Step 2: Design modulus from nome
 

@@ -1,7 +1,6 @@
 #ifndef CONSTFILT_STABILITY_HPP
 #define CONSTFILT_STABILITY_HPP
 
-#include "constfilt_options.hpp"
 #include "discretize.hpp"
 #include "vendor/consteig/consteig.hpp"
 
@@ -17,16 +16,18 @@ enum class Stability
 
 // Checks continuous-time stability via eigenvalues of the A matrix.
 //
-//   Stable:           all poles have Re(λ) < 0
-//   MarginallyStable: all poles have Re(λ) ≤ 0, and any imaginary-axis poles
+//   Stable:           all poles have Re(lambda) < 0
+//   MarginallyStable: all poles have Re(lambda) <= 0, and any imaginary-axis
+//   poles
 //                     are simple (no repeated imaginary-axis poles)
-//   Unstable:         any pole has Re(λ) > 0, or repeated imaginary-axis poles
+//   Unstable:         any pole has Re(lambda) > 0, or repeated imaginary-axis
+//   poles
 //
 // Tolerance used for "near imaginary axis" and "repeated" comparisons: 1e-8.
 template <typename T, consteig::Size N>
 constexpr Stability check_stability(const StateSpace<T, N> &sys)
 {
-    auto evals = consteig::eigenvalues(sys.A);
+    const auto evals = consteig::eigenvalues(sys.A);
 
     constexpr T tol = static_cast<T>(1e-8);
 
@@ -47,7 +48,7 @@ constexpr Stability check_stability(const StateSpace<T, N> &sys)
 
     if (has_imag_axis)
     {
-        // Check for repeated imaginary-axis poles (repeated → Unstable).
+        // Check for repeated imaginary-axis poles (repeated = Unstable).
         for (consteig::Size i = 0; i < N; ++i)
         {
             if (evals(i, 0).real > -tol)

@@ -20,10 +20,10 @@ set(CMAKE_CXX_FLAGS_INIT "--target=arm-none-eabi -isystem ${ARM_CXX_INC} -isyste
 set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
 # Prevent CMake from finding host system resources when cross-compiling:
-#   PROGRAM NEVER  — use host tools (make, pkg-config), not target sysroot
-#   LIBRARY ONLY   — only link against target ARM libraries, not host x86 libs
-#   INCLUDE ONLY   — only search target sysroot for headers
-#   PACKAGE ONLY   — only search target sysroot for CMake packages
+#   PROGRAM NEVER: use host tools (make, pkg-config), not target sysroot
+#   LIBRARY ONLY:  only link against target ARM libraries, not host x86 libs
+#   INCLUDE ONLY:  only search target sysroot for headers
+#   PACKAGE ONLY:  only search target sysroot for CMake packages
 set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)

@@ -1,7 +1,6 @@
 #ifndef CONSTFILT_FILTER_HPP
 #define CONSTFILT_FILTER_HPP
 
-#include "constfilt_options.hpp"
 #include "vendor/consteig/consteig.hpp"
 
 namespace constfilt
@@ -48,7 +47,7 @@ template <typename T, consteig::Size NB, consteig::Size NA> class Filter
     // NOT constexpr (writes to member state).
     T operator()(T x)
     {
-        T y = _b[0] * x + _state[0];
+        const T y = _b[0] * x + _state[0];
 
         for (consteig::Size k = 0; k < M - 1u; ++k)
         {
@@ -69,8 +68,8 @@ template <typename T, consteig::Size NB, consteig::Size NA> class Filter
 
         for (consteig::Size n = 0; n < N; ++n)
         {
-            T x = input[n];
-            T y = _b[0] * x + local_state[0];
+            const T x = input[n];
+            const T y = _b[0] * x + local_state[0];
 
             for (consteig::Size k = 0; k < M - 1u; ++k)
             {

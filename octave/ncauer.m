@@ -59,7 +59,7 @@
 
 function [zer, pol, T0] = ncauer (Rp, Rs, n)
 
-  ## Step 1 & 2 — design modulus k and nome q.
+  ## Step 1 & 2: design modulus k and nome q.
   ##   ncauer finds ws first via an iterative degree-equation solver, then
   ##   derives k = 1/ws and the nome q from k.  (constfilt takes a closed-form
   ##   path instead; only this step differs between the two implementations.)
@@ -74,7 +74,7 @@ function [zer, pol, T0] = ncauer (Rp, Rs, n)
   ## Filter order maybe this, but not used now:
   ## n=ceil(log10(16*D)/log10(1/q))
 
-  ## Step 3 — pole-shift parameter sig0.
+  ## Step 3: pole-shift parameter sig0.
   ##   l encodes the passband-ripple spec as a hyperbolic angle, divided by n
   ##   to spread it across the n pole positions.  sig01/sig02 are theta-function
   ##   series that evaluate the Jacobi elliptic function at that angle.
@@ -88,7 +88,7 @@ function [zer, pol, T0] = ncauer (Rp, Rs, n)
   endfor
   sig0=abs((2*q^(1/4)*sig01)/(1+2*sig02));
 
-  ## Step 4 — zero positions wi (one per conjugate pair).
+  ## Step 4: zero positions wi (one per conjugate pair).
   ##   wi = sn(i*K(k)/n, k) via theta-function series; mu shifts the index for
   ##   even orders so zeros land at half-integer multiples of K/n.
   w=sqrt((1+k*sig0^2)*(1+sig0^2/k));
@@ -115,7 +115,7 @@ function [zer, pol, T0] = ncauer (Rp, Rs, n)
     wi(ii)=(soma1/(1+soma2));
   endfor
 
-  ## Step 5 — pole and zero placement.
+  ## Step 5: pole and zero placement.
   ##   Vi = cn(ui,k)*dn(ui,k) via Pythagorean identities on wi = sn(ui,k).
   ##   B0i/B1i are the quadratic and linear denominator coefficients per pair.
   ##   sqrt(ws) scaling puts the stopband edge at ws rad/s.
@@ -125,7 +125,7 @@ function [zer, pol, T0] = ncauer (Rp, Rs, n)
   B0i=((sig0.*Vi).^2 + (w.*wi).^2)./((1+sig0^2.*wi.^2).^2);
   B1i=(2 * sig0.*Vi)./(1 + sig0^2 * wi.^2);
 
-  ## Step 6 — gain normalization.
+  ## Step 6: gain normalization.
   ##   odd n:  H(0) = 1  (DC gain exactly 1)
   ##   even n: H(0) = Gp = 10^(-0.05*Rp)  (DC gain at passband floor)
   if rem(n,2)
@@ -134,7 +134,7 @@ function [zer, pol, T0] = ncauer (Rp, Rs, n)
     T0=10^(-0.05*Rp)*prod(B0i./A0i);
   endif
 
-  ## Step 7 — zeros, poles, stopband scaling.
+  ## Step 7: zeros, poles, stopband scaling.
   zer=[i*sqrA0i, -i*sqrA0i];
   pol=[(-2*sig0*Vi+2*i*wi.*w)./(2*(1+sig0^2*wi.^2)), (-2*sig0*Vi-2*i*wi.*w)./(2*(1+sig0^2*wi.^2))];
 

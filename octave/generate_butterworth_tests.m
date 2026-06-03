@@ -137,7 +137,7 @@ for ci = 1:length(hpf_cases)
     fs  = hpf_cases{ci}{3};
     wc  = 2 * pi * fc;
 
-    % LP prototype → LP-to-HP transformation: poles map as wc/p, N zeros at
+    % LP prototype -> LP-to-HP transformation: poles map as wc/p, N zeros at
     % s=0, unity high-frequency gain.
     [z_p, p_p, k_p] = buttap(ord);
     p_hp = wc ./ p_p;

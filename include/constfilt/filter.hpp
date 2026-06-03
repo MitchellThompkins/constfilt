@@ -12,6 +12,10 @@ namespace constfilt
 template <typename T, consteig::Size NB, consteig::Size NA> class Filter
 {
     static constexpr consteig::Size M = (NA > NB ? NA : NB) - 1u; // STATE_LEN
+    // NB == NA == 1 gives H(z) = b[0]/a[0] which is a pure gain. It is
+    // mathematically valid but breaks the DF2T implementation (zero-sized
+    // state, unsigned underflow in loops).
+    static_assert(M >= 1u, "Filter requires max(NB, NA) - 1 >= 1");
 
   protected:
     T _b[NB]{};

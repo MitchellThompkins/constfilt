@@ -29,6 +29,12 @@ constexpr Stability check_stability(const StateSpace<T, N> &sys)
 {
     const auto evals = consteig::eigenvalues(sys.A);
 
+    // Classifies poles by real part:
+    //   re   >  tol -> Unstable
+    //   |re| <= tol -> MarginallyStable
+    //   re   < -tol -> Stable
+    // tol = 1e-8 is conservative. A pole that close to the imaginary axis is
+    // effectively marginal regardless.
     constexpr T tol = static_cast<T>(1e-8);
 
     bool has_imag_axis = false;

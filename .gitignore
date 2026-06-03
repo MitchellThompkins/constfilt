@@ -1,0 +1,16 @@
+# Build directories
+build*/
+
+# CMake
+compile_commands.json
+
+# Container
+.ash_history
+
+# Claude
+.claude/
+
+# Development
+*.sw[op]
+tags
+.DS_Store

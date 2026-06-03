@@ -1,0 +1,11 @@
+#ifndef CONSTFILT_HPP
+#define CONSTFILT_HPP
+
+#include "analog_filter.hpp"
+#include "butterworth.hpp"
+#include "discretize.hpp"
+#include "elliptic.hpp"
+#include "filter.hpp"
+#include "stability.hpp"
+
+#endif // CONSTFILT_HPP

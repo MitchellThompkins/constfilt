@@ -70,6 +70,17 @@ target_link_libraries(constfilt INTERFACE
     gcem
 )
 
+# INTERFACE_SYSTEM_INCLUDE_DIRECTORIES does not propagate transitively beyond
+# direct consumers, so re-declare vendor paths as SYSTEM on constfilt itself so
+# that downstream targets see -isystem and suppress third-party warnings (e.g.
+# -Wfloat-equal in gcem).
+target_include_directories(constfilt SYSTEM INTERFACE
+    $<BUILD_INTERFACE:${_constfilt_vendor}>
+    $<BUILD_INTERFACE:${_constfilt_vendor}/gcem>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/constfilt/vendor>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/constfilt/vendor/gcem>
+)
+
 ################################################################################
 # Development mode (skipped when consumed via add_subdirectory/FetchContent)
 ################################################################################

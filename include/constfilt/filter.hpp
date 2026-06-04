@@ -24,7 +24,7 @@ template <typename T, consteig::Size NB, consteig::Size NA> class Filter
   protected:
     T _b[NB]{};
     T _a[NA]{};
-    T _state[M]{}; // DF2T delay line, zero-initialized
+    mutable T _state[M]{}; // DF2T delay line, zero-initialized
 
     constexpr Filter() = default;
 
@@ -51,9 +51,11 @@ template <typename T, consteig::Size NB, consteig::Size NA> class Filter
     }
 
   public:
-    // Real-time: process one sample, mutate _state.
-    // NOT constexpr (writes to member state).
-    T operator()(T x)
+    // Real-time: process one sample. Declared const so the filter can be
+    // static constexpr (coefficients at compile time) while still supporting
+    // runtime sample-by-sample processing. _state is mutable for this reason.
+    // Not thread-safe on shared instances without external synchronization.
+    T operator()(T x) const
     {
         const T y = _b[0] * x + _state[0];
 
@@ -101,7 +103,7 @@ template <typename T, consteig::Size NB, consteig::Size NA> class Filter
     }
 
     // Reset real-time state to zero.
-    void reset()
+    void reset() const
     {
         for (consteig::Size k = 0; k < M; ++k)
         {

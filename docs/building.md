@@ -11,12 +11,12 @@ automatically on first use. CI runs in the same container.
 Makefile entry points:
 
 ```sh
-make container.make.test.gcc        # configure, build, and run tests with GCC
-make container.make.test.clang      # ... with Clang
-make container.make.build.gcc       # build without running tests
-make container.make.build.clang
-make container.make.check-format    # clang-format dry-run (enforced by CI)
-make container.make.format          # apply clang-format in-place
+make container.make.test.gcc
+make container.make.test.clang
+make container.make.build.gcc
+make container.make.build.clan
+make container.make.check-format
+make container.make.format
 ```
 
 `container.make.<target>` runs `make <target>` inside the container, so any
@@ -47,14 +47,10 @@ surrounding testing.
 ## Regenerating reference data
 
 Numerical references for the regression tests are produced by Octave scripts
-checked into the repo and emitted as committed C++ headers. Committing the
-generated headers means the test suite runs without an Octave installation
-and the references are version-controlled alongside the code that consumes
-them.
+checked into the repo and emitted as committed C++ headers.
 
-To regenerate, run the Octave scripts in the `octave/` directory and commit
-the updated headers. Each script is self-contained and prints its output
-path; running it under `octave` (or `octave-cli`) overwrites the
-corresponding header in place. CI does not regenerate references; they are
-considered ground truth until a maintainer changes the cases and regenerates
-deliberately.
+To regenerate them, run the Octave scripts in the `octave/` directory and commit
+the updated headers. Each script is self-contained and prints its output path.
+Running it under `octave` (or `octave-cli`) overwrites the corresponding header
+in place. CI does not regenerate references; they are considered truth until a
+maintainer changes the cases and regenerates deliberately.

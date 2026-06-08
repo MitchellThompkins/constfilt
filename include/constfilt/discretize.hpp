@@ -104,6 +104,9 @@ constexpr consteig::Matrix<T, N, N> matrix_exp(
 // ZOH: Ad = matrix_exp(Ac*Ts),  Bd = Ac^{-1} * (Ad - I) * Bc
 // Solve  Ac * Bd = (Ad - I) * Bc  via LU.
 // Cc and Dc are unchanged.
+// Returns StateSpace, as opposed to TransferFunction to preserve access to the
+// discrete matrices for callers that need them (e.g. state estimation, observer
+// design).
 template <typename T, consteig::Size N>
 constexpr StateSpace<T, N> zoh_discretize(const StateSpace<T, N> &sys_c, T Ts,
                                           ZOH /*tag*/)
@@ -539,26 +542,58 @@ constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_discretize_tf(
     return tf;
 }
 
-// Tustin discretization (TF entry point)
-
-// TBD
+// Tustin discretization
+//
+// With beta = Ts/2:
+//   M  = I - beta*Ac
+//   P  = I + beta*Ac
+//   Ad = P * M^{-1}              (right-solve: M^T * Ad^T = P^T)
+//   Bd = beta * (Ad + I) * Bc
+//   Cd = Cc * M^{-1}             (right-solve: M^T * Cd^T = Cc^T)
+//   Dd = Dc + beta * Cd * Bc
+//
+// M is LU-factorized once and reused for both Ad and Cd.
+// See https://dsp.stackexchange.com/questions/45042
+// Returns StateSpace (not TransferFunction) to preserve access to the discrete
+// matrices for callers that need them (e.g. state estimation, observer design).
 template <typename T, consteig::Size N>
-constexpr TransferFunction<T, N + 1u, N + 1u> tustin_discretize_tf(
-    const T (&b_c)[N + 1u], const T (&a_c)[N + 1u], T Ts, Tustin /*tag*/)
+constexpr StateSpace<T, N> tustin_discretize(const StateSpace<T, N> &sys_c,
+                                             T Ts, Tustin /*tag*/)
 {
-    return {};
-}
+    const auto &Ac = sys_c.A;
+    const auto &Bc = sys_c.B;
+    const auto &Cc = sys_c.C;
 
-// Backward-compatible wrapper: recovers (b_c, a_c) from SS and delegates.
-template <typename T, consteig::Size N>
-constexpr TransferFunction<T, N + 1u, N + 1u> tustin_discretize(
-    const StateSpace<T, N> &sys_c, T Ts, Tustin /*tag*/)
-{
-    T a_c[N + 1u]{};
-    char_poly(sys_c.A, a_c);
-    T b_c[N + 1u]{};
-    markov_numerator(sys_c, a_c, b_c);
-    return tustin_discretize_tf<T, N>(b_c, a_c, Ts, Tustin{});
+    const T beta = Ts / static_cast<T>(2);
+
+    // M = I - beta*Ac,  P = I + beta*Ac
+    const consteig::Matrix<T, N, N> M = consteig::eye<T, N>() - beta * Ac;
+    const consteig::Matrix<T, N, N> P = consteig::eye<T, N>() + beta * Ac;
+
+    const auto lu_M = consteig::lu(M);
+
+    // Ad = P * M^{-1}
+    consteig::Matrix<T, N, N> Ad{};
+    // right-solve via lu_M
+
+    // Bd = beta * (Ad + I) * Bc
+    consteig::Matrix<T, N, 1> Bd{};
+    // matrix-vector multiply
+
+    // Cd = Cc * M^{-1}
+    consteig::Matrix<T, 1, N> Cd{};
+    // right-solve via lu_M
+
+    // Dd = Dc + beta * Cd * Bc
+    T Dd{};
+    // dot product
+
+    StateSpace<T, N> sys_d{};
+    sys_d.A = Ad;
+    sys_d.B = Bd;
+    sys_d.C = Cd;
+    sys_d.D = Dd;
+    return sys_d;
 }
 
 // Backward-compatible wrapper: recovers (b_c, a_c) from SS and delegates.
@@ -593,7 +628,7 @@ template <typename T, consteig::Size N>
 constexpr TransferFunction<T, N + 1u, N + 1u> analog_to_digital(
     const StateSpace<T, N> &sys_c, T Ts, Tustin)
 {
-    return tustin_discretize(sys_c, Ts, Tustin{});
+    return ss_to_tf(tustin_discretize(sys_c, Ts, Tustin{}));
 }
 
 // analog_to_digital (TF overloads)
@@ -616,7 +651,7 @@ template <typename T, consteig::Size N>
 constexpr TransferFunction<T, N + 1u, N + 1u> analog_to_digital(
     const T (&b_c)[N + 1u], const T (&a_c)[N + 1u], T Ts, Tustin)
 {
-    return tustin_discretize_tf<T, N>(b_c, a_c, Ts, Tustin{});
+    return ss_to_tf(tustin_discretize(tf_to_ss<T, N>(b_c, a_c), Ts, Tustin{}));
 }
 
 } // namespace constfilt

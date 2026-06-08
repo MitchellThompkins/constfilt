@@ -540,23 +540,33 @@ constexpr StateSpace<T, N> tustin_discretize(const StateSpace<T, N> &sys_c,
     const consteig::Matrix<T, N, N> M = consteig::eye<T, N>() - inv_alpha * Ac;
     const consteig::Matrix<T, N, N> P = consteig::eye<T, N>() + inv_alpha * Ac;
 
-    const auto lu_M = consteig::lu(M);
+    const auto lu_M{consteig::lu(M)};
+
+    // M^{-1} column by column via LU solve (lu_solve only accepts a single rhs)
+    consteig::Matrix<T, N, N> M_inv{};
+    for (consteig::Size col = 0; col < N; ++col)
+    {
+        consteig::Matrix<T, N, 1> e_col{};
+        e_col(col, 0) = static_cast<T>(1);
+        const auto col_vec{consteig::lu_solve(lu_M, e_col)};
+        for (consteig::Size row = 0; row < N; ++row)
+        {
+            M_inv(row, col) = col_vec(row, 0);
+        }
+    }
 
     // Ad = P * M^{-1}
-    consteig::Matrix<T, N, N> Ad{};
-    // right-solve via lu_M
+    const consteig::Matrix<T, N, N> Ad{P * M_inv};
 
     // Bd = (1/alpha) * (Ad + I) * Bc
-    consteig::Matrix<T, N, 1> Bd{};
-    // matrix-vector multiply
+    const consteig::Matrix<T, N, 1> Bd{inv_alpha *
+                                       (Ad + consteig::eye<T, N>()) * Bc};
 
     // Cd = Cc * M^{-1}
-    consteig::Matrix<T, 1, N> Cd{};
-    // right-solve via lu_M
+    const consteig::Matrix<T, 1, N> Cd{Cc * M_inv};
 
     // Dd = Dc + (1/alpha) * Cd * Bc
-    T Dd{};
-    // dot product
+    const T Dd{sys_c.D + inv_alpha * (Cd * Bc)(0, 0)};
 
     StateSpace<T, N> sys_d{};
     sys_d.A = Ad;

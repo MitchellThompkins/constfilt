@@ -513,13 +513,13 @@ constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_discretize_tf(
 
 // Tustin discretization
 //
-// With beta = Ts/2:
-//   M  = I - beta*Ac
-//   P  = I + beta*Ac
+// With alpha = 2/Ts:
+//   M  = I - (1/alpha)*Ac
+//   P  = I + (1/alpha)*Ac
 //   Ad = P * M^{-1}              (right-solve: M^T * Ad^T = P^T)
-//   Bd = beta * (Ad + I) * Bc
+//   Bd = (1/alpha) * (Ad + I) * Bc
 //   Cd = Cc * M^{-1}             (right-solve: M^T * Cd^T = Cc^T)
-//   Dd = Dc + beta * Cd * Bc
+//   Dd = Dc + (1/alpha) * Cd * Bc
 //
 // M is LU-factorized once and reused for both Ad and Cd.
 // See https://dsp.stackexchange.com/questions/45042
@@ -533,11 +533,12 @@ constexpr StateSpace<T, N> tustin_discretize(const StateSpace<T, N> &sys_c,
     const auto &Bc = sys_c.B;
     const auto &Cc = sys_c.C;
 
-    const T beta = Ts / static_cast<T>(2);
+    const T alpha = static_cast<T>(2) / Ts;
+    const T inv_alpha = static_cast<T>(1) / alpha;
 
-    // M = I - beta*Ac,  P = I + beta*Ac
-    const consteig::Matrix<T, N, N> M = consteig::eye<T, N>() - beta * Ac;
-    const consteig::Matrix<T, N, N> P = consteig::eye<T, N>() + beta * Ac;
+    // M = I - (1/alpha)*Ac,  P = I + (1/alpha)*Ac
+    const consteig::Matrix<T, N, N> M = consteig::eye<T, N>() - inv_alpha * Ac;
+    const consteig::Matrix<T, N, N> P = consteig::eye<T, N>() + inv_alpha * Ac;
 
     const auto lu_M = consteig::lu(M);
 
@@ -545,7 +546,7 @@ constexpr StateSpace<T, N> tustin_discretize(const StateSpace<T, N> &sys_c,
     consteig::Matrix<T, N, N> Ad{};
     // right-solve via lu_M
 
-    // Bd = beta * (Ad + I) * Bc
+    // Bd = (1/alpha) * (Ad + I) * Bc
     consteig::Matrix<T, N, 1> Bd{};
     // matrix-vector multiply
 
@@ -553,7 +554,7 @@ constexpr StateSpace<T, N> tustin_discretize(const StateSpace<T, N> &sys_c,
     consteig::Matrix<T, 1, N> Cd{};
     // right-solve via lu_M
 
-    // Dd = Dc + beta * Cd * Bc
+    // Dd = Dc + (1/alpha) * Cd * Bc
     T Dd{};
     // dot product
 

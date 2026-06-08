@@ -115,31 +115,13 @@ constexpr StateSpace<T, N> zoh_discretize(const StateSpace<T, N> &sys_c, T Ts,
     const auto &Bc = sys_c.B;
 
     // Ac * Ts
-    consteig::Matrix<T, N, N> AcTs{};
-    for (consteig::Size r = 0; r < N; ++r)
-    {
-        for (consteig::Size c = 0; c < N; ++c)
-        {
-            AcTs(r, c) = Ac(r, c) * Ts;
-        }
-    }
-
-    const consteig::Matrix<T, N, N> Ad = matrix_exp(AcTs);
+    const consteig::Matrix<T, N, N> Ad = matrix_exp(Ts * Ac);
 
     // (Ad - I)
     const consteig::Matrix<T, N, N> AdmI = Ad - consteig::eye<T, N>();
 
     // (Ad - I) * Bc
-    consteig::Matrix<T, N, 1> rhs{};
-    for (consteig::Size r = 0; r < N; ++r)
-    {
-        T sum = static_cast<T>(0);
-        for (consteig::Size k = 0; k < N; ++k)
-        {
-            sum += AdmI(r, k) * Bc(k, 0);
-        }
-        rhs(r, 0) = sum;
-    }
+    const consteig::Matrix<T, N, 1> rhs = AdmI * Bc;
 
     // Bd = Ac^{-1} * rhs  ->  solve Ac * Bd = rhs
     const auto lu_Ac = consteig::lu(Ac);
@@ -228,20 +210,7 @@ constexpr void markov_numerator(const StateSpace<T, N> &sys_d,
         h[k] = val;
 
         // Advance: A_pow = A_pow * Ad
-        consteig::Matrix<T, N, N> next{};
-        for (consteig::Size r = 0; r < N; ++r)
-        {
-            for (consteig::Size cc = 0; cc < N; ++cc)
-            {
-                T sum = static_cast<T>(0);
-                for (consteig::Size col = 0; col < N; ++col)
-                {
-                    sum += A_pow(r, col) * Ad(col, cc);
-                }
-                next(r, cc) = sum;
-            }
-        }
-        A_pow = next;
+        A_pow = A_pow * Ad;
     }
 
     // Convolve: b[k] = sum_{j=0}^{k} a[j] * h[k-j]

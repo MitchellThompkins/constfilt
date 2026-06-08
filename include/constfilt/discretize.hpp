@@ -17,6 +17,10 @@ struct MatchedZ
 {
 };
 
+struct Tustin // Bilinear
+{
+};
+
 // Data structures
 
 template <typename T, consteig::Size N> struct StateSpace
@@ -535,6 +539,28 @@ constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_discretize_tf(
     return tf;
 }
 
+// Tustin discretization (TF entry point)
+
+// TBD
+template <typename T, consteig::Size N>
+constexpr TransferFunction<T, N + 1u, N + 1u> tustin_discretize_tf(
+    const T (&b_c)[N + 1u], const T (&a_c)[N + 1u], T Ts, Tustin /*tag*/)
+{
+    return {};
+}
+
+// Backward-compatible wrapper: recovers (b_c, a_c) from SS and delegates.
+template <typename T, consteig::Size N>
+constexpr TransferFunction<T, N + 1u, N + 1u> tustin_discretize(
+    const StateSpace<T, N> &sys_c, T Ts, Tustin /*tag*/)
+{
+    T a_c[N + 1u]{};
+    char_poly(sys_c.A, a_c);
+    T b_c[N + 1u]{};
+    markov_numerator(sys_c, a_c, b_c);
+    return tustin_discretize_tf<T, N>(b_c, a_c, Ts, Tustin{});
+}
+
 // Backward-compatible wrapper: recovers (b_c, a_c) from SS and delegates.
 template <typename T, consteig::Size N>
 constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_discretize(
@@ -563,6 +589,13 @@ constexpr TransferFunction<T, N + 1u, N + 1u> analog_to_digital(
     return matched_z_discretize(sys_c, Ts, MatchedZ{});
 }
 
+template <typename T, consteig::Size N>
+constexpr TransferFunction<T, N + 1u, N + 1u> analog_to_digital(
+    const StateSpace<T, N> &sys_c, T Ts, Tustin)
+{
+    return tustin_discretize(sys_c, Ts, Tustin{});
+}
+
 // analog_to_digital (TF overloads)
 
 template <typename T, consteig::Size N>
@@ -577,6 +610,13 @@ constexpr TransferFunction<T, N + 1u, N + 1u> analog_to_digital(
     const T (&b_c)[N + 1u], const T (&a_c)[N + 1u], T Ts, MatchedZ)
 {
     return matched_z_discretize_tf<T, N>(b_c, a_c, Ts, MatchedZ{});
+}
+
+template <typename T, consteig::Size N>
+constexpr TransferFunction<T, N + 1u, N + 1u> analog_to_digital(
+    const T (&b_c)[N + 1u], const T (&a_c)[N + 1u], T Ts, Tustin)
+{
+    return tustin_discretize_tf<T, N>(b_c, a_c, Ts, Tustin{});
 }
 
 } // namespace constfilt

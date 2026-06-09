@@ -454,8 +454,8 @@ constexpr Arr<4096> bw_tu2_chirp()
     return out;
 }
 constexpr Arr<4096> kBwTu2Chirp = bw_tu2_chirp();
-static_assert(array_near_eq(kBwTu2Chirp.v, bw_ref::case_tu_2_100Hz_1000Hz::chirp,
-                            kStepTol),
+static_assert(array_near_eq(kBwTu2Chirp.v,
+                            bw_ref::case_tu_2_100Hz_1000Hz::chirp, kStepTol),
               "Butterworth Tustin N=2: batch chirp disagrees with Octave");
 
 // =============================================================================
@@ -473,10 +473,9 @@ constexpr Arr<256> bw_tu_hp2_step()
     return out;
 }
 constexpr Arr<256> kBwTuHp2Step = bw_tu_hp2_step();
-static_assert(
-    array_near_eq(kBwTuHp2Step.v, bw_ref::case_tu_hp_2_100Hz_1000Hz::step,
-                  kStepTol),
-    "Butterworth Tustin HP N=2: batch step disagrees with Octave");
+static_assert(array_near_eq(kBwTuHp2Step.v,
+                            bw_ref::case_tu_hp_2_100Hz_1000Hz::step, kStepTol),
+              "Butterworth Tustin HP N=2: batch step disagrees with Octave");
 
 constexpr Arr<256> bw_tu_hp2_impulse()
 {
@@ -489,10 +488,10 @@ constexpr Arr<256> bw_tu_hp2_impulse()
     return out;
 }
 constexpr Arr<256> kBwTuHp2Impulse = bw_tu_hp2_impulse();
-static_assert(
-    array_near_eq(kBwTuHp2Impulse.v,
-                  bw_ref::case_tu_hp_2_100Hz_1000Hz::impulse, kStepTol),
-    "Butterworth Tustin HP N=2: batch impulse disagrees with Octave");
+static_assert(array_near_eq(kBwTuHp2Impulse.v,
+                            bw_ref::case_tu_hp_2_100Hz_1000Hz::impulse,
+                            kStepTol),
+              "Butterworth Tustin HP N=2: batch impulse disagrees with Octave");
 
 constexpr Arr<4096> bw_tu_hp2_chirp()
 {
@@ -507,10 +506,9 @@ constexpr Arr<4096> bw_tu_hp2_chirp()
     return out;
 }
 constexpr Arr<4096> kBwTuHp2Chirp = bw_tu_hp2_chirp();
-static_assert(
-    array_near_eq(kBwTuHp2Chirp.v, bw_ref::case_tu_hp_2_100Hz_1000Hz::chirp,
-                  kStepTol),
-    "Butterworth Tustin HP N=2: batch chirp disagrees with Octave");
+static_assert(array_near_eq(kBwTuHp2Chirp.v,
+                            bw_ref::case_tu_hp_2_100Hz_1000Hz::chirp, kStepTol),
+              "Butterworth Tustin HP N=2: batch chirp disagrees with Octave");
 
 // =============================================================================
 // Elliptic low-pass (Tustin), N=2, Rp=0.5dB, Rs=40dB, fc=100Hz, fs=1000Hz
@@ -527,10 +525,10 @@ constexpr Arr<256> el_tu_lp2_step()
     return out;
 }
 constexpr Arr<256> kElTuLp2Step = el_tu_lp2_step();
-static_assert(
-    array_near_eq(kElTuLp2Step.v, el_ref::lp_tu_2_5rp_40rs_100Hz_1000Hz::step,
-                  kStepTol),
-    "Elliptic Tustin LP N=2: batch step disagrees with Octave");
+static_assert(array_near_eq(kElTuLp2Step.v,
+                            el_ref::lp_tu_2_5rp_40rs_100Hz_1000Hz::step,
+                            kStepTol),
+              "Elliptic Tustin LP N=2: batch step disagrees with Octave");
 
 constexpr Arr<256> el_tu_lp2_impulse()
 {
@@ -543,10 +541,10 @@ constexpr Arr<256> el_tu_lp2_impulse()
     return out;
 }
 constexpr Arr<256> kElTuLp2Impulse = el_tu_lp2_impulse();
-static_assert(
-    array_near_eq(kElTuLp2Impulse.v,
-                  el_ref::lp_tu_2_5rp_40rs_100Hz_1000Hz::impulse, kStepTol),
-    "Elliptic Tustin LP N=2: batch impulse disagrees with Octave");
+static_assert(array_near_eq(kElTuLp2Impulse.v,
+                            el_ref::lp_tu_2_5rp_40rs_100Hz_1000Hz::impulse,
+                            kStepTol),
+              "Elliptic Tustin LP N=2: batch impulse disagrees with Octave");
 
 constexpr Arr<4096> el_tu_lp2_chirp()
 {
@@ -561,10 +559,10 @@ constexpr Arr<4096> el_tu_lp2_chirp()
     return out;
 }
 constexpr Arr<4096> kElTuLp2Chirp = el_tu_lp2_chirp();
-static_assert(
-    array_near_eq(kElTuLp2Chirp.v,
-                  el_ref::lp_tu_2_5rp_40rs_100Hz_1000Hz::chirp, kStepTol),
-    "Elliptic Tustin LP N=2: batch chirp disagrees with Octave");
+static_assert(array_near_eq(kElTuLp2Chirp.v,
+                            el_ref::lp_tu_2_5rp_40rs_100Hz_1000Hz::chirp,
+                            kStepTol),
+              "Elliptic Tustin LP N=2: batch chirp disagrees with Octave");
 
 // =============================================================================
 // AnalogFilter (Tustin), H(s) = 1/(s^2+3s+2), fs=10Hz

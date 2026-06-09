@@ -38,5 +38,6 @@ bit-identical output to confirm they implement the same computation.
 |---|---|---|
 | Transfer function coefficients vs. Octave | $10^{-7}$ | High-order coefficient computation accumulates floating-point error; N=8 was observed near $3 \times 10^{-8}$. |
 | Step / impulse / chirp response vs. Octave | $10^{-7}$ | Recursive filtering accumulates rounding error; this bound accommodates that without masking real discrepancies. |
-| Analytic ZOH / Matched-Z / Tustin checks | $10^{-10}$ to $10^{-12}$ | Closed-form references carry no approximation error beyond `double` representation. |
+| Analytic ZOH / Matched-Z checks | $10^{-10}$ | Closed-form references carry no approximation error beyond `double` representation. |
+| Analytic Tustin checks | $10^{-12}$ | Reference values are exact rationals, so a tighter bound is achievable than for ZOH / Matched-Z whose references involve transcendental `exp()` values. |
 | DF2T hand-trace | $10^{-13}$ to $10^{-14}$ | Rational inputs yield nearly exact results; tight bounds catch any arithmetic mistake. |

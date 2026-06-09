@@ -172,6 +172,9 @@ TEST(Tustin, FirstOrder_a1_T0p1)
     constexpr auto sys_d =
         constfilt::tustin_discretize(sys_c, Ts, constfilt::Tustin{});
 
+    // Reference values are exact rationals, so 1e-12 is tighter than the
+    // 1e-10 used for ZOH/MatchedZ (whose references involve transcendental
+    // exp() values with inherent double representation error).
     EXPECT_NEAR(sys_d.A(0, 0), 19.0 / 21.0, 1e-12);
     EXPECT_NEAR(sys_d.B(0, 0), 2.0 / 21.0, 1e-12);
     EXPECT_NEAR(sys_d.C(0, 0), 20.0 / 21.0, 1e-12);

@@ -37,11 +37,11 @@ more poles than zeros).
 ZOH requires $e^{A_c T_s}$ to compute the full discrete state-space.
 Matched-Z maps continuous poles and zeros with scalar exponentials
 ($z = e^{sT_s}$) rather than forming the full matrix exponential.
-Tustin does not use the matrix exponential; it operates on
+Tustin does not use the matrix exponential. It operates on
 $(A_c, B_c, C_c, D_c)$ directly via a matrix inversion. consteig provides
 the eigendecomposition of $A_c$ at compile time. ZOH needs the full
-decomposition (eigenvalues and eigenvectors) to compute $B_d$ accurately;
-Matched-Z only needs the eigenvalues; Tustin needs neither.
+decomposition (eigenvalues and eigenvectors) to compute $B_d$ accurately.
+Matched-Z only needs the eigenvalues. Tustin needs neither.
 
 The $A_c$ matrix itself is a companion matrix built directly from the
 denominator polynomial coefficients in controllable canonical form, which is the
@@ -88,11 +88,10 @@ B_c = \begin{bmatrix} 0 \\ \omega_n^2 \end{bmatrix}, \qquad
 C_c = \begin{bmatrix} 1 & 0 \end{bmatrix}, \qquad D_c = 0$$
 
 All three methods take this $A_c$ as their starting point. ZOH computes
-$e^{A_c T_s}$ to get $A_d$ and solves for $B_d$; Matched-Z uses $e^{A_c T_s}$
-to map the poles and uses $(A_c, B_c, C_c, D_c)$ to evaluate the continuous
-transfer function at a test frequency for gain matching; Tustin applies the
-bilinear substitution directly to $(A_c, B_c, C_c, D_c)$ via a single matrix
-inversion.
+$e^{A_c T_s}$ to get $A_d$ and solves for $B_d$. Matched-Z uses the eigenvalues
+of $A_c$ to map poles and evaluates the continuous transfer function at a test
+frequency for gain matching. Tustin applies the bilinear substitution directly
+to $(A_c, B_c, C_c, D_c)$ via a single matrix inversion.
 
 
 ## Discretization
@@ -130,7 +129,7 @@ and signal reconstruction. Matched-Z explicitly places zeros to match the
 continuous-time frequency response shape, which can give better stopband
 attenuation when the cutoff is a significant fraction of the sample rate.
 Tustin is a good choice when frequency-domain shape is important and
-prewarping is acceptable; it is the most commonly used method in digital
+prewarping is acceptable. It is the most commonly used method in digital
 control and audio signal processing. The difference is small when
 $f_c \ll f_s$. If you are unsure, use ZOH (the default).
 
@@ -227,7 +226,7 @@ $$C_d = C_c M^{-1}$$
 $$D_d = D_c + \frac{1}{\alpha} C_d B_c$$
 
 $M^{-1}$ is computed once via LU decomposition and reused for both $A_d$ and
-$C_d$. Unlike ZOH, no matrix exponential is required; unlike Matched-Z, no
+$C_d$. Unlike ZOH, no matrix exponential is required. Unlike Matched-Z, no
 companion-matrix eigendecomposition is needed for the zeros. The resulting
 discrete state-space is then converted to $(b, a)$ via the same characteristic
 polynomial and Markov parameter steps used by ZOH.

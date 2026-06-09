@@ -64,10 +64,8 @@ int main()
 
 ## Supported filters
 
-| Filter      | Variants          |
-|-------------|-------------------|
-| Butterworth | lowpass, highpass |
-| Elliptic    | lowpass, highpass |
+- Butterworth: lowpass, highpass
+- Elliptic: lowpass, highpass
 
 All filter types support ZOH (default), MatchedZ, and Tustin discretization.
 

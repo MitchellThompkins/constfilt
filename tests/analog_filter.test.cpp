@@ -174,6 +174,10 @@ FULL_MATRIX(AnalogFilter, case_4_mz_fs10,
             constfilt::AnalogFilter<double, 2u, constfilt::MatchedZ>(
                 Ref::b_s, Ref::a_s, Ref::sample_rate_hz))
 
+FULL_MATRIX(AnalogFilter, case_5_tustin_fs10,
+            constfilt::AnalogFilter<double, 2u, constfilt::Tustin>(
+                Ref::b_s, Ref::a_s, Ref::sample_rate_hz))
+
 // --- AnalogFilter: stability check disabled allows unstable filter
 // ---------------
 

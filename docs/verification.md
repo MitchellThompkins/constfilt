@@ -11,10 +11,10 @@ The layers, from the inside out:
 | Test file | Scope |
 |---|---|
 | `filter.test.cpp` | The `Filter` class in isolation: stored coefficients, batch output, sample-by-sample output, state reset. |
-| `discretize.test.cpp` | `expm`, `char_poly`, `ss_to_tf`, ZOH, Matched-Z, each checked against closed-form analytic results. |
-| `analog_filter.test.cpp` | Continuous-time transfer function to state-space conversion and stability classification; full filter output checks (coefficients, step, impulse, chirp) against Octave references. |
-| `butterworth.test.cpp` | Full Butterworth pipeline: pole computation, state-space, discretization, filtering, lowpass and highpass, ZOH and Matched-Z. |
-| `elliptic.test.cpp` | Full Elliptic pipeline: nome-series design, discretization, filtering, lowpass and highpass, ZOH and Matched-Z. |
+| `discretize.test.cpp` | `expm`, `char_poly`, `ss_to_tf`, ZOH, Matched-Z, Tustin, each checked against closed-form analytic results. |
+| `analog_filter.test.cpp` | Continuous-time transfer function to state-space conversion and stability classification; full filter output checks (coefficients, step, impulse, chirp) against Octave references for ZOH, Matched-Z, and Tustin. |
+| `butterworth.test.cpp` | Full Butterworth pipeline: pole computation, state-space, discretization, filtering, lowpass and highpass, ZOH, Matched-Z, and Tustin. |
+| `elliptic.test.cpp` | Full Elliptic pipeline: nome-series design, discretization, filtering, lowpass and highpass, ZOH, Matched-Z, and Tustin. |
 
 ## Philosophy
 
@@ -38,5 +38,5 @@ bit-identical output to confirm they implement the same computation.
 |---|---|---|
 | Transfer function coefficients vs. Octave | $10^{-7}$ | High-order coefficient computation accumulates floating-point error; N=8 was observed near $3 \times 10^{-8}$. |
 | Step / impulse / chirp response vs. Octave | $10^{-7}$ | Recursive filtering accumulates rounding error; this bound accommodates that without masking real discrepancies. |
-| Analytic ZOH / Matched-Z checks | $10^{-10}$ | Closed-form references carry no approximation error beyond `double` representation. |
+| Analytic ZOH / Matched-Z / Tustin checks | $10^{-10}$ to $10^{-12}$ | Closed-form references carry no approximation error beyond `double` representation. |
 | DF2T hand-trace | $10^{-13}$ to $10^{-14}$ | Rational inputs yield nearly exact results; tight bounds catch any arithmetic mistake. |

@@ -87,6 +87,7 @@ reference-data regeneration workflow.
 |---|---|
 | `zoh_discretize` | Matrix exponential via eigendecomposition; $B_d$ via LU solve |
 | `matched_z_discretize` | Map continuous poles via $z = e^{sT_s}$; finite zeros mapped to $e^{sT_s}$, missing zeros placed at $z = -1$; gain matched at a test frequency (DC where possible) |
+| `tustin_discretize` | Bilinear substitution $s = \alpha(z-1)/(z+1)$, $\alpha = 2/T_s$; $M = I - (1/\alpha)A_c$ inverted via LU; $A_d$, $B_d$, $C_d$, $D_d$ computed from $M^{-1}$ |
 | `Butterworth` | Analytic pole formula $\theta_k = \pi(2k+N-1)/(2N)$ -> real polynomial coefficients via conjugate-pair multiply-out -> controllable-canonical SS -> discretize |
 | `Elliptic` | Nome-series Cauer design (see [docs/elliptic.md](docs/elliptic.md)) -> s-domain TF -> controllable-canonical SS -> discretize |
 | `AnalogFilter` | s-domain TF -> controllable-canonical SS -> discretize -> TF |

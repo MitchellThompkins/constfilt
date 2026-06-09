@@ -16,7 +16,7 @@ namespace constfilt
 // Template parameters:
 //   T          - floating-point scalar type
 //   N          - filter order (>= 1)
-//   Method     - discretization method (ZOH default)
+//   Method     - discretization method (ZOH default), MatchedZ, or Tustin
 //   FilterType - LowPass (default) or HighPass
 //
 // Constructor parameters:

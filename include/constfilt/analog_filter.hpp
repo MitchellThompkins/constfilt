@@ -17,7 +17,7 @@ namespace constfilt
 // Template parameters:
 //   T         - numeric type (float, double, ...)
 //   N         - filter order (degree of denominator)
-//   Method    - ZOH (default) or MatchedZ
+//   Method    - ZOH (default), MatchedZ, or Tustin
 //   CheckStab - reserved for future use; currently has no effect (see below).
 //
 // Constructors:

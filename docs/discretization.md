@@ -19,7 +19,7 @@ directly, then convert to discrete time in a single well-defined step.
 
 ## State-space Representation
 
-The discretization methods used here (ZOH and Matched-Z) both work on a
+The discretization methods used here (ZOH, Matched-Z, and Tustin) all work on a
 continuous state-space model of the form:
 
 $$\dot{x} = A_c x + B_c u, \quad y = C_c x + D_c u$$
@@ -34,11 +34,14 @@ feedthrough from input to output (describes the direct path from input to
 output, bypassing the states), which is zero for strictly proper filters (i.e.
 more poles than zeros).
 
-Both methods require $e^{A_c T_s}$. ZOH uses it to compute the full discrete
-state-space, and Matched-Z uses it to map the continuous poles to discrete poles.
-consteig provides the eigendecomposition of $A_c$ at compile time. ZOH needs the
-full decomposition (eigenvalues and eigenvectors) to compute $B_d$ accurately;
-Matched-Z only needs the eigenvalues.
+ZOH requires $e^{A_c T_s}$ to compute the full discrete state-space.
+Matched-Z maps continuous poles and zeros with scalar exponentials
+($z = e^{sT_s}$) rather than forming the full matrix exponential.
+Tustin does not use the matrix exponential. It operates on
+$(A_c, B_c, C_c, D_c)$ directly via a matrix inversion. consteig provides
+the eigendecomposition of $A_c$ at compile time. ZOH needs the full
+decomposition (eigenvalues and eigenvectors) to compute $B_d$ accurately.
+Matched-Z only needs the eigenvalues. Tustin needs neither.
 
 The $A_c$ matrix itself is a companion matrix built directly from the
 denominator polynomial coefficients in controllable canonical form, which is the
@@ -46,10 +49,10 @@ shared first step before either method is applied.
 
 ## Transfer function to state-space
 
-This is that shared first step for both ZOH and Matched-Z. Given the
+This is that shared first step for ZOH, Matched-Z, and Tustin. Given the
 continuous-time transfer function that describes the filter (Butterworth,
 Elliptic, etc.), the $(A_c, B_c, C_c, D_c)$ matrices are constructed in
-controllable canonical form. Both discretization methods then operate on this
+controllable canonical form. All three discretization methods then operate on this
 same $A_c$.
 
 For an all-pole filter with numerator gain $b_0$:
@@ -84,18 +87,27 @@ $$A_c = \begin{bmatrix} 0 & 1 \\ -\omega_n^2 & -2\zeta\omega_n \end{bmatrix}, \q
 B_c = \begin{bmatrix} 0 \\ \omega_n^2 \end{bmatrix}, \qquad
 C_c = \begin{bmatrix} 1 & 0 \end{bmatrix}, \qquad D_c = 0$$
 
-Both ZOH and Matched-Z take this $A_c$ as their starting point: ZOH computes
-$e^{A_c T_s}$ to get $A_d$ and solves for $B_d$; Matched-Z uses $e^{A_c T_s}$
-to map the poles and uses $(A_c, B_c, C_c, D_c)$ to evaluate the continuous transfer function at a test frequency for gain matching.
+All three methods take this $A_c$ as their starting point. ZOH computes
+$e^{A_c T_s}$ to get $A_d$ and solves for $B_d$. Matched-Z uses the eigenvalues
+of $A_c$ to map poles and evaluates the continuous transfer function at a test
+frequency for gain matching. Tustin applies the bilinear substitution directly
+to $(A_c, B_c, C_c, D_c)$ via a single matrix inversion.
 
 
 ## Discretization
 
-### ZOH vs. Matched-Z
+### Choosing a method
 
-Both methods map continuous poles to discrete poles via $z = e^{s T_s}$, so the
-pole locations are identical. The difference is in what each method actually
-computes and how it arrives at $b$ and $a$.
+ZOH and Matched-Z both map continuous poles to discrete poles via
+$z = e^{s T_s}$. Tustin maps them via the bilinear substitution
+$s = \frac{2}{T_s}\frac{z-1}{z+1}$, which places poles at different locations
+than the other two.
+
+ZOH asks: given that the input is held constant between samples, what is the
+exact discrete equivalent? It derives the discrete state-space model from the
+continuous one via the matrix exponential, then extracts $b$ and $a$ from the
+Markov parameters. The result is exact for piecewise-constant inputs but does
+not explicitly preserve the continuous frequency response shape.
 
 Matched-Z asks: what discrete filter has the same poles and zeros as the
 continuous filter, with gain matched at a reference frequency? It maps
@@ -103,26 +115,23 @@ continuous poles and zeros to discrete ones via $z = e^{s T_s}$ and sets the
 gain by evaluating both filters at a test frequency. The result preserves the
 shape of the continuous frequency response.
 
-ZOH asks a different question: given that the input is held constant between
-samples, what is the exact discrete equivalent? It derives the discrete
-state-space model from the continuous one via the matrix exponential, then
-extracts $b$ and $a$ from the Markov parameters. The result is exact for
-piecewise-constant inputs but does not explicitly preserve the continuous
-frequency response shape.
+Tustin asks: what discrete filter results from substituting the bilinear
+approximation $s \approx \frac{2}{T_s}\frac{z-1}{z+1}$ into the continuous
+transfer function? The substitution is applied directly to the state-space
+matrices. The result warps the frequency axis (frequencies near Nyquist are
+compressed), but the discrete filter is stable whenever the continuous filter
+is stable and preserves the frequency-domain shape up to that warping.
 
-The choice between them comes down to what fidelity matters. ZOH is exact for
+The choice comes down to what fidelity matters. ZOH is exact for
 piecewise-constant (sample-and-hold) inputs, making it the natural choice when
 time-domain behavior matters: step response, impulse response, control systems,
 and signal reconstruction. Matched-Z explicitly places zeros to match the
 continuous-time frequency response shape, which can give better stopband
-attenuation and more accurate frequency-domain behavior when the cutoff is a
-significant fraction of the sample rate. The difference is small when $f_c \ll f_s$. As $f_c$ approaches Nyquist,
-the continuous-to-discrete mapping becomes increasingly nonlinear and both
-methods show their limits: ZOH's zero placement diverges from the mapped
-continuous zeros, degrading frequency-domain accuracy, while Matched-Z
-preserves the frequency response shape but gives up the guarantee that the
-discrete output exactly matches the continuous output for piecewise-constant
-inputs. If you are unsure, use ZOH (the default).
+attenuation when the cutoff is a significant fraction of the sample rate.
+Tustin is a good choice when frequency-domain shape is important and
+prewarping is acceptable. It is the most commonly used method in digital
+control and audio signal processing. The difference is small when
+$f_c \ll f_s$. If you are unsure, use ZOH (the default).
 
 Given a continuous state-space model with $(A_c, B_c, C_c, D_c)$, the goal is a
 discrete state-space model $(A_d, B_d, C_d, D_d)$ valid at sample rate $f_s$.
@@ -200,8 +209,31 @@ The steps are:
 3. Match the gain by evaluating the continuous and discrete transfer functions at a test frequency $\omega_c$ (chosen to avoid poles and zeros) and scaling $b$ so that $|H_d(e^{j\omega_c T_s})| = |H_c(j\omega_c)|$.
 
 
+### Tustin (Bilinear)
+
+Tustin substitutes $s = \frac{2}{T_s}\frac{z-1}{z+1}$ into the continuous
+state-space equations and applies a coordinate transformation to put the result
+in standard discrete form[^4]. With $\alpha = 2 / T_s$:
+
+$$M = I - \frac{1}{\alpha}A_c$$
+
+$$A_d = \left(I + \frac{1}{\alpha}A_c\right) M^{-1}$$
+
+$$B_d = \frac{1}{\alpha}(A_d + I) B_c$$
+
+$$C_d = C_c M^{-1}$$
+
+$$D_d = D_c + \frac{1}{\alpha} C_d B_c$$
+
+$M^{-1}$ is computed once via LU decomposition and reused for both $A_d$ and
+$C_d$. Unlike ZOH, no matrix exponential is required. Unlike Matched-Z, no
+companion-matrix eigendecomposition is needed for the zeros. The resulting
+discrete state-space is then converted to $(b, a)$ via the same characteristic
+polynomial and Markov parameter steps used by ZOH.
+
 ## References
 
 [^1]: Swarthmore LPSA, [Transfer Function to State Space](https://lpsa.swarthmore.edu/Representations/SysRepTransformations/TF2SS.html). Uses the same convention as this library (coefficients in the last row, super-diagonal of 1s).
 [^2]: R. Murray, [State Feedback](https://www.cds.caltech.edu/~murray/amwiki/State_Feedback.html), CDS 110b Lecture Notes, Caltech.
 [^3]: MathWorks, [`tf2ss`](https://www.mathworks.com/help/signal/ref/tf2ss.html).
+[^4]: DSP Stack Exchange, [Bilinear transformation of continuous-time state-space system](https://dsp.stackexchange.com/questions/45042/bilinear-transformation-of-continuous-time-state-space-system).

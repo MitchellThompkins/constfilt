@@ -122,6 +122,9 @@ for ci = 1:length(lp_cases)
 
     [b_d, a_d, y_step, y_imp, u_c, y_c] = design_and_filter(Rp, Rs, N, wc, 'low', fs, STEP_LEN, CHIRP_LEN, 'matched');
     emit_case(fid, 'lp_mz', N, Rp, Rs, fc, fs, b_d, a_d, y_step, y_imp, u_c, y_c);
+
+    [b_d, a_d, y_step, y_imp, u_c, y_c] = design_and_filter(Rp, Rs, N, wc, 'low', fs, STEP_LEN, CHIRP_LEN, 'tustin');
+    emit_case(fid, 'lp_tu', N, Rp, Rs, fc, fs, b_d, a_d, y_step, y_imp, u_c, y_c);
 end
 
 % =============================================================================
@@ -151,6 +154,9 @@ for ci = 1:length(hp_cases)
 
     [b_d, a_d, y_step, y_imp, u_c, y_c] = design_and_filter(Rp, Rs, N, wc, 'high', fs, STEP_LEN, CHIRP_LEN, 'matched');
     emit_case(fid, 'hp_mz', N, Rp, Rs, fc, fs, b_d, a_d, y_step, y_imp, u_c, y_c);
+
+    [b_d, a_d, y_step, y_imp, u_c, y_c] = design_and_filter(Rp, Rs, N, wc, 'high', fs, STEP_LEN, CHIRP_LEN, 'tustin');
+    emit_case(fid, 'hp_tu', N, Rp, Rs, fc, fs, b_d, a_d, y_step, y_imp, u_c, y_c);
 end
 
 fprintf(fid, '} // namespace el_ref\n\n');

@@ -108,10 +108,24 @@ for ci = 1:length(lpf_cases)
     y_c_mz    = filter(b_mz, a_mz, u_c);
     emit_case(fid, sprintf('case_mz_%d_%dHz_%dHz', ord, fc, fs), ...
               ord, fc, fs, b_mz, a_mz, y_step_mz, y_imp_mz, u_c, y_c_mz);
+
+    % --- Tustin ---
+    sys_tu = c2d(sys_c, 1.0/fs, 'tustin');
+    [b_tu, a_tu] = tfdata(sys_tu, 'v');
+
+    while length(b_tu) < length(a_tu)
+        b_tu = [0, b_tu];
+    end
+
+    y_step_tu = filter(b_tu, a_tu, u);
+    y_imp_tu  = filter(b_tu, a_tu, [1, zeros(1, STEP_LEN-1)]);
+    y_c_tu    = filter(b_tu, a_tu, u_c);
+    emit_case(fid, sprintf('case_tu_%d_%dHz_%dHz', ord, fc, fs), ...
+              ord, fc, fs, b_tu, a_tu, y_step_tu, y_imp_tu, u_c, y_c_tu);
 end
 
 % =============================================================================
-% High-pass cases (ZOH + Matched-Z)
+% High-pass cases (ZOH + Matched-Z + Tustin)
 % =============================================================================
 %
 % HP Butterworth has N zeros at s=0 which map to z=1 under matched-Z, but
@@ -168,6 +182,16 @@ for ci = 1:length(hpf_cases)
     y_c_mz    = filter(b_mz, a_mz, u_c);
     emit_case(fid, sprintf('case_mz_hp_%d_%dHz_%dHz', ord, fc, fs), ...
               ord, fc, fs, b_mz, a_mz, y_step_mz, y_imp_mz, u_c, y_c_mz);
+
+    % --- Tustin ---
+    sys_tu = c2d(sys_c, 1.0/fs, 'tustin');
+    [b_tu, a_tu] = tfdata(sys_tu, 'v');
+
+    y_step_tu = filter(b_tu, a_tu, u);
+    y_imp_tu  = filter(b_tu, a_tu, [1, zeros(1, STEP_LEN-1)]);
+    y_c_tu    = filter(b_tu, a_tu, u_c);
+    emit_case(fid, sprintf('case_tu_hp_%d_%dHz_%dHz', ord, fc, fs), ...
+              ord, fc, fs, b_tu, a_tu, y_step_tu, y_imp_tu, u_c, y_c_tu);
 end
 
 fprintf(fid, '} // namespace bw_ref\n\n');

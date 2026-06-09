@@ -48,8 +48,8 @@ All at compile time:
   frequency and sample rate.
 - Elliptic (Cauer) lowpass and highpass filters of arbitrary order, from
   cutoff frequency, passband ripple, and stopband attenuation.
-- ZOH and Matched-Z discretization of arbitrary continuous-time
-  transfer functions, via matrix exponential through eigendecomposition.
+- ZOH, Matched-Z, and Tustin (bilinear) discretization of arbitrary
+  continuous-time transfer functions.
 - Direct Form II Transposed filter implementation, with both a real-time
   sample-by-sample interface and a `constexpr`-capable batch interface.
 

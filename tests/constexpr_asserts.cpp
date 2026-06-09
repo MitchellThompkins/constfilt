@@ -690,6 +690,31 @@ static_assert(near_eq(kElLp2.coeffs_b()[0],
 static_assert(near_eq(kElLp2.coeffs_a()[1],
                       el_ref::lp_2_5rp_40rs_100Hz_1000Hz::a[1], kCoeffTol),
               "Elliptic LP N=2: constexpr ctor a[1] disagrees");
+
+// Default method must be Tustin: a[1] differs between ZOH and Tustin,
+// so checking against the Tustin reference (and != ZOH) pins the default.
+static constexpr constfilt::Butterworth<double, 2> kBwDefaultLp2(100.0, 1000.0);
+static_assert(near_eq(kBwDefaultLp2.coeffs_b()[1],
+                      bw_ref::case_tu_2_100Hz_1000Hz::b[1], kCoeffTol),
+              "Butterworth default method must be Tustin: b[1] disagrees");
+static_assert(near_eq(kBwDefaultLp2.coeffs_a()[1],
+                      bw_ref::case_tu_2_100Hz_1000Hz::a[1], kCoeffTol),
+              "Butterworth default method must be Tustin: a[1] disagrees");
+static_assert(!near_eq(kBwDefaultLp2.coeffs_a()[1],
+                       bw_ref::case_2_100Hz_1000Hz::a[1], kCoeffTol),
+              "Butterworth default method must not be ZOH");
+
+static constexpr constfilt::Elliptic<double, 2> kElDefaultLp2(100.0, 0.5, 40.0,
+                                                              1000.0);
+static_assert(near_eq(kElDefaultLp2.coeffs_b()[0],
+                      el_ref::lp_tu_2_5rp_40rs_100Hz_1000Hz::b[0], kCoeffTol),
+              "Elliptic default method must be Tustin: b[0] disagrees");
+static_assert(near_eq(kElDefaultLp2.coeffs_a()[1],
+                      el_ref::lp_tu_2_5rp_40rs_100Hz_1000Hz::a[1], kCoeffTol),
+              "Elliptic default method must be Tustin: a[1] disagrees");
+static_assert(!near_eq(kElDefaultLp2.coeffs_a()[1],
+                       el_ref::lp_2_5rp_40rs_100Hz_1000Hz::a[1], kCoeffTol),
+              "Elliptic default method must not be ZOH");
 } // namespace
 
 } // namespace

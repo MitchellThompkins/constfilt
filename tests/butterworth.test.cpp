@@ -227,3 +227,19 @@ FULL_MATRIX(ButterworthTustin, case_tu_2_500Hz_8000Hz,
 
 FULL_MATRIX(ButterworthTustin, case_tu_3_200Hz_4000Hz,
             constfilt::Butterworth<double, 3, constfilt::Tustin>(200.0, 4000.0))
+
+// =============================================================================
+// Butterworth default discretization (must be Tustin)
+// =============================================================================
+
+FULL_MATRIX(ButterworthDefault, case_tu_1_100Hz_1000Hz,
+            constfilt::Butterworth<double, 1>(100.0, 1000.0))
+
+FULL_MATRIX(ButterworthDefault, case_tu_2_100Hz_1000Hz,
+            constfilt::Butterworth<double, 2>(100.0, 1000.0))
+
+FULL_MATRIX(FirstOrderLowPassDefault, case_tu_1_100Hz_1000Hz,
+            constfilt::FirstOrderLowPass<double>(100.0, 1000.0))
+
+FULL_MATRIX(FirstOrderHighPassDefault, case_tu_hp_1_100Hz_1000Hz,
+            constfilt::FirstOrderHighPass<double>(100.0, 1000.0))

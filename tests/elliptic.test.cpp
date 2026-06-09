@@ -193,3 +193,10 @@ FULL_MATRIX(EllipticHPTustin, hp_tu_8_5rp_40rs_100Hz_1000Hz,
 FULL_MATRIX(EllipticHPTustin, hp_tu_3_10rp_60rs_200Hz_4000Hz,
             constfilt::Elliptic<double, 3, constfilt::Tustin,
                                 constfilt::HighPass>(200.0, 1.0, 60.0, 4000.0))
+
+// =============================================================================
+// Elliptic default discretization (must be Tustin)
+// =============================================================================
+
+FULL_MATRIX(EllipticDefault, lp_tu_2_5rp_40rs_100Hz_1000Hz,
+            constfilt::Elliptic<double, 2>(100.0, 0.5, 40.0, 1000.0))

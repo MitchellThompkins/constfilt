@@ -34,9 +34,10 @@ feedthrough from input to output (describes the direct path from input to
 output, bypassing the states), which is zero for strictly proper filters (i.e.
 more poles than zeros).
 
-ZOH and Matched-Z both require $e^{A_c T_s}$. ZOH uses it to compute the full
-discrete state-space, and Matched-Z uses it to map the continuous poles to
-discrete poles. Tustin does not use the matrix exponential; it operates on
+ZOH requires $e^{A_c T_s}$ to compute the full discrete state-space.
+Matched-Z maps continuous poles and zeros with scalar exponentials
+($z = e^{sT_s}$) rather than forming the full matrix exponential.
+Tustin does not use the matrix exponential; it operates on
 $(A_c, B_c, C_c, D_c)$ directly via a matrix inversion. consteig provides
 the eigendecomposition of $A_c$ at compile time. ZOH needs the full
 decomposition (eigenvalues and eigenvectors) to compute $B_d$ accurately;
@@ -51,7 +52,7 @@ shared first step before either method is applied.
 This is that shared first step for ZOH, Matched-Z, and Tustin. Given the
 continuous-time transfer function that describes the filter (Butterworth,
 Elliptic, etc.), the $(A_c, B_c, C_c, D_c)$ matrices are constructed in
-controllable canonical form. Both discretization methods then operate on this
+controllable canonical form. All three discretization methods then operate on this
 same $A_c$.
 
 For an all-pole filter with numerator gain $b_0$:

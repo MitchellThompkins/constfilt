@@ -1,7 +1,7 @@
-// bench_accuracy.cpp — accuracy comparison vs Octave reference (C++17)
+// bench_accuracy.cpp: accuracy comparison vs Octave reference (C++17)
 //
-// Covers constfilt (all three methods, orders 1–12) and iir1 (Tustin/bilinear
-// design, orders 1–12 Butterworth).  iir1 and KFR both use bilinear/Tustin
+// Covers constfilt (all three methods, orders 1-12) and iir1 (Tustin/bilinear
+// design, orders 1-12 Butterworth).  iir1 and KFR both use bilinear/Tustin
 // internally, so they are compared against the Tustin reference.
 //
 // KFR accuracy lives in bench_accuracy_kfr.cpp (C++20 TU) for the same
@@ -122,7 +122,7 @@ int main()
         "--------------------\n",
         stderr);
 
-    // ── constfilt Butterworth ─────────────────────────────────────────────────
+    // constfilt Butterworth
 #define BW(N, MC, MSTR)                                                        \
     do                                                                         \
     {                                                                          \
@@ -177,7 +177,7 @@ int main()
 
 #undef BW
 
-    // ── constfilt Elliptic ────────────────────────────────────────────────────
+    // constfilt Elliptic
 #define EL(N, MC, MSTR)                                                        \
     do                                                                         \
     {                                                                          \
@@ -231,14 +231,14 @@ int main()
 #undef EL
 
 #ifdef CONSTFILT_BENCH_IIR1
-    // ── iir1 Butterworth (Tustin/bilinear) ────────────────────────────────────
+    // iir1 Butterworth (Tustin/bilinear)
     // iir1 uses pre-warped bilinear (exact digital cutoff).  constfilt and
     // Octave's c2d(...,'tustin') use standard bilinear (no pre-warping).  This
     // causes a systematic ~N*1% step-response difference that grows with order
-    // but does NOT represent numerical breakdown -- both implementations are
+    // but does NOT represent numerical breakdown; both implementations are
     // self-consistent.  Use iir1's errors here as a baseline for the design
     // convention delta; compare them against constfilt_tustin rows for context.
-    std::fputs("  [iir1  Butterworth  tustin(bilinear) -- pre-warped, see note]\n",
+    std::fputs("  [iir1  Butterworth  tustin(bilinear) pre-warped, see note]\n",
                stderr);
 
 #define IIR1_BW(N)                                                             \

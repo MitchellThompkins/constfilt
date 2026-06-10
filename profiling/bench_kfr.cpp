@@ -1,4 +1,4 @@
-// bench_kfr.cpp — KFR runtime throughput benchmark (C++20)
+// bench_kfr.cpp: KFR runtime throughput benchmark (C++20)
 //
 // Compiled as C++20 (required by KFR). Kept separate from bench.cpp (C++17)
 // because consteig vendor headers use C++17 aggregate initialisation that
@@ -8,7 +8,7 @@
 // method column is "runtime+simd" to distinguish from constfilt's compile-time
 // scalar path. ns/sample is still per-sample throughput.
 //
-// Output: CSV rows to stdout (no header — appended after bench output).
+// Output: CSV rows to stdout (no header, appended after bench output).
 //         Human-readable table to stderr.
 
 #include <chrono>
@@ -86,7 +86,7 @@ int main()
                  "  [KFR  Butterworth+Elliptic  runtime+simd  batch=%d]\n",
                  kBatch);
 
-    // ── KFR Butterworth ───────────────────────────────────────────────────────
+    // KFR Butterworth
     for (int order : {2, 4, 6, 8})
     {
         auto params =
@@ -98,7 +98,7 @@ int main()
     }
 
 #ifdef KFR_HAVE_ELLIPTIC
-    // ── KFR Elliptic ──────────────────────────────────────────────────────────
+    // KFR Elliptic
     for (int order : {2, 4, 6, 8})
     {
         auto params = kfr::to_sos<double>(

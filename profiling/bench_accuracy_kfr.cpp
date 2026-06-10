@@ -1,4 +1,4 @@
-// bench_accuracy_kfr.cpp — KFR accuracy vs Octave reference (C++20)
+// bench_accuracy_kfr.cpp: KFR accuracy vs Octave reference (C++20)
 //
 // KFR uses bilinear/Tustin for both Butterworth and Elliptic designs, so all
 // comparisons are against acc_ref::bw_tustin_NX and acc_ref::el_tustin_NX.
@@ -6,7 +6,7 @@
 // KFR uses SOS (biquad cascade) internally and does not expose direct-form
 // b/a polynomials; only step response is compared.
 //
-// CSV rows appended to the accuracy CSV (no header — bench_accuracy writes it).
+// CSV rows appended to the accuracy CSV (no header, bench_accuracy writes it).
 // Human table to stderr.
 
 #include <cmath>
@@ -59,11 +59,11 @@ static double max_step_err(kfr::iir_filter<double> &f,
 
 int main()
 {
-    // ── KFR Butterworth (Tustin/bilinear) ─────────────────────────────────────
+    // KFR Butterworth (Tustin/bilinear)
     // KFR uses pre-warped bilinear (exact digital cutoff), same convention as
     // iir1.  Systematic ~N*1% step-response offset vs constfilt/Octave standard
-    // bilinear.  Not numerical breakdown -- design convention difference.
-    std::fputs("  [KFR  Butterworth  runtime+simd  tustin(bilinear) -- pre-warped]\n",
+    // bilinear.  Not numerical breakdown; design convention difference.
+    std::fputs("  [KFR  Butterworth  runtime+simd  tustin(bilinear) pre-warped]\n",
                stderr);
     for (int order = 1; order <= 12; ++order)
     {
@@ -102,7 +102,7 @@ int main()
     }
 
 #ifdef KFR_HAVE_ELLIPTIC
-    // ── KFR Elliptic (Tustin/bilinear) ───────────────────────────────────────
+    // KFR Elliptic (Tustin/bilinear)
     std::fputs("  [KFR  Elliptic  runtime+simd  tustin(bilinear)]\n", stderr);
     for (int order = 2; order <= 12; ++order)
     {

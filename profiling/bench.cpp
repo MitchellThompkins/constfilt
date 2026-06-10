@@ -1,11 +1,11 @@
-// bench.cpp — runtime throughput benchmark (constfilt + iir1)
+// bench.cpp: runtime throughput benchmark (constfilt + iir1)
 //
 // Compiled as C++17. KFR benchmarks live in bench_kfr.cpp (C++20) to avoid
 // mixing KFR headers (C++20) with consteig vendor headers (C++17 aggregate
 // initialisation that breaks under C++20 rules).
 //
 // Build defines (set by CMake when libraries are available via FetchContent):
-//   CONSTFILT_BENCH_IIR1  -- enable iir1 section
+//   CONSTFILT_BENCH_IIR1   enable iir1 section
 //
 // CSV to stdout:  library,filter_type,order,method,ns_per_sample,msa_per_s,dc_gain
 // Human table to stderr.
@@ -140,7 +140,7 @@ int main()
         "---------------\n",
         stderr);
 
-    // ── constfilt Butterworth, Tustin ─────────────────────────────────────────
+    // constfilt Butterworth, Tustin
     std::fputs("  [constfilt  Butterworth  Tustin  single-sample]\n", stderr);
     {
         constfilt::Butterworth<double, 1u, constfilt::Tustin> f(100.0, 1000.0);
@@ -173,7 +173,7 @@ int main()
         human_row("constfilt", "butterworth", 8, "tustin", r);
     }
 
-    // ── constfilt Butterworth, ZOH ────────────────────────────────────────────
+    // constfilt Butterworth, ZOH
     std::fputs("  [constfilt  Butterworth  ZOH  single-sample]\n", stderr);
     {
         constfilt::Butterworth<double, 1u, constfilt::ZOH> f(100.0, 1000.0);
@@ -206,7 +206,7 @@ int main()
         human_row("constfilt", "butterworth", 8, "zoh", r);
     }
 
-    // ── constfilt Butterworth, MatchedZ ───────────────────────────────────────
+    // constfilt Butterworth, MatchedZ
     std::fputs("  [constfilt  Butterworth  MatchedZ  single-sample]\n", stderr);
     {
         constfilt::Butterworth<double, 1u, constfilt::MatchedZ> f(100.0, 1000.0);
@@ -239,7 +239,7 @@ int main()
         human_row("constfilt", "butterworth", 8, "matchedz", r);
     }
 
-    // ── constfilt Elliptic, Tustin ────────────────────────────────────────────
+    // constfilt Elliptic, Tustin
     std::fputs("  [constfilt  Elliptic  Tustin  single-sample]\n", stderr);
     {
         constfilt::Elliptic<double, 2u, constfilt::Tustin> f(100.0, 0.5, 40.0,
@@ -270,7 +270,7 @@ int main()
         human_row("constfilt", "elliptic", 8, "tustin", r);
     }
 
-    // ── constfilt Elliptic, ZOH ───────────────────────────────────────────────
+    // constfilt Elliptic, ZOH
     std::fputs("  [constfilt  Elliptic  ZOH  single-sample]\n", stderr);
     {
         constfilt::Elliptic<double, 2u, constfilt::ZOH> f(100.0, 0.5, 40.0,
@@ -301,7 +301,7 @@ int main()
         human_row("constfilt", "elliptic", 8, "zoh", r);
     }
 
-    // ── constfilt Elliptic, MatchedZ ──────────────────────────────────────────
+    // constfilt Elliptic, MatchedZ
     std::fputs("  [constfilt  Elliptic  MatchedZ  single-sample]\n", stderr);
     {
         constfilt::Elliptic<double, 2u, constfilt::MatchedZ> f(100.0, 0.5, 40.0,
@@ -333,7 +333,7 @@ int main()
     }
 
 #ifdef CONSTFILT_BENCH_IIR1
-    // ── iir1 Butterworth, per-sample ──────────────────────────────────────────
+    // iir1 Butterworth, per-sample
     std::fputs("  [iir1  Butterworth  runtime-design  single-sample]\n", stderr);
     {
         Iir::Butterworth::LowPass<2> f;

@@ -46,7 +46,7 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/accuracy_reference.hpp")
     endif()
 else()
     message(STATUS
-        "profiling/accuracy_reference.hpp not found — skipping bench_accuracy. "
+        "profiling/accuracy_reference.hpp not found, skipping bench_accuracy. "
         "Run: octave --no-gui profiling/octave/generate_accuracy_reference.m")
 endif()
 

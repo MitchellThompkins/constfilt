@@ -42,7 +42,7 @@ def detect_mode(csv_path):
     return "compiletime"
 
 
-# ── Compile-time ──────────────────────────────────────────────────────────────
+# Compile-time
 
 def load_compiletime(csv_path):
     success = defaultdict(list)  # (filter_type, method, order) -> [sec, ...]
@@ -128,7 +128,7 @@ def plot_compiletime(success, failed, orders, categories, csv_path, label):
     print(f"Plot saved: {png_path}")
 
 
-# ── Runtime ───────────────────────────────────────────────────────────────────
+# Runtime
 
 def load_runtime(csv_path):
     data   = defaultdict(list)   # (library, filter_type, method, order) -> [ns, ...]
@@ -233,7 +233,7 @@ def plot_runtime(data, orders, groups, csv_path, label):
     print(f"Plot saved: {png_path}")
 
 
-# ── Accuracy ─────────────────────────────────────────────────────────────────
+# Accuracy
 
 def load_accuracy(csv_path):
     data   = defaultdict(dict)   # group -> {order: max_step_err}
@@ -325,7 +325,7 @@ def plot_accuracy(data, orders, groups, csv_path, label):
     print(f"Plot saved: {png_path}")
 
 
-# ── Entry point ───────────────────────────────────────────────────────────────
+# Entry point
 
 def main():
     if len(sys.argv) < 2:

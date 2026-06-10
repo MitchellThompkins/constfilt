@@ -38,7 +38,7 @@ fprintf(fid, '// Octave-computed reference for accuracy comparison against const
 fprintf(fid, '// Filter spec: fc=100 Hz, fs=1000 Hz; elliptic: Rp=0.5 dB, Rs=40 dB.\n\n');
 fprintf(fid, 'namespace acc_ref\n{\n\n');
 
-% ── helpers ──────────────────────────────────────────────────────────────────
+% helpers
 
 function emit_arr(fid, name, v)
     fprintf(fid, '    static constexpr double %s[%d] = {', name, length(v));
@@ -121,7 +121,7 @@ function [b_d, a_d, y_step] = el_design_pw(ord, Rp, Rs, fc, fs)
     y_step = filter(b_d, a_d, ones(1, STEP_LEN));
 end
 
-% ── Butterworth LP, orders 1-12, all three methods + pre-warped Tustin ────────
+% Butterworth LP, orders 1-12, all three methods + pre-warped Tustin
 
 fprintf(fid, '// Butterworth lowpass: fc=100 Hz, fs=1000 Hz\n\n');
 
@@ -145,7 +145,7 @@ for ord = 1:12
     end
 end
 
-% ── Elliptic LP, orders 2-12, all three methods + pre-warped Tustin ──────────
+% Elliptic LP, orders 2-12, all three methods + pre-warped Tustin
 
 fprintf(fid, '// Elliptic lowpass: fc=100 Hz, fs=1000 Hz, Rp=0.5 dB, Rs=40 dB\n\n');
 

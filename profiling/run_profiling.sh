@@ -43,7 +43,7 @@ BUILD_DIR="$SCRIPT_DIR/build"
 
 mkdir -p "$RESULTS_DIR"
 
-# ── Compiler identification ───────────────────────────────────────────────────
+# Compiler identification
 COMPILER_VERSION=$("$COMPILER" --version | head -1)
 COMPILER_VER=$("$COMPILER" --version | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
 
@@ -67,7 +67,7 @@ echo "Output:   $CT_RESULTS_FILE"
 echo "          $RT_RESULTS_FILE"
 echo ""
 
-# ── Step 1: CMake configure ───────────────────────────────────────────────────
+# Step 1: CMake configure
 echo "Configuring CMake (to extract compiler flags and build bench)..."
 cmake -S "$REPO_ROOT" -B "$BUILD_DIR" \
     -DCMAKE_CXX_COMPILER="$COMPILER" \
@@ -77,7 +77,7 @@ cmake -S "$REPO_ROOT" -B "$BUILD_DIR" \
     > /dev/null 2>&1 \
     || { echo "CMake configuration failed"; exit 1; }
 
-# ── Step 2: Extract compiler flags from compile_commands.json ─────────────────
+# Step 2: Extract compiler flags from compile_commands.json
 # Find one profile_*.cpp entry and strip the compiler binary, -c <src>, -o <out>
 # to get just the flags (e.g. -std=c++17 -O2 ...).
 COMPILE_FLAGS=$(python3 - "$BUILD_DIR/compile_commands.json" "$COMPILE_DIR" <<'EOF'
@@ -102,7 +102,7 @@ EOF
 echo "Flags from CMake: $COMPILE_FLAGS"
 echo ""
 
-# ── Step 3: OS name for metadata ──────────────────────────────────────────────
+# Step 3: OS name for metadata
 if [ -f /etc/os-release ]; then
     OS_NAME=$(. /etc/os-release && echo "$NAME")
 elif sw_vers > /dev/null 2>&1; then
@@ -111,7 +111,7 @@ else
     OS_NAME="unknown"
 fi
 
-# ── Step 4: Compile-time profiling loop ───────────────────────────────────────
+# Step 4: Compile-time profiling loop
 printf '# family: %s\n'   "$COMPILER_ID"      > "$CT_RESULTS_FILE"
 printf '# compiler: %s\n' "$COMPILER_VERSION" >> "$CT_RESULTS_FILE"
 printf '# os: %s\n'       "$OS_NAME"          >> "$CT_RESULTS_FILE"
@@ -173,7 +173,7 @@ done
 echo ""
 echo "Compile-time results: $CT_RESULTS_FILE"
 
-# ── Step 5: Build bench executables ──────────────────────────────────────────
+# Step 5: Build bench executables
 echo ""
 echo "Building bench executables..."
 cmake --build "$BUILD_DIR" --target bench -- -j "$(getconf _NPROCESSORS_ONLN)" \
@@ -186,14 +186,14 @@ cmake --build "$BUILD_DIR" --target bench_accuracy     -- -j "$(getconf _NPROCES
 cmake --build "$BUILD_DIR" --target bench_accuracy_kfr -- -j "$(getconf _NPROCESSORS_ONLN)" \
     2>/dev/null || true
 
-# ── Step 6: Runtime benchmark ─────────────────────────────────────────────────
+# Step 6: Runtime benchmark
 echo ""
 echo "Running runtime benchmark..."
 printf '# family: %s\n'   "$COMPILER_ID"      > "$RT_RESULTS_FILE"
 printf '# compiler: %s\n' "$COMPILER_VERSION" >> "$RT_RESULTS_FILE"
 printf '# os: %s\n'       "$OS_NAME"          >> "$RT_RESULTS_FILE"
 "$BUILD_DIR/bin/bench" >> "$RT_RESULTS_FILE"
-# Append KFR rows if bench_kfr was built (no CSV header — rows only)
+# Append KFR rows if bench_kfr was built (no CSV header, rows only)
 if [ -x "$BUILD_DIR/bin/bench_kfr" ]; then
     "$BUILD_DIR/bin/bench_kfr" >> "$RT_RESULTS_FILE"
 fi
@@ -201,7 +201,7 @@ fi
 echo ""
 echo "Runtime results: $RT_RESULTS_FILE"
 
-# ── Step 7: Accuracy benchmark (requires accuracy_reference.hpp) ──────────────
+# Step 7: Accuracy benchmark (requires accuracy_reference.hpp)
 ACC_RESULTS_FILE="$RESULTS_DIR/accuracy_${COMPILER_ID}_${COMPILER_VER}.csv"
 
 if [ -x "$BUILD_DIR/bin/bench_accuracy" ]; then
@@ -217,25 +217,25 @@ if [ -x "$BUILD_DIR/bin/bench_accuracy" ]; then
     echo "Accuracy results: $ACC_RESULTS_FILE"
 else
     echo ""
-    echo "bench_accuracy not built — skipping accuracy check."
+    echo "bench_accuracy not built, skipping accuracy check."
     echo "Generate accuracy_reference.hpp first:"
     echo "  octave --no-gui profiling/octave/generate_accuracy_reference.m"
 fi
 
-# ── Step 8: Analysis ──────────────────────────────────────────────────────────
+# Step 8: Analysis
 echo ""
 echo "=== Compile-time summary ==="
 uv run "$SCRIPT_DIR/analyze_results.py" "$CT_RESULTS_FILE" 2>/dev/null || \
-    echo "(uv not available — run: uv run profiling/analyze_results.py <csv>)"
+    echo "(uv not available, run: uv run profiling/analyze_results.py <csv>)"
 
 echo ""
 echo "=== Runtime summary ==="
 uv run "$SCRIPT_DIR/analyze_results.py" "$RT_RESULTS_FILE" 2>/dev/null || \
-    echo "(uv not available — run: uv run profiling/analyze_results.py <csv>)"
+    echo "(uv not available, run: uv run profiling/analyze_results.py <csv>)"
 
 if [ -f "$ACC_RESULTS_FILE" ]; then
     echo ""
     echo "=== Accuracy summary ==="
     uv run "$SCRIPT_DIR/analyze_results.py" "$ACC_RESULTS_FILE" 2>/dev/null || \
-        echo "(uv not available — run: uv run profiling/analyze_results.py <csv>)"
+        echo "(uv not available, run: uv run profiling/analyze_results.py <csv>)"
 fi

@@ -176,27 +176,30 @@ echo "Compile-time results: $CT_RESULTS_FILE"
 # Step 5: Build bench executables
 echo ""
 echo "Building bench executables..."
-cmake --build "$BUILD_DIR" --target bench -- -j "$(getconf _NPROCESSORS_ONLN)" \
-    || { echo "bench build failed"; exit 1; }
-# bench_kfr and bench_accuracy are optional; build them if the targets exist
-cmake --build "$BUILD_DIR" --target bench_kfr     -- -j "$(getconf _NPROCESSORS_ONLN)" \
+cmake --build "$BUILD_DIR" --target bench_constfilt -- -j "$(getconf _NPROCESSORS_ONLN)" \
+    || { echo "bench_constfilt build failed"; exit 1; }
+cmake --build "$BUILD_DIR" --target bench_iir1               -- -j "$(getconf _NPROCESSORS_ONLN)" \
     2>/dev/null || true
-cmake --build "$BUILD_DIR" --target bench_accuracy     -- -j "$(getconf _NPROCESSORS_ONLN)" \
+cmake --build "$BUILD_DIR" --target bench_kfr                -- -j "$(getconf _NPROCESSORS_ONLN)" \
     2>/dev/null || true
-cmake --build "$BUILD_DIR" --target bench_accuracy_kfr -- -j "$(getconf _NPROCESSORS_ONLN)" \
+cmake --build "$BUILD_DIR" --target bench_accuracy_constfilt -- -j "$(getconf _NPROCESSORS_ONLN)" \
+    2>/dev/null || true
+cmake --build "$BUILD_DIR" --target bench_accuracy_iir1      -- -j "$(getconf _NPROCESSORS_ONLN)" \
+    2>/dev/null || true
+cmake --build "$BUILD_DIR" --target bench_accuracy_kfr       -- -j "$(getconf _NPROCESSORS_ONLN)" \
     2>/dev/null || true
 
 # Step 6: Runtime benchmark
 echo ""
 echo "Running runtime benchmark..."
-printf '# family: %s\n'   "$COMPILER_ID"      > "$RT_RESULTS_FILE"
-printf '# compiler: %s\n' "$COMPILER_VERSION" >> "$RT_RESULTS_FILE"
-printf '# os: %s\n'       "$OS_NAME"          >> "$RT_RESULTS_FILE"
-"$BUILD_DIR/bin/bench" >> "$RT_RESULTS_FILE"
-# Append KFR rows if bench_kfr was built (no CSV header, rows only)
-if [ -x "$BUILD_DIR/bin/bench_kfr" ]; then
-    "$BUILD_DIR/bin/bench_kfr" >> "$RT_RESULTS_FILE"
-fi
+printf '# family: %s\n'   "$COMPILER_ID"                                 > "$RT_RESULTS_FILE"
+printf '# compiler: %s\n' "$COMPILER_VERSION"                           >> "$RT_RESULTS_FILE"
+printf '# os: %s\n'       "$OS_NAME"                                    >> "$RT_RESULTS_FILE"
+echo "library,filter_type,order,method,ns_per_sample,msa_per_s,dc_gain" >> "$RT_RESULTS_FILE"
+
+"$BUILD_DIR/bin/bench_constfilt" >> "$RT_RESULTS_FILE"
+[ -x "$BUILD_DIR/bin/bench_iir1" ] && "$BUILD_DIR/bin/bench_iir1" >> "$RT_RESULTS_FILE"
+[ -x "$BUILD_DIR/bin/bench_kfr"  ] && "$BUILD_DIR/bin/bench_kfr"  >> "$RT_RESULTS_FILE"
 
 echo ""
 echo "Runtime results: $RT_RESULTS_FILE"
@@ -204,20 +207,22 @@ echo "Runtime results: $RT_RESULTS_FILE"
 # Step 7: Accuracy benchmark (requires accuracy_reference.hpp)
 ACC_RESULTS_FILE="$RESULTS_DIR/accuracy_${COMPILER_ID}_${COMPILER_VER}.csv"
 
-if [ -x "$BUILD_DIR/bin/bench_accuracy" ]; then
+if [ -x "$BUILD_DIR/bin/bench_accuracy_constfilt" ]; then
     echo ""
     echo "Running accuracy benchmark..."
-    printf '# family: %s\n'   "$COMPILER_ID"      > "$ACC_RESULTS_FILE"
-    printf '# compiler: %s\n' "$COMPILER_VERSION" >> "$ACC_RESULTS_FILE"
-    printf '# os: %s\n'       "$OS_NAME"          >> "$ACC_RESULTS_FILE"
-    "$BUILD_DIR/bin/bench_accuracy" >> "$ACC_RESULTS_FILE"
-    if [ -x "$BUILD_DIR/bin/bench_accuracy_kfr" ]; then
-        "$BUILD_DIR/bin/bench_accuracy_kfr" >> "$ACC_RESULTS_FILE"
-    fi
+    printf '# family: %s\n'   "$COMPILER_ID"                                       > "$ACC_RESULTS_FILE"
+    printf '# compiler: %s\n' "$COMPILER_VERSION"                                 >> "$ACC_RESULTS_FILE"
+    printf '# os: %s\n'       "$OS_NAME"                                          >> "$ACC_RESULTS_FILE"
+    echo "library,filter_type,order,method,max_b_err,max_a_err,max_step_err"      >> "$ACC_RESULTS_FILE"
+
+    "$BUILD_DIR/bin/bench_accuracy_constfilt" >> "$ACC_RESULTS_FILE"
+    [ -x "$BUILD_DIR/bin/bench_accuracy_iir1" ] && "$BUILD_DIR/bin/bench_accuracy_iir1" >> "$ACC_RESULTS_FILE"
+    [ -x "$BUILD_DIR/bin/bench_accuracy_kfr"  ] && "$BUILD_DIR/bin/bench_accuracy_kfr"  >> "$ACC_RESULTS_FILE"
+
     echo "Accuracy results: $ACC_RESULTS_FILE"
 else
     echo ""
-    echo "bench_accuracy not built, skipping accuracy check."
+    echo "bench_accuracy_constfilt not built, skipping accuracy check."
     echo "Generate accuracy_reference.hpp first:"
     echo "  octave --no-gui profiling/octave/generate_accuracy_reference.m"
 fi

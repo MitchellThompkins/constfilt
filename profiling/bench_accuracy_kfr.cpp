@@ -18,7 +18,9 @@ static double kfr_step_err(kfr::iir_filter<double> &f,
     double x_buf[kStepLen];
     double y_buf[kStepLen];
     for (int i = 0; i < kStepLen; ++i)
+    {
         x_buf[i] = 1.0;
+    }
     f.apply(y_buf, x_buf, static_cast<size_t>(kStepLen));
 
     double max_e = 0.0;
@@ -26,7 +28,9 @@ static double kfr_step_err(kfr::iir_filter<double> &f,
     {
         double e = std::fabs(y_buf[i] - ref_step[i]);
         if (e > max_e)
+        {
             max_e = e;
+        }
     }
     return max_e;
 }
@@ -34,7 +38,7 @@ static double kfr_step_err(kfr::iir_filter<double> &f,
 #define RUN_KFR_BW(N)                                                          \
     do                                                                         \
     {                                                                          \
-        using Ref  = acc_ref::bw_prewarp_N##N;                                \
+        using Ref   = acc_ref::bw_prewarp_N##N;                               \
         auto params = kfr::to_sos<double>(                                     \
             kfr::iir_lowpass(kfr::butterworth(N), 100.0, 1000.0));            \
         kfr::iir_filter<double> f(params);                                     \
@@ -47,7 +51,7 @@ static double kfr_step_err(kfr::iir_filter<double> &f,
 #define RUN_KFR_EL(N)                                                          \
     do                                                                         \
     {                                                                          \
-        using Ref  = acc_ref::el_prewarp_N##N;                                \
+        using Ref   = acc_ref::el_prewarp_N##N;                               \
         auto params = kfr::to_sos<double>(kfr::iir_lowpass(                   \
             kfr::elliptic(N, 0.5, 40.0), 100.0, 1000.0));                     \
         kfr::iir_filter<double> f(params);                                     \
@@ -60,15 +64,32 @@ static double kfr_step_err(kfr::iir_filter<double> &f,
 int main()
 {
     std::fputs("  [KFR  Butterworth  prewarp bilinear]\n", stderr);
-    RUN_KFR_BW(1);   RUN_KFR_BW(2);   RUN_KFR_BW(3);   RUN_KFR_BW(4);
-    RUN_KFR_BW(5);   RUN_KFR_BW(6);   RUN_KFR_BW(7);   RUN_KFR_BW(8);
-    RUN_KFR_BW(9);   RUN_KFR_BW(10);  RUN_KFR_BW(11);  RUN_KFR_BW(12);
+    RUN_KFR_BW(1);
+    RUN_KFR_BW(2);
+    RUN_KFR_BW(3);
+    RUN_KFR_BW(4);
+    RUN_KFR_BW(5);
+    RUN_KFR_BW(6);
+    RUN_KFR_BW(7);
+    RUN_KFR_BW(8);
+    RUN_KFR_BW(9);
+    RUN_KFR_BW(10);
+    RUN_KFR_BW(11);
+    RUN_KFR_BW(12);
 
 #ifdef KFR_HAVE_ELLIPTIC
     std::fputs("  [KFR  Elliptic  prewarp bilinear]\n", stderr);
-    RUN_KFR_EL(2);   RUN_KFR_EL(3);   RUN_KFR_EL(4);   RUN_KFR_EL(5);
-    RUN_KFR_EL(6);   RUN_KFR_EL(7);   RUN_KFR_EL(8);   RUN_KFR_EL(9);
-    RUN_KFR_EL(10);  RUN_KFR_EL(11);  RUN_KFR_EL(12);
+    RUN_KFR_EL(2);
+    RUN_KFR_EL(3);
+    RUN_KFR_EL(4);
+    RUN_KFR_EL(5);
+    RUN_KFR_EL(6);
+    RUN_KFR_EL(7);
+    RUN_KFR_EL(8);
+    RUN_KFR_EL(9);
+    RUN_KFR_EL(10);
+    RUN_KFR_EL(11);
+    RUN_KFR_EL(12);
 #endif
 
     return 0;

@@ -48,17 +48,23 @@ static BenchResult bench(F &f, CallFn call)
         double acc       = 0.0;
         const auto t0    = Clock::now();
         for (int i = 0; i < kSamples; ++i)
+        {
             acc += call(f);
+        }
         const auto t1    = Clock::now();
         g_sink           = acc;
         const Ns elapsed = t1 - t0;
         if (elapsed < best)
+        {
             best = elapsed;
+        }
     }
     f.reset();
     double y = 0.0;
     for (int i = 0; i < kDcSamples; ++i)
+    {
         y = call(f);
+    }
     return {static_cast<double>(best.count()) / static_cast<double>(kSamples),
             y};
 }

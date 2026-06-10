@@ -22,11 +22,15 @@ static void csv_row(const char *lib, const char *ftype, int order,
                     const char *method, const AccResult &r)
 {
     if (r.max_b_err < 0.0)
+    {
         std::printf("%s,%s,%d,%s,n/a,n/a,%.6e\n", lib, ftype, order, method,
                     r.max_step_err);
+    }
     else
+    {
         std::printf("%s,%s,%d,%s,%.6e,%.6e,%.6e\n", lib, ftype, order, method,
                     r.max_b_err, r.max_a_err, r.max_step_err);
+    }
 }
 
 static void human_row(const char *lib, const char *ftype, int order,
@@ -34,16 +38,20 @@ static void human_row(const char *lib, const char *ftype, int order,
 {
     const char *flag = r.max_step_err > kErrThreshold ? " !" : "  ";
     if (r.max_b_err < 0.0)
+    {
         std::fprintf(stderr,
                      "%s %-10s %-12s N=%-2d %-10s  b=n/a       a=n/a      "
                      " step=%.2e\n",
                      flag, lib, ftype, order, method, r.max_step_err);
+    }
     else
+    {
         std::fprintf(stderr,
                      "%s %-10s %-12s N=%-2d %-10s  b=%.2e  a=%.2e  "
                      "step=%.2e\n",
                      flag, lib, ftype, order, method, r.max_b_err,
                      r.max_a_err, r.max_step_err);
+    }
 }
 
 // Full accuracy check for filters that expose b/a polynomials.
@@ -57,14 +65,18 @@ static AccResult check(F &filt, const double (&ref_b)[NC],
     {
         double e = std::fabs(filt.coeffs_b()[i] - ref_b[i]);
         if (e > max_b)
+        {
             max_b = e;
+        }
     }
     double max_a = 0.0;
     for (size_t i = 0; i < NC; ++i)
     {
         double e = std::fabs(filt.coeffs_a()[i] - ref_a[i]);
         if (e > max_a)
+        {
             max_a = e;
+        }
     }
     double max_s = 0.0;
     for (int i = 0; i < kStepLen; ++i)
@@ -72,7 +84,9 @@ static AccResult check(F &filt, const double (&ref_b)[NC],
         double y = filt(1.0);
         double e = std::fabs(y - ref_step[i]);
         if (e > max_s)
+        {
             max_s = e;
+        }
     }
     return {max_b, max_a, max_s};
 }
@@ -88,7 +102,9 @@ static AccResult check_step(StepFn step_fn,
     {
         double e = std::fabs(step_fn() - ref_step[i]);
         if (e > max_s)
+        {
             max_s = e;
+        }
     }
     return {-1.0, -1.0, max_s};
 }

@@ -24,9 +24,18 @@
 int main()
 {
     std::fputs("  [iir1  Butterworth  prewarp bilinear]\n", stderr);
-    RUN_IIR1(1);   RUN_IIR1(2);   RUN_IIR1(3);   RUN_IIR1(4);
-    RUN_IIR1(5);   RUN_IIR1(6);   RUN_IIR1(7);   RUN_IIR1(8);
-    RUN_IIR1(9);   RUN_IIR1(10);  RUN_IIR1(11);  RUN_IIR1(12);
+    RUN_IIR1(1);
+    RUN_IIR1(2);
+    RUN_IIR1(3);
+    RUN_IIR1(4);
+    RUN_IIR1(5);
+    RUN_IIR1(6);
+    RUN_IIR1(7);
+    RUN_IIR1(8);
+    RUN_IIR1(9);
+    RUN_IIR1(10);
+    RUN_IIR1(11);
+    RUN_IIR1(12);
 
     return 0;
 }

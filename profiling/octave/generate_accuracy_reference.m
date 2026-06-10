@@ -75,6 +75,27 @@ function [b_d, a_d, y_step] = bw_design(ord, fc, fs, method)
     y_step = filter(b_d, a_d, ones(1, STEP_LEN));
 end
 
+% Pre-warped bilinear: design the analog prototype at the pre-warped frequency
+%   wc_pw = 2*fs*tan(pi*fc/fs)
+% then apply the standard bilinear (c2d 'tustin').  This ensures the standard
+% bilinear maps wc_pw to exactly fc Hz digital, so the -3dB point lands at
+% the specified cutoff.  Octave's c2d ignores the 4th-argument warp frequency,
+% so we implement the pre-warp manually.
+function [b_d, a_d, y_step] = bw_design_pw(ord, fc, fs)
+    wc_pw = 2 * fs * tan(pi * fc / fs);
+    [z_p, p_p, k_p] = buttap(ord);
+    p_scaled = p_p * wc_pw;
+    k_scaled = k_p * wc_pw^ord;
+    [b_s, a_s] = zp2tf(z_p, p_scaled, k_scaled);
+    sys_d = c2d(tf(b_s, a_s), 1.0/fs, 'tustin');
+    [b_d, a_d] = tfdata(sys_d, 'v');
+    while length(b_d) < length(a_d)
+        b_d = [0, b_d];
+    end
+    STEP_LEN = 256;
+    y_step = filter(b_d, a_d, ones(1, STEP_LEN));
+end
+
 % Design a continuous-time Elliptic LP, discretize, zero-pad, step response.
 function [b_d, a_d, y_step] = el_design(ord, Rp, Rs, fc, fs, method)
     wc = 2 * pi * fc;
@@ -88,7 +109,19 @@ function [b_d, a_d, y_step] = el_design(ord, Rp, Rs, fc, fs, method)
     y_step = filter(b_d, a_d, ones(1, STEP_LEN));
 end
 
-% ── Butterworth LP, orders 1–12, all three methods ───────────────────────────
+function [b_d, a_d, y_step] = el_design_pw(ord, Rp, Rs, fc, fs)
+    wc_pw = 2 * fs * tan(pi * fc / fs);
+    [b_s, a_s] = ellip(ord, Rp, Rs, wc_pw, 's');
+    sys_d = c2d(tf(b_s, a_s), 1.0/fs, 'tustin');
+    [b_d, a_d] = tfdata(sys_d, 'v');
+    while length(b_d) < length(a_d)
+        b_d = [0, b_d];
+    end
+    STEP_LEN = 256;
+    y_step = filter(b_d, a_d, ones(1, STEP_LEN));
+end
+
+% ── Butterworth LP, orders 1-12, all three methods + pre-warped Tustin ────────
 
 fprintf(fid, '// Butterworth lowpass: fc=100 Hz, fs=1000 Hz\n\n');
 
@@ -96,19 +129,23 @@ fc = 100;
 fs = 1000;
 
 for ord = 1:12
-    for mi = 1:3
-        methods = {'zoh', 'matched', 'tustin'};
+    for mi = 1:4
+        methods = {'zoh', 'matched', 'tustin', 'prewarp'};
         method  = methods{mi};
-        labels  = {'zoh', 'matchedz', 'tustin'};
+        labels  = {'zoh', 'matchedz', 'tustin', 'prewarp'};
         label   = labels{mi};
 
-        [b_d, a_d, y_step] = bw_design(ord, fc, fs, method);
+        if strcmp(method, 'prewarp')
+            [b_d, a_d, y_step] = bw_design_pw(ord, fc, fs);
+        else
+            [b_d, a_d, y_step] = bw_design(ord, fc, fs, method);
+        end
         sname = sprintf('bw_%s_N%d', label, ord);
         emit_struct(fid, sname, ord, b_d, a_d, y_step);
     end
 end
 
-% ── Elliptic LP, orders 2–12, all three methods ──────────────────────────────
+% ── Elliptic LP, orders 2-12, all three methods + pre-warped Tustin ──────────
 
 fprintf(fid, '// Elliptic lowpass: fc=100 Hz, fs=1000 Hz, Rp=0.5 dB, Rs=40 dB\n\n');
 
@@ -116,13 +153,17 @@ Rp = 0.5;
 Rs = 40;
 
 for ord = 2:12
-    for mi = 1:3
-        methods = {'zoh', 'matched', 'tustin'};
+    for mi = 1:4
+        methods = {'zoh', 'matched', 'tustin', 'prewarp'};
         method  = methods{mi};
-        labels  = {'zoh', 'matchedz', 'tustin'};
+        labels  = {'zoh', 'matchedz', 'tustin', 'prewarp'};
         label   = labels{mi};
 
-        [b_d, a_d, y_step] = el_design(ord, Rp, Rs, fc, fs, method);
+        if strcmp(method, 'prewarp')
+            [b_d, a_d, y_step] = el_design_pw(ord, Rp, Rs, fc, fs);
+        else
+            [b_d, a_d, y_step] = el_design(ord, Rp, Rs, fc, fs, method);
+        end
         sname = sprintf('el_%s_N%d', label, ord);
         emit_struct(fid, sname, ord, b_d, a_d, y_step);
     end

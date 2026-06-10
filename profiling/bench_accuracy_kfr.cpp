@@ -74,7 +74,7 @@ int main()
         // Select the correct acc_ref struct by order via a switch.
 #define REF_CASE(N)                                                            \
     case N:                                                                    \
-        e = max_step_err(f, acc_ref::bw_tustin_N##N::step);                   \
+        e = max_step_err(f, acc_ref::bw_prewarp_N##N::step);                  \
         break
 
         double e = 0.0;
@@ -97,8 +97,8 @@ int main()
         }
 #undef REF_CASE
 
-        csv_row("kfr", "butterworth", order, "tustin", e);
-        human_row("kfr", "butterworth", order, "tustin", e);
+        csv_row("kfr", "butterworth", order, "prewarp", e);
+        human_row("kfr", "butterworth", order, "prewarp", e);
     }
 
 #ifdef KFR_HAVE_ELLIPTIC
@@ -112,7 +112,7 @@ int main()
 
 #define REF_CASE(N)                                                            \
     case N:                                                                    \
-        e = max_step_err(f, acc_ref::el_tustin_N##N::step);                   \
+        e = max_step_err(f, acc_ref::el_prewarp_N##N::step);                  \
         break
 
         double e = 0.0;
@@ -134,8 +134,8 @@ int main()
         }
 #undef REF_CASE
 
-        csv_row("kfr", "elliptic", order, "tustin", e);
-        human_row("kfr", "elliptic", order, "elliptic", e);
+        csv_row("kfr", "elliptic", order, "prewarp", e);
+        human_row("kfr", "elliptic", order, "prewarp", e);
     }
 #endif // KFR_HAVE_ELLIPTIC
 

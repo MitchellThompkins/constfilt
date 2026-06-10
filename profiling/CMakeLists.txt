@@ -1,4 +1,37 @@
 ################################################################################
+# External comparison libraries (FetchContent, never committed to repo)
+# KFR requires C++20 for its internal CMake tests. Setting the global standard
+# here is safe: constfilt and its vendored targets are already defined by this
+# point and won't be re-configured.
+################################################################################
+include(FetchContent)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# iir1: runtime IIR filter design + execution; MIT license
+FetchContent_Declare(
+    iir1
+    GIT_REPOSITORY https://github.com/berndporr/iir1.git
+    GIT_TAG        1.9.4
+    GIT_SHALLOW    TRUE
+)
+set(IIR1_BUILD_TESTING OFF CACHE BOOL "" FORCE)
+set(IIR1_BUILD_DEMO    OFF CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(iir1)
+
+# KFR: full filter design + SIMD-accelerated execution; GPL v2+
+FetchContent_Declare(
+    kfr
+    GIT_REPOSITORY https://github.com/kfrlib/kfr.git
+    GIT_TAG        7.0.1
+    GIT_SHALLOW    TRUE
+)
+set(KFR_ENABLE_TESTS    OFF CACHE BOOL "" FORCE)
+set(KFR_ENABLE_EXAMPLES OFF CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(kfr)
+
+################################################################################
 # Compile-time probes
 # Each .cpp forces static constexpr filter construction; compile time IS the
 # benchmark. OBJECT lib = compile only, no link step.

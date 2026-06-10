@@ -130,7 +130,6 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
 
     option(CONSTFILT_BUILD_PROFILING "Build profiling suite" OFF)
     if(CONSTFILT_BUILD_PROFILING)
-        add_subdirectory(profiling_dependencies)
         add_subdirectory(profiling)
     endif()
 endif()

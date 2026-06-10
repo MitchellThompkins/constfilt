@@ -19,9 +19,9 @@ struct HighPass
 // Template parameters:
 //   T          - floating-point scalar type
 //   N          - filter order (>= 1)
-//   Method     - discretization method (ZOH default), MatchedZ, or Tustin
+//   Method     - discretization method (Tustin default), ZOH, or MatchedZ
 //   FilterType - LowPass (default) or HighPass
-template <typename T, consteig::Size N, typename Method = ZOH,
+template <typename T, consteig::Size N, typename Method = Tustin,
           typename FilterType = LowPass>
 class Butterworth : public AnalogFilter<T, N, Method>
 {
@@ -132,10 +132,10 @@ class Butterworth : public AnalogFilter<T, N, Method>
 };
 
 // Convenience aliases for first-order RC-equivalent filters.
-template <typename T, typename Method = ZOH>
+template <typename T, typename Method = Tustin>
 using FirstOrderLowPass = Butterworth<T, 1u, Method, LowPass>;
 
-template <typename T, typename Method = ZOH>
+template <typename T, typename Method = Tustin>
 using FirstOrderHighPass = Butterworth<T, 1u, Method, HighPass>;
 
 } // namespace constfilt

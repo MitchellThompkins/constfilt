@@ -131,7 +131,7 @@ attenuation when the cutoff is a significant fraction of the sample rate.
 Tustin is a good choice when frequency-domain shape is important and
 prewarping is acceptable. It is the most commonly used method in digital
 control and audio signal processing. The difference is small when
-$f_c \ll f_s$. If you are unsure, use ZOH (the default).
+$f_c \ll f_s$. If you are unsure, use Tustin (the default).
 
 Given a continuous state-space model with $(A_c, B_c, C_c, D_c)$, the goal is a
 discrete state-space model $(A_d, B_d, C_d, D_d)$ valid at sample rate $f_s$.

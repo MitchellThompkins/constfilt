@@ -159,16 +159,16 @@ TEST(Stability, UnstableSystem_RepeatedImaginaryAxisPole)
 // Batch_RealTime_Equivalence.
 
 FULL_MATRIX(AnalogFilter, case_1_zoh_fs10,
-            constfilt::AnalogFilter<double, 1u>(Ref::b_s, Ref::a_s,
-                                                Ref::sample_rate_hz))
+            constfilt::AnalogFilter<double, 1u, constfilt::ZOH>(
+                Ref::b_s, Ref::a_s, Ref::sample_rate_hz))
 
 FULL_MATRIX(AnalogFilter, case_2_zoh_fs10,
-            constfilt::AnalogFilter<double, 2u>(Ref::b_s, Ref::a_s,
-                                                Ref::sample_rate_hz))
+            constfilt::AnalogFilter<double, 2u, constfilt::ZOH>(
+                Ref::b_s, Ref::a_s, Ref::sample_rate_hz))
 
 FULL_MATRIX(AnalogFilter, case_3_proper_zoh_fs10,
-            constfilt::AnalogFilter<double, 1u>(Ref::b_s, Ref::a_s,
-                                                Ref::sample_rate_hz))
+            constfilt::AnalogFilter<double, 1u, constfilt::ZOH>(
+                Ref::b_s, Ref::a_s, Ref::sample_rate_hz))
 
 FULL_MATRIX(AnalogFilter, case_4_mz_fs10,
             constfilt::AnalogFilter<double, 2u, constfilt::MatchedZ>(
@@ -177,6 +177,13 @@ FULL_MATRIX(AnalogFilter, case_4_mz_fs10,
 FULL_MATRIX(AnalogFilter, case_5_tustin_fs10,
             constfilt::AnalogFilter<double, 2u, constfilt::Tustin>(
                 Ref::b_s, Ref::a_s, Ref::sample_rate_hz))
+
+// --- AnalogFilter: default discretization (must be Tustin)
+// ------------------
+
+FULL_MATRIX(AnalogFilterDefault, case_5_tustin_fs10,
+            constfilt::AnalogFilter<double, 2u>(Ref::b_s, Ref::a_s,
+                                                Ref::sample_rate_hz))
 
 // --- AnalogFilter: stability check disabled allows unstable filter
 // ---------------

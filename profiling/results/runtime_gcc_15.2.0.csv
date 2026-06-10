@@ -1,0 +1,43 @@
+# family: gcc
+# compiler: g++ (Alpine 15.2.0) 15.2.0
+# os: Alpine Linux
+library,filter_type,order,method,ns_per_sample,msa_per_s,dc_gain
+constfilt,butterworth,1,tustin,6.227,160.6,1.00000000
+constfilt,butterworth,2,tustin,9.698,103.1,1.00000000
+constfilt,butterworth,4,tustin,17.340,57.7,1.00000000
+constfilt,butterworth,6,tustin,24.834,40.3,1.00000000
+constfilt,butterworth,8,tustin,32.962,30.3,1.00000000
+constfilt,butterworth,1,zoh,6.290,159.0,1.00000000
+constfilt,butterworth,2,zoh,9.412,106.3,1.00000000
+constfilt,butterworth,4,zoh,17.326,57.7,1.00000000
+constfilt,butterworth,6,zoh,24.966,40.1,1.00000000
+constfilt,butterworth,8,zoh,33.015,30.3,1.00000000
+constfilt,butterworth,1,matchedz,6.276,159.3,1.00000000
+constfilt,butterworth,2,matchedz,12.417,80.5,1.00000000
+constfilt,butterworth,4,matchedz,17.287,57.8,1.00000000
+constfilt,butterworth,6,matchedz,24.954,40.1,1.00000000
+constfilt,butterworth,8,matchedz,33.457,29.9,1.00000000
+constfilt,elliptic,2,tustin,10.374,96.4,0.94406088
+constfilt,elliptic,4,tustin,17.400,57.5,0.94406088
+constfilt,elliptic,6,tustin,25.009,40.0,0.94406088
+constfilt,elliptic,8,tustin,33.045,30.3,0.94406088
+constfilt,elliptic,2,zoh,9.450,105.8,0.94406088
+constfilt,elliptic,4,zoh,17.235,58.0,0.94406088
+constfilt,elliptic,6,zoh,25.248,39.6,0.94406088
+constfilt,elliptic,8,zoh,33.209,30.1,0.94406088
+constfilt,elliptic,2,matchedz,9.416,106.2,0.94406088
+constfilt,elliptic,4,matchedz,17.395,57.5,0.94406088
+constfilt,elliptic,6,matchedz,24.932,40.1,0.94406088
+constfilt,elliptic,8,matchedz,32.968,30.3,0.94406088
+iir1,butterworth,2,runtime,9.503,105.2,1.00000000
+iir1,butterworth,4,runtime,17.116,58.4,1.00000000
+iir1,butterworth,6,runtime,29.468,33.9,1.00000000
+iir1,butterworth,8,runtime,43.839,22.8,1.00000000
+kfr,butterworth,2,runtime+simd,620.793,1.6,1.00000000
+kfr,butterworth,4,runtime+simd,405.517,2.5,1.00000000
+kfr,butterworth,6,runtime+simd,302.119,3.3,1.00000000
+kfr,butterworth,8,runtime+simd,302.705,3.3,1.00000000
+kfr,elliptic,2,runtime+simd,620.582,1.6,0.94406088
+kfr,elliptic,4,runtime+simd,406.641,2.5,0.94406088
+kfr,elliptic,6,runtime+simd,303.068,3.3,0.94406088
+kfr,elliptic,8,runtime+simd,302.503,3.3,0.94406088

@@ -9,22 +9,22 @@
 #define RUN_BW(N, MC, mstr)                                                    \
     do                                                                         \
     {                                                                          \
-        using Ref = acc_ref::bw_##mstr##_N##N;                                \
-        constfilt::Butterworth<double, N##u, constfilt::MC> f(100.0, 1000.0); \
-        auto r = check(f, Ref::b, Ref::a, Ref::step);                         \
-        csv_row("constfilt", "butterworth", N, #mstr, r);                     \
-        human_row("constfilt", "butterworth", N, #mstr, r);                   \
+        using Ref = acc_ref::bw_##mstr##_N##N;                                 \
+        constfilt::Butterworth<double, N##u, constfilt::MC> f(100.0, 1000.0);  \
+        auto r = check(f, Ref::b, Ref::a, Ref::step);                          \
+        csv_row("constfilt", "butterworth", N, #mstr, r);                      \
+        human_row("constfilt", "butterworth", N, #mstr, r);                    \
     } while (0)
 
 #define RUN_EL(N, MC, mstr)                                                    \
     do                                                                         \
     {                                                                          \
-        using Ref = acc_ref::el_##mstr##_N##N;                                \
-        constfilt::Elliptic<double, N##u, constfilt::MC> f(100.0, 0.5, 40.0,  \
-                                                           1000.0);           \
-        auto r = check(f, Ref::b, Ref::a, Ref::step);                         \
-        csv_row("constfilt", "elliptic", N, #mstr, r);                        \
-        human_row("constfilt", "elliptic", N, #mstr, r);                      \
+        using Ref = acc_ref::el_##mstr##_N##N;                                 \
+        constfilt::Elliptic<double, N##u, constfilt::MC> f(100.0, 0.5, 40.0,   \
+                                                           1000.0);            \
+        auto r = check(f, Ref::b, Ref::a, Ref::step);                          \
+        csv_row("constfilt", "elliptic", N, #mstr, r);                         \
+        human_row("constfilt", "elliptic", N, #mstr, r);                       \
     } while (0)
 
 int main()

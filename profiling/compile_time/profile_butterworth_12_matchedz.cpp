@@ -1,3 +1,3 @@
 #include <constfilt/constfilt.hpp>
-static constexpr constfilt::Butterworth<double, 12u, constfilt::MatchedZ> kFilter(
-    100.0, 1000.0);
+static constexpr constfilt::Butterworth<double, 12u, constfilt::MatchedZ>
+    kFilter(100.0, 1000.0);

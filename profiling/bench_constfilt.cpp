@@ -9,20 +9,20 @@
 #define RUN_CF(ftype, N, METHOD, mstr)                                         \
     do                                                                         \
     {                                                                          \
-        constfilt::ftype<double, N##u, constfilt::METHOD> f(100.0, 1000.0);   \
-        auto r = bench(f, [](auto &f) { return f(1.0); });                    \
-        csv_row("constfilt", #ftype, N, mstr, r);                             \
-        human_row("constfilt", #ftype, N, mstr, r);                           \
+        constfilt::ftype<double, N##u, constfilt::METHOD> f(100.0, 1000.0);    \
+        auto r = bench(f, [](auto &f) { return f(1.0); });                     \
+        csv_row("constfilt", #ftype, N, mstr, r);                              \
+        human_row("constfilt", #ftype, N, mstr, r);                            \
     } while (0)
 
 #define RUN_EL(N, METHOD, mstr)                                                \
     do                                                                         \
     {                                                                          \
-        constfilt::Elliptic<double, N##u, constfilt::METHOD> f(100.0, 0.5,    \
-                                                               40.0, 1000.0); \
-        auto r = bench(f, [](auto &f) { return f(1.0); });                    \
-        csv_row("constfilt", "Elliptic", N, mstr, r);                         \
-        human_row("constfilt", "Elliptic", N, mstr, r);                       \
+        constfilt::Elliptic<double, N##u, constfilt::METHOD> f(100.0, 0.5,     \
+                                                               40.0, 1000.0);  \
+        auto r = bench(f, [](auto &f) { return f(1.0); });                     \
+        csv_row("constfilt", "Elliptic", N, mstr, r);                          \
+        human_row("constfilt", "Elliptic", N, mstr, r);                        \
     } while (0)
 
 int main()

@@ -8,12 +8,12 @@
 
 #include "accuracy_reference.hpp"
 
-static constexpr int kStepLen         = 256;
+static constexpr int kStepLen = 256;
 static constexpr double kErrThreshold = 1e-6;
 
 struct AccResult
 {
-    double max_b_err;   // -1 when b/a not available (SOS-internal libraries)
+    double max_b_err; // -1 when b/a not available (SOS-internal libraries)
     double max_a_err;
     double max_step_err;
 };
@@ -49,8 +49,8 @@ static void human_row(const char *lib, const char *ftype, int order,
         std::fprintf(stderr,
                      "%s %-10s %-12s N=%-2d %-10s  b=%.2e  a=%.2e  "
                      "step=%.2e\n",
-                     flag, lib, ftype, order, method, r.max_b_err,
-                     r.max_a_err, r.max_step_err);
+                     flag, lib, ftype, order, method, r.max_b_err, r.max_a_err,
+                     r.max_step_err);
     }
 }
 
@@ -94,8 +94,7 @@ static AccResult check(F &filt, const double (&ref_b)[NC],
 // Step-only check for libraries that use SOS internally (b/a not available).
 // StepFn() must return the next output sample for a unit-step input.
 template <typename StepFn>
-static AccResult check_step(StepFn step_fn,
-                             const double (&ref_step)[kStepLen])
+static AccResult check_step(StepFn step_fn, const double (&ref_step)[kStepLen])
 {
     double max_s = 0.0;
     for (int i = 0; i < kStepLen; ++i)

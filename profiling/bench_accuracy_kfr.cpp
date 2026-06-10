@@ -12,7 +12,7 @@
 #include <kfr/dsp/iir_design.hpp>
 
 static double kfr_step_err(kfr::iir_filter<double> &f,
-                            const double (&ref_step)[kStepLen])
+                           const double (&ref_step)[kStepLen])
 {
     // KFR requires a single contiguous apply() to maintain state.
     double x_buf[kStepLen];
@@ -38,26 +38,26 @@ static double kfr_step_err(kfr::iir_filter<double> &f,
 #define RUN_KFR_BW(N)                                                          \
     do                                                                         \
     {                                                                          \
-        using Ref   = acc_ref::bw_prewarp_N##N;                               \
+        using Ref = acc_ref::bw_prewarp_N##N;                                  \
         auto params = kfr::to_sos<double>(                                     \
-            kfr::iir_lowpass(kfr::butterworth(N), 100.0, 1000.0));            \
+            kfr::iir_lowpass(kfr::butterworth(N), 100.0, 1000.0));             \
         kfr::iir_filter<double> f(params);                                     \
-        AccResult r = {-1.0, -1.0, kfr_step_err(f, Ref::step)};              \
-        csv_row("kfr", "butterworth", N, "prewarp", r);                       \
-        human_row("kfr", "butterworth", N, "prewarp", r);                     \
+        AccResult r = {-1.0, -1.0, kfr_step_err(f, Ref::step)};                \
+        csv_row("kfr", "butterworth", N, "prewarp", r);                        \
+        human_row("kfr", "butterworth", N, "prewarp", r);                      \
     } while (0)
 
 #ifdef KFR_HAVE_ELLIPTIC
 #define RUN_KFR_EL(N)                                                          \
     do                                                                         \
     {                                                                          \
-        using Ref   = acc_ref::el_prewarp_N##N;                               \
-        auto params = kfr::to_sos<double>(kfr::iir_lowpass(                   \
-            kfr::elliptic(N, 0.5, 40.0), 100.0, 1000.0));                     \
+        using Ref = acc_ref::el_prewarp_N##N;                                  \
+        auto params = kfr::to_sos<double>(                                     \
+            kfr::iir_lowpass(kfr::elliptic(N, 0.5, 40.0), 100.0, 1000.0));     \
         kfr::iir_filter<double> f(params);                                     \
-        AccResult r = {-1.0, -1.0, kfr_step_err(f, Ref::step)};              \
-        csv_row("kfr", "elliptic", N, "prewarp", r);                          \
-        human_row("kfr", "elliptic", N, "prewarp", r);                        \
+        AccResult r = {-1.0, -1.0, kfr_step_err(f, Ref::step)};                \
+        csv_row("kfr", "elliptic", N, "prewarp", r);                           \
+        human_row("kfr", "elliptic", N, "prewarp", r);                         \
     } while (0)
 #endif
 

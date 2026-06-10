@@ -26,13 +26,13 @@ static BenchResult bench_kfr(kfr::iir_filter<double> &f)
     for (int r = 0; r < kReps; ++r)
     {
         f.reset();
-        const auto t0    = Clock::now();
+        const auto t0 = Clock::now();
         for (int b = 0; b < n_batches; ++b)
         {
             f.apply(y_buf, x_buf, static_cast<size_t>(kBatch));
         }
-        const auto t1    = Clock::now();
-        g_sink           = y_buf[0];
+        const auto t1 = Clock::now();
+        g_sink = y_buf[0];
         const Ns elapsed = t1 - t0;
         if (elapsed < best)
         {
@@ -55,22 +55,22 @@ static BenchResult bench_kfr(kfr::iir_filter<double> &f)
     do                                                                         \
     {                                                                          \
         auto params = kfr::to_sos<double>(                                     \
-            kfr::iir_lowpass(kfr::butterworth(N), 100.0, 1000.0));            \
+            kfr::iir_lowpass(kfr::butterworth(N), 100.0, 1000.0));             \
         kfr::iir_filter<double> f(params);                                     \
         auto r = bench_kfr(f);                                                 \
-        csv_row("kfr", "Butterworth", N, "runtime+simd", r);                  \
-        human_row("kfr", "Butterworth", N, "runtime+simd", r);                \
+        csv_row("kfr", "Butterworth", N, "runtime+simd", r);                   \
+        human_row("kfr", "Butterworth", N, "runtime+simd", r);                 \
     } while (0)
 
 #define RUN_KFR_EL(N)                                                          \
     do                                                                         \
     {                                                                          \
         auto params = kfr::to_sos<double>(                                     \
-            kfr::iir_lowpass(kfr::elliptic(N, 0.5, 40.0), 100.0, 1000.0));   \
+            kfr::iir_lowpass(kfr::elliptic(N, 0.5, 40.0), 100.0, 1000.0));     \
         kfr::iir_filter<double> f(params);                                     \
         auto r = bench_kfr(f);                                                 \
-        csv_row("kfr", "Elliptic", N, "runtime+simd", r);                     \
-        human_row("kfr", "Elliptic", N, "runtime+simd", r);                   \
+        csv_row("kfr", "Elliptic", N, "runtime+simd", r);                      \
+        human_row("kfr", "Elliptic", N, "runtime+simd", r);                    \
     } while (0)
 
 int main()
@@ -83,8 +83,7 @@ int main()
     RUN_KFR_BW(8);
 
 #ifdef KFR_HAVE_ELLIPTIC
-    std::fprintf(stderr, "  [KFR  Elliptic  runtime+simd  batch=%d]\n",
-                 kBatch);
+    std::fprintf(stderr, "  [KFR  Elliptic  runtime+simd  batch=%d]\n", kBatch);
     RUN_KFR_EL(2);
     RUN_KFR_EL(4);
     RUN_KFR_EL(6);

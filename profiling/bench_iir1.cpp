@@ -11,14 +11,15 @@
     {                                                                          \
         Iir::Butterworth::LowPass<N> f;                                        \
         f.setup(1000.0, 100.0);                                                \
-        auto r = bench(f, [](auto &f) { return f.filter(1.0); });             \
-        csv_row("iir1", "Butterworth", N, "runtime", r);                      \
-        human_row("iir1", "Butterworth", N, "runtime", r);                    \
+        auto r = bench(f, [](auto &f) { return f.filter(1.0); });              \
+        csv_row("iir1", "Butterworth", N, "runtime", r);                       \
+        human_row("iir1", "Butterworth", N, "runtime", r);                     \
     } while (0)
 
 int main()
 {
-    std::fputs("  [iir1  Butterworth  runtime-design  single-sample]\n", stderr);
+    std::fputs("  [iir1  Butterworth  runtime-design  single-sample]\n",
+               stderr);
     RUN_IIR1(2);
     RUN_IIR1(4);
     RUN_IIR1(6);

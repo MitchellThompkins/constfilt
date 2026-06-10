@@ -13,12 +13,12 @@
 #define RUN_IIR1(N)                                                            \
     do                                                                         \
     {                                                                          \
-        using Ref = acc_ref::bw_prewarp_N##N;                                 \
+        using Ref = acc_ref::bw_prewarp_N##N;                                  \
         Iir::Butterworth::LowPass<N> f;                                        \
         f.setup(1000.0, 100.0);                                                \
-        auto r = check_step([&]() { return f.filter(1.0); }, Ref::step);      \
-        csv_row("iir1", "butterworth", N, "prewarp", r);                      \
-        human_row("iir1", "butterworth", N, "prewarp", r);                    \
+        auto r = check_step([&]() { return f.filter(1.0); }, Ref::step);       \
+        csv_row("iir1", "butterworth", N, "prewarp", r);                       \
+        human_row("iir1", "butterworth", N, "prewarp", r);                     \
     } while (0)
 
 int main()

@@ -16,7 +16,12 @@ struct HighPass
 {
 };
 
-template <typename T, consteig::Size N, typename Method = ZOH,
+// Template parameters:
+//   T          - floating-point scalar type
+//   N          - filter order (>= 1)
+//   Method     - discretization method (Tustin default), ZOH, or MatchedZ
+//   FilterType - LowPass (default) or HighPass
+template <typename T, consteig::Size N, typename Method = Tustin,
           typename FilterType = LowPass>
 class Butterworth : public AnalogFilter<T, N, Method>
 {
@@ -50,13 +55,13 @@ class Butterworth : public AnalogFilter<T, N, Method>
     static constexpr void continuous_tf(T wc, T (&b)[N + 1u], T (&a)[N + 1u],
                                         LowPass)
     {
-        b[N] = consteig::pow(wc, static_cast<int>(N));
+        b[N] = gcem::pow(wc, static_cast<int>(N));
 
         T p[N + 1u]{};
         butterworth_poly_coeffs(p);
         for (consteig::Size k = 0; k <= N; ++k)
         {
-            a[k] = p[k] * consteig::pow(wc, static_cast<int>(k));
+            a[k] = p[k] * gcem::pow(wc, static_cast<int>(k));
         }
     }
 
@@ -78,7 +83,7 @@ class Butterworth : public AnalogFilter<T, N, Method>
         butterworth_poly_coeffs(p);
         for (consteig::Size k = 0; k <= N; ++k)
         {
-            a[k] = p[N - k] * consteig::pow(wc, static_cast<int>(k));
+            a[k] = p[N - k] * gcem::pow(wc, static_cast<int>(k));
         }
     }
 
@@ -105,7 +110,7 @@ class Butterworth : public AnalogFilter<T, N, Method>
             const T theta = static_cast<T>(GCEM_PI) *
                             static_cast<T>(2u * k + N - 1u) /
                             static_cast<T>(2u * N);
-            const Complex pole{consteig::cos(theta), consteig::sin(theta)};
+            const Complex pole{gcem::cos(theta), gcem::sin(theta)};
 
             // In-place multiply by (s - pole), traversing backwards
             // to avoid overwriting values still needed this iteration.
@@ -127,10 +132,10 @@ class Butterworth : public AnalogFilter<T, N, Method>
 };
 
 // Convenience aliases for first-order RC-equivalent filters.
-template <typename T, typename Method = ZOH>
+template <typename T, typename Method = Tustin>
 using FirstOrderLowPass = Butterworth<T, 1u, Method, LowPass>;
 
-template <typename T, typename Method = ZOH>
+template <typename T, typename Method = Tustin>
 using FirstOrderHighPass = Butterworth<T, 1u, Method, HighPass>;
 
 } // namespace constfilt

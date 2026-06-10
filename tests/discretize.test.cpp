@@ -154,4 +154,31 @@ TEST(MatchedZ, FirstOrder_Float_DCGain)
     EXPECT_NEAR(num / den, 1.0f, 1e-4f);
 }
 
+// --- Tustin: 1st-order H_c(s) = 1/(s+1) -------------------------------------
+//
+// Substituting s = (2/Ts)*(z-1)/(z+1) = 20*(z-1)/(z+1):
+//   H(z) = (z+1) / (21z - 19)
+//
+// State-space (alpha = 2/Ts = 20, inv_alpha = Ts/2 = 0.05):
+//   M = 1 - 0.05*(-1) = 1.05,  P = 1 + 0.05*(-1) = 0.95
+//   Ad = P/M = 19/21,  Bd = inv_alpha*(Ad+1) = 0.05*(40/21) = 2/21
+//   Cd = 1/M = 20/21,  Dd = 0 + inv_alpha*Cd*1 = 1/21
+
+TEST(Tustin, FirstOrder_a1_T0p1)
+{
+    constexpr constfilt::StateSpace<double, 1u> sys_c{
+        {{{-1.0}}}, {{{1.0}}}, {{{1.0}}}, 0.0};
+    constexpr double Ts = 0.1;
+    constexpr auto sys_d =
+        constfilt::tustin_discretize(sys_c, Ts, constfilt::Tustin{});
+
+    // Reference values are exact rationals, so 1e-12 is tighter than the
+    // 1e-10 used for ZOH/MatchedZ (whose references involve transcendental
+    // exp() values with inherent double representation error).
+    EXPECT_NEAR(sys_d.A(0, 0), 19.0 / 21.0, 1e-12);
+    EXPECT_NEAR(sys_d.B(0, 0), 2.0 / 21.0, 1e-12);
+    EXPECT_NEAR(sys_d.C(0, 0), 20.0 / 21.0, 1e-12);
+    EXPECT_NEAR(sys_d.D, 1.0 / 21.0, 1e-12);
+}
+
 } // namespace

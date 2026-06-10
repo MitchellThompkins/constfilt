@@ -16,7 +16,7 @@ namespace constfilt
 // Template parameters:
 //   T          - floating-point scalar type
 //   N          - filter order (>= 1)
-//   Method     - discretization method (ZOH default)
+//   Method     - discretization method (Tustin default), ZOH, or MatchedZ
 //   FilterType - LowPass (default) or HighPass
 //
 // Constructor parameters:
@@ -29,7 +29,7 @@ namespace constfilt
 // with one deviation: Step 2 uses the modular identity q = q1^(1/N) instead of
 // ncauer's iterative degree-equation solver. Steps 1 and 3 onward are
 // identical. All coefficient math is constexpr.
-template <typename T, consteig::Size N, typename Method = ZOH,
+template <typename T, consteig::Size N, typename Method = Tustin,
           typename FilterType = LowPass>
 class Elliptic : public AnalogFilter<T, N, Method>
 {

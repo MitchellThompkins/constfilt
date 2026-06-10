@@ -23,8 +23,8 @@ All at compile time, constfilt supports:
   frequency and sample rate.
 - Elliptic (Cauer) lowpass and highpass filters of arbitrary order, from
   cutoff frequency, passband ripple, and stopband attenuation.
-- ZOH and Matched-Z discretization of arbitrary continuous-time
-  transfer functions, via matrix exponential through eigendecomposition.
+- ZOH, Matched-Z, and Tustin (bilinear) discretization of arbitrary
+  continuous-time transfer functions.
 - Direct Form II Transposed filter implementation, with both a real-time
   sample-by-sample interface and a `constexpr`-capable batch interface.
 
@@ -40,7 +40,7 @@ Simply `#include <constfilt/constfilt.hpp>` (optionally consume via CMake with
 #include <constfilt/constfilt.hpp>
 
 static constexpr constfilt::Butterworth<double, 4> bw(100.0, 1000.0);
-static constexpr constfilt::Elliptic<double, 4>    el(100.0, 0.5, 60.0, 1000.0);
+static constexpr constfilt::Elliptic<double, 4> el(100.0, 0.5, 60.0, 1000.0);
 ```
 
 For a quick reference on getting started, including examples, see

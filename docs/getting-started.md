@@ -64,10 +64,10 @@ int main()
 
 ## Supported filters
 
-| Filter      | Variants            | Order  | Discretization      |
-|-------------|---------------------|--------|---------------------|
-| Butterworth | lowpass, highpass   | $N \geq 1$ | ZOH (default), MatchedZ |
-| Elliptic    | lowpass, highpass   | $N \geq 1$ | ZOH (default), MatchedZ |
+- Butterworth: lowpass, highpass
+- Elliptic: lowpass, highpass
+
+All filter types support Tustin (bilinear, default), ZOH, and MatchedZ discretization.
 
 The library imposes no upper bound on the filter order. The practical upper
 bound is set by `double` precision: as `N` grows, the magnitudes of polynomial
@@ -80,18 +80,19 @@ reference implementations.
 
 ```cpp
 // Lowpass / highpass (template parameter 4):
-constfilt::Butterworth<double, 4>                                       lp(100.0, 1000.0);
-constfilt::Butterworth<double, 4, constfilt::ZOH, constfilt::HighPass>  hp(100.0, 1000.0);
+constfilt::Butterworth<double, 4> lp(100.0, 1000.0);
+constfilt::Butterworth<double, 4, constfilt::Tustin, constfilt::HighPass> hp(100.0, 1000.0);
 
 // Discretization method (template parameter 3):
-constfilt::Butterworth<double, 4, constfilt::MatchedZ>                  mz(100.0, 1000.0);
+constfilt::Butterworth<double, 4, constfilt::ZOH> zoh(100.0, 1000.0);
+constfilt::Butterworth<double, 4, constfilt::MatchedZ> mz(100.0, 1000.0);
 
 // Elliptic takes (cutoff_hz, passband_ripple_dB, stopband_atten_dB, sample_rate_hz):
-constfilt::Elliptic<double, 4>                                          el(100.0, 0.5, 60.0, 1000.0);
-constfilt::Elliptic<double, 4, constfilt::ZOH, constfilt::HighPass>     el_hp(100.0, 0.5, 60.0, 1000.0);
+constfilt::Elliptic<double, 4> el(100.0, 0.5, 60.0, 1000.0);
+constfilt::Elliptic<double, 4, constfilt::Tustin, constfilt::HighPass> el_hp(100.0, 0.5, 60.0, 1000.0);
 
 // Convenience aliases for first-order RC equivalents:
-constfilt::FirstOrderLowPass<double>  first_lp(100.0, 1000.0);
+constfilt::FirstOrderLowPass<double> first_lp(100.0, 1000.0);
 constfilt::FirstOrderHighPass<double> first_hp(100.0, 1000.0);
 ```
 

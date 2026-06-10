@@ -103,6 +103,16 @@ fs  = 10.0;
 emit_case(fid, 'case_4_mz_fs10', 'H(s) = 1/(s^2+3s+2), MatchedZ, fs=10 Hz', ...
           b_s, a_s, fs, b_d, a_d, y_step, y_imp, u_c, y_c);
 
+% ---------------------------------------------------------------------------
+% Case 5: H(s) = 1/(s^2 + 3s + 2), Tustin, fs=10 Hz
+% ---------------------------------------------------------------------------
+b_s = [0, 0, 1];
+a_s = [1, 3, 2];
+fs  = 10.0;
+[b_d, a_d, y_step, y_imp, u_c, y_c] = design_and_filter(b_s, a_s, fs, 'tustin', STEP_LEN, CHIRP_LEN);
+emit_case(fid, 'case_5_tustin_fs10', 'H(s) = 1/(s^2+3s+2), Tustin, fs=10 Hz', ...
+          b_s, a_s, fs, b_d, a_d, y_step, y_imp, u_c, y_c);
+
 fprintf(fid, '} // namespace ctf_ref\n\n');
 fprintf(fid, '#endif // CONSTFILT_CONTINUOUS_TF_REFERENCE_HPP\n');
 fclose(fid);

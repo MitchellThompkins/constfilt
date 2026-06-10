@@ -17,7 +17,7 @@ namespace constfilt
 // Template parameters:
 //   T         - numeric type (float, double, ...)
 //   N         - filter order (degree of denominator)
-//   Method    - ZOH (default) or MatchedZ
+//   Method    - Tustin (default), ZOH, or MatchedZ
 //   CheckStab - reserved for future use; currently has no effect (see below).
 //
 // Constructors:
@@ -29,7 +29,7 @@ namespace constfilt
 //   AnalogFilter(continuous_tf, sample_rate_hz)
 //     continuous_tf  - s-domain TransferFunction (e.g. from a subclass)
 //     sample_rate_hz - sample rate in Hz
-template <typename T, consteig::Size N, typename Method = ZOH,
+template <typename T, consteig::Size N, typename Method = Tustin,
           bool CheckStab = true>
 class AnalogFilter : public Filter<T, N + 1u, N + 1u>
 {

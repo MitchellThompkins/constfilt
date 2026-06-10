@@ -1,46 +1,20 @@
 // bench_accuracy_kfr.cpp: KFR accuracy vs Octave reference (C++20)
 //
-// KFR uses bilinear/Tustin for both Butterworth and Elliptic designs, so all
-// comparisons are against acc_ref::bw_tustin_NX and acc_ref::el_tustin_NX.
+// KFR uses pre-warped bilinear for both Butterworth and Elliptic designs.
+// Compared against acc_ref::bw_prewarp_NX and acc_ref::el_prewarp_NX.
+// Only step response is compared (KFR uses SOS internally).
 //
-// KFR uses SOS (biquad cascade) internally and does not expose direct-form
-// b/a polynomials; only step response is compared.
-//
-// CSV rows appended to the accuracy CSV (no header, bench_accuracy writes it).
+// Outputs CSV rows to stdout (no header, run_profiling.sh writes it).
 // Human table to stderr.
 
-#include <cmath>
-#include <cstdio>
-
-#include "accuracy_reference.hpp"
+#include "bench_accuracy_common.hpp"
 #include <kfr/dsp/iir.hpp>
 #include <kfr/dsp/iir_design.hpp>
 
-static constexpr int kStepLen = 256;
-
-static void csv_row(const char *lib, const char *ftype, int order,
-                    const char *method, double step_err)
-{
-    std::printf("%s,%s,%d,%s,n/a,n/a,%.6e\n", lib, ftype, order, method,
-                step_err);
-}
-
-static void human_row(const char *lib, const char *ftype, int order,
-                      const char *method, double step_err)
-{
-    const char *flag = step_err > 1e-6 ? " !" : "  ";
-    std::fprintf(stderr,
-                 "%s %-10s %-12s N=%-2d %-10s  b=n/a       a=n/a       "
-                 "step=%.2e\n",
-                 flag, lib, ftype, order, method, step_err);
-}
-
-static double max_step_err(kfr::iir_filter<double> &f,
+static double kfr_step_err(kfr::iir_filter<double> &f,
                             const double (&ref_step)[kStepLen])
 {
-    // KFR's IIR expression engine requires a single contiguous apply() call to
-    // maintain state correctly across samples. Calling with size=1 repeatedly
-    // does not accumulate state between calls.
+    // KFR requires a single contiguous apply() to maintain state.
     double x_buf[kStepLen];
     double y_buf[kStepLen];
     for (int i = 0; i < kStepLen; ++i)
@@ -57,87 +31,45 @@ static double max_step_err(kfr::iir_filter<double> &f,
     return max_e;
 }
 
-int main()
-{
-    // KFR Butterworth (Tustin/bilinear)
-    // KFR uses pre-warped bilinear (exact digital cutoff), same convention as
-    // iir1.  Systematic ~N*1% step-response offset vs constfilt/Octave standard
-    // bilinear.  Not numerical breakdown; design convention difference.
-    std::fputs("  [KFR  Butterworth  runtime+simd  tustin(bilinear) pre-warped]\n",
-               stderr);
-    for (int order = 1; order <= 12; ++order)
-    {
-        auto params = kfr::to_sos<double>(
-            kfr::iir_lowpass(kfr::butterworth(order), 100.0, 1000.0));
-        kfr::iir_filter<double> f(params);
-
-        // Select the correct acc_ref struct by order via a switch.
-#define REF_CASE(N)                                                            \
-    case N:                                                                    \
-        e = max_step_err(f, acc_ref::bw_prewarp_N##N::step);                  \
-        break
-
-        double e = 0.0;
-        switch (order)
-        {
-            REF_CASE(1);
-            REF_CASE(2);
-            REF_CASE(3);
-            REF_CASE(4);
-            REF_CASE(5);
-            REF_CASE(6);
-            REF_CASE(7);
-            REF_CASE(8);
-            REF_CASE(9);
-            REF_CASE(10);
-            REF_CASE(11);
-            REF_CASE(12);
-        default:
-            break;
-        }
-#undef REF_CASE
-
-        csv_row("kfr", "butterworth", order, "prewarp", e);
-        human_row("kfr", "butterworth", order, "prewarp", e);
-    }
+#define RUN_KFR_BW(N)                                                          \
+    do                                                                         \
+    {                                                                          \
+        using Ref  = acc_ref::bw_prewarp_N##N;                                \
+        auto params = kfr::to_sos<double>(                                     \
+            kfr::iir_lowpass(kfr::butterworth(N), 100.0, 1000.0));            \
+        kfr::iir_filter<double> f(params);                                     \
+        AccResult r = {-1.0, -1.0, kfr_step_err(f, Ref::step)};              \
+        csv_row("kfr", "butterworth", N, "prewarp", r);                       \
+        human_row("kfr", "butterworth", N, "prewarp", r);                     \
+    } while (0)
 
 #ifdef KFR_HAVE_ELLIPTIC
-    // KFR Elliptic (Tustin/bilinear)
-    std::fputs("  [KFR  Elliptic  runtime+simd  tustin(bilinear)]\n", stderr);
-    for (int order = 2; order <= 12; ++order)
-    {
-        auto params = kfr::to_sos<double>(
-            kfr::iir_lowpass(kfr::elliptic(order, 0.5, 40.0), 100.0, 1000.0));
-        kfr::iir_filter<double> f(params);
+#define RUN_KFR_EL(N)                                                          \
+    do                                                                         \
+    {                                                                          \
+        using Ref  = acc_ref::el_prewarp_N##N;                                \
+        auto params = kfr::to_sos<double>(kfr::iir_lowpass(                   \
+            kfr::elliptic(N, 0.5, 40.0), 100.0, 1000.0));                     \
+        kfr::iir_filter<double> f(params);                                     \
+        AccResult r = {-1.0, -1.0, kfr_step_err(f, Ref::step)};              \
+        csv_row("kfr", "elliptic", N, "prewarp", r);                          \
+        human_row("kfr", "elliptic", N, "prewarp", r);                        \
+    } while (0)
+#endif
 
-#define REF_CASE(N)                                                            \
-    case N:                                                                    \
-        e = max_step_err(f, acc_ref::el_prewarp_N##N::step);                  \
-        break
+int main()
+{
+    std::fputs("  [KFR  Butterworth  prewarp bilinear]\n", stderr);
+    RUN_KFR_BW(1);   RUN_KFR_BW(2);   RUN_KFR_BW(3);   RUN_KFR_BW(4);
+    RUN_KFR_BW(5);   RUN_KFR_BW(6);   RUN_KFR_BW(7);   RUN_KFR_BW(8);
+    RUN_KFR_BW(9);   RUN_KFR_BW(10);  RUN_KFR_BW(11);  RUN_KFR_BW(12);
 
-        double e = 0.0;
-        switch (order)
-        {
-            REF_CASE(2);
-            REF_CASE(3);
-            REF_CASE(4);
-            REF_CASE(5);
-            REF_CASE(6);
-            REF_CASE(7);
-            REF_CASE(8);
-            REF_CASE(9);
-            REF_CASE(10);
-            REF_CASE(11);
-            REF_CASE(12);
-        default:
-            break;
-        }
-#undef REF_CASE
-
-        csv_row("kfr", "elliptic", order, "prewarp", e);
-        human_row("kfr", "elliptic", order, "prewarp", e);
-    }
-#endif // KFR_HAVE_ELLIPTIC
+#ifdef KFR_HAVE_ELLIPTIC
+    std::fputs("  [KFR  Elliptic  prewarp bilinear]\n", stderr);
+    RUN_KFR_EL(2);   RUN_KFR_EL(3);   RUN_KFR_EL(4);   RUN_KFR_EL(5);
+    RUN_KFR_EL(6);   RUN_KFR_EL(7);   RUN_KFR_EL(8);   RUN_KFR_EL(9);
+    RUN_KFR_EL(10);  RUN_KFR_EL(11);  RUN_KFR_EL(12);
+#endif
 
     return 0;
 }

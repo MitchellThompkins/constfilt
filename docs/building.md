@@ -14,7 +14,7 @@ Makefile entry points:
 make container.make.test.gcc
 make container.make.test.clang
 make container.make.build.gcc
-make container.make.build.clan
+make container.make.build.clang
 make container.make.check-format
 make container.make.format
 ```

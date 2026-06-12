@@ -29,7 +29,17 @@ make generate-accuracy-reference   # requires Octave with signal package
 
 ## Comparison libraries
 
-<!-- TODO: document iir1 and KFR comparison methodology -->
+**iir1** does runtime coefficient design and DF2T filtering with plain scalar doubles —
+a direct apples-to-apples comparison for constfilt's runtime path.
+
+**KFR** is a SIMD-accelerated DSP library. Its `iir_filter<T>` is a type-erased
+convenience class: each `apply(dest, src, N)` call heap-allocates a wrapper for the
+input pointer, substitutes it into a type-erased expression tree, then dispatches every
+SIMD-width chunk through two levels of virtual function pointers. At `-O0` (the default
+when no `CMAKE_BUILD_TYPE` is set) none of this inlines and the overhead dominates. At
+`-O2`/`-O3` the compiler collapses the expression chain and the gap with scalar
+implementations narrows substantially. The KFR runtime numbers reflect abstraction cost
+at zero optimisation, not KFR's peak IIR throughput.
 
 ## Interpreting results
 

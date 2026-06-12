@@ -53,7 +53,7 @@ namespace gcem
   #define GCEM_UNDEF_HAS_BUILTIN
 #endif
 
-#if __has_builtin(__builtin_huge_valf) || defined(__GNUC__) || defined(__clang__) || defined(_MSC_VER)
+#if __has_builtin(__builtin_huge_valf) || defined(__GNUC__) || defined(__clang__)
 
     template<>
     struct gcem_limits<float> {

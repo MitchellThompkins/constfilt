@@ -99,27 +99,34 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
     add_library(constfilt_warnings INTERFACE)
-    target_compile_options(constfilt_warnings INTERFACE
-        -Wall
-        -Wextra
-        -pedantic
-        -Werror
-        -Wmisleading-indentation
-        -Wshadow
-        -Wconversion
-        -Wsign-conversion
-        -Wnull-dereference
-        -Wdouble-promotion
-        -Wformat=2
-        -Wundef
-    )
-
-    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+    if(MSVC)
         target_compile_options(constfilt_warnings INTERFACE
-            -Wduplicated-cond
-            -Wduplicated-branches
-            -Wlogical-op
+            /W4
+            /WX
+            /permissive-
         )
+    else()
+        target_compile_options(constfilt_warnings INTERFACE
+            -Wall
+            -Wextra
+            -pedantic
+            -Werror
+            -Wmisleading-indentation
+            -Wshadow
+            -Wconversion
+            -Wsign-conversion
+            -Wnull-dereference
+            -Wdouble-promotion
+            -Wformat=2
+            -Wundef
+        )
+        if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+            target_compile_options(constfilt_warnings INTERFACE
+                -Wduplicated-cond
+                -Wduplicated-branches
+                -Wlogical-op
+            )
+        endif()
     endif()
 
     if(CONSTFILT_BUILD_TESTS)

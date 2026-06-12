@@ -97,6 +97,35 @@ namespace gcem
         static constexpr long double quiet_NaN() noexcept { return __builtin_nanl("");    }
     };
 
+#elif defined(_MSC_VER)
+
+    template<>
+    struct gcem_limits<float> {
+        static constexpr float min()       noexcept { return __FLT_MIN__;                                           }
+        static constexpr float max()       noexcept { return __FLT_MAX__;                                           }
+        static constexpr float epsilon()   noexcept { return __FLT_EPSILON__;                                       }
+        static constexpr float infinity()  noexcept { return __builtin_bit_cast(float, 0x7F800000u);                }
+        static constexpr float quiet_NaN() noexcept { return __builtin_bit_cast(float, 0x7FC00000u);                }
+    };
+
+    template<>
+    struct gcem_limits<double> {
+        static constexpr double min()       noexcept { return __DBL_MIN__;                                          }
+        static constexpr double max()       noexcept { return __DBL_MAX__;                                          }
+        static constexpr double epsilon()   noexcept { return __DBL_EPSILON__;                                      }
+        static constexpr double infinity()  noexcept { return __builtin_bit_cast(double, 0x7FF0000000000000ULL);    }
+        static constexpr double quiet_NaN() noexcept { return __builtin_bit_cast(double, 0x7FF8000000000000ULL);    }
+    };
+
+    template<>
+    struct gcem_limits<long double> {
+        static constexpr long double min()       noexcept { return __LDBL_MIN__;                                            }
+        static constexpr long double max()       noexcept { return __LDBL_MAX__;                                            }
+        static constexpr long double epsilon()   noexcept { return __LDBL_EPSILON__;                                        }
+        static constexpr long double infinity()  noexcept { return __builtin_bit_cast(long double, 0x7FF0000000000000ULL);  }
+        static constexpr long double quiet_NaN() noexcept { return __builtin_bit_cast(long double, 0x7FF8000000000000ULL);  }
+    };
+
 #else
     #error "GCEM_TRAITS_BUILTIN: compiler does not support __builtin_huge_valf. " \
            "Use GCEM_TRAITS_CUSTOM and provide your own gcem_limits specializations."

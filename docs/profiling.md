@@ -2,19 +2,19 @@
 
 constfilt includes a profiling suite that measures compile-time cost, runtime
 throughput, and numerical accuracy. Results are committed under
-`profiling/results/` so regressions are visible in code review.
+`profiling/results/` so that it is easy to track regressions and improvements.
 
 ## Running
 
 ```sh
-make container.make.profile.gcc    # GCC
-make container.make.profile.clang  # Clang
+make container.make.profile.gcc
+make container.make.profile.clang
 ```
 
 The Octave accuracy reference must be generated before the first run:
 
 ```sh
-make generate-accuracy-reference   # requires Octave with signal package
+make generate-accuracy-reference
 ```
 
 ## What is measured

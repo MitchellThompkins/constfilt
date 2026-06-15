@@ -41,6 +41,8 @@ foreach(src ${CT_SOURCES})
     get_filename_component(tgt ${src} NAME_WE)
     add_library(${tgt} OBJECT ${src})
     target_link_libraries(${tgt} PRIVATE constfilt constfilt_warnings)
+    set_target_properties(${tgt} PROPERTIES
+        CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON)
 endforeach()
 
 ################################################################################

@@ -20,7 +20,8 @@ pkg load signal;
 % test suite).
 addpath(fullfile(fileparts(mfilename('fullpath')), '..', '..', 'octave'), '-begin');
 which_ncauer = which('ncauer');
-if isempty(strfind(which_ncauer, 'octave'))
+expected_ncauer = fullfile(fileparts(mfilename('fullpath')), '..', '..', 'octave', 'ncauer.m');
+if ~strcmp(which_ncauer, expected_ncauer)
     error('generate_accuracy_reference: shadowed ncauer.m not on path; got %s', ...
           which_ncauer);
 end
@@ -29,6 +30,9 @@ STEP_LEN = 256;
 
 outfile = fullfile(fileparts(mfilename('fullpath')), '..', 'accuracy_reference.hpp');
 fid = fopen(outfile, 'w');
+if fid < 0
+    error('generate_accuracy_reference: failed to open output file: %s', outfile);
+end
 
 fprintf(fid, '#ifndef CONSTFILT_PROFILING_ACCURACY_REFERENCE_HPP\n');
 fprintf(fid, '#define CONSTFILT_PROFILING_ACCURACY_REFERENCE_HPP\n\n');

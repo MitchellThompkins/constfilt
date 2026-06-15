@@ -127,6 +127,11 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
         enable_testing()
         add_subdirectory(tests)
     endif()
+
+    option(CONSTFILT_BUILD_PROFILING "Build profiling suite" OFF)
+    if(CONSTFILT_BUILD_PROFILING)
+        add_subdirectory(profiling)
+    endif()
 endif()
 
 ################################################################################

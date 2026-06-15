@@ -48,4 +48,5 @@ nav:
   - Development:
       - Building & Testing: building.md
       - Verification: verification.md
+      - Profiling: profiling.md
   - API Reference: api/index.html

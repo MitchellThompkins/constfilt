@@ -14,17 +14,17 @@ generate-reference:
 
 .PHONY: remove
 remove:
-	rm -rf build/ build-gcc/ build-clang/
+	rm -rf build/ build-gcc/ build-clang/ profiling/build/
 
 .PHONY: format
 format:
-	find . \( -path "./test_dependencies/googletest" -o -path "./build*" -o -path "./include/constfilt/vendor/*" -o -path "./.worktree/*" \) -prune \
+	find . \( -path "./test_dependencies/googletest" -o -path "./build*" -o -path "./profiling/build" -o -path "./include/constfilt/vendor/*" -o -path "./.worktree/*" \) -prune \
 		-o -type f \( -name "*.hpp" -o -name "*.cpp" \) ! -name "*_reference.hpp" -print \
 		| xargs clang-format -i
 
 .PHONY: check-format
 check-format:
-	find . \( -path "./test_dependencies/googletest" -o -path "./build*" -o -path "./include/constfilt/vendor/*" -o -path "./.worktree/*" \) -prune \
+	find . \( -path "./test_dependencies/googletest" -o -path "./build*" -o -path "./profiling/build" -o -path "./include/constfilt/vendor/*" -o -path "./.worktree/*" \) -prune \
 		-o -type f \( -name "*.hpp" -o -name "*.cpp" \) ! -name "*_reference.hpp" -print \
 		| xargs clang-format --dry-run --Werror
 
@@ -75,6 +75,22 @@ cross.arm-clang:
 		-DCONSTFILT_BUILD_TESTS=ON \
 		-DCONSTFILT_COMPILE_ONLY=ON
 	cmake --build $(BUILD_PREFIX)-arm-clang --target all -- $(JOB_FLAG)
+
+################################################################################
+# Profiling targets
+################################################################################
+
+.PHONY: generate-accuracy-reference
+generate-accuracy-reference:
+	octave --no-gui profiling/octave/generate_accuracy_reference.m
+
+.PHONY: profile.gcc
+profile.gcc:
+	sh profiling/run_profiling.sh g++
+
+.PHONY: profile.clang
+profile.clang:
+	sh profiling/run_profiling.sh clang++
 
 ################################################################################
 # Container targets

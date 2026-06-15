@@ -230,17 +230,17 @@ fi
 # Step 8: Analysis
 echo ""
 echo "=== Compile-time summary ==="
-uv run "$SCRIPT_DIR/analyze_results.py" "$CT_RESULTS_FILE" 2>/dev/null || \
+uv run --project "$SCRIPT_DIR" "$SCRIPT_DIR/analyze_results.py" "$CT_RESULTS_FILE" 2>/dev/null || \
     echo "(uv not available, run: uv run profiling/analyze_results.py <csv>)"
 
 echo ""
 echo "=== Runtime summary ==="
-uv run "$SCRIPT_DIR/analyze_results.py" "$RT_RESULTS_FILE" 2>/dev/null || \
+uv run --project "$SCRIPT_DIR" "$SCRIPT_DIR/analyze_results.py" "$RT_RESULTS_FILE" 2>/dev/null || \
     echo "(uv not available, run: uv run profiling/analyze_results.py <csv>)"
 
 if [ -f "$ACC_RESULTS_FILE" ]; then
     echo ""
     echo "=== Accuracy summary ==="
-    uv run "$SCRIPT_DIR/analyze_results.py" "$ACC_RESULTS_FILE" 2>/dev/null || \
+    uv run --project "$SCRIPT_DIR" "$SCRIPT_DIR/analyze_results.py" "$ACC_RESULTS_FILE" 2>/dev/null || \
         echo "(uv not available, run: uv run profiling/analyze_results.py <csv>)"
 fi

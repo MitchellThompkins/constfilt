@@ -1,7 +1,4 @@
-#!/usr/bin/env -S uv run
-# /// script
-# dependencies = ["matplotlib"]
-# ///
+#!/usr/bin/env python3
 """Analyze profiling CSV results, print summary tables, and generate plots.
 
 Handles two CSV types (auto-detected from header):
@@ -350,22 +347,22 @@ def main():
         print_compiletime_table(success, failed, orders, categories)
         try:
             plot_compiletime(success, failed, orders, categories, csv_path, label)
-        except ImportError:
-            print("(matplotlib not available, skipping plot)")
+        except ImportError as e:
+            print(f"(matplotlib not available, skipping plot: {e})")
     elif mode == "accuracy":
         data, orders, groups = load_accuracy(csv_path)
         print_accuracy_table(data, orders, groups)
         try:
             plot_accuracy(data, orders, groups, csv_path, label)
-        except ImportError:
-            print("(matplotlib not available, skipping plot)")
+        except ImportError as e:
+            print(f"(matplotlib not available, skipping plot: {e})")
     else:
         data, dc, orders, groups = load_runtime(csv_path)
         print_runtime_table(data, dc, orders, groups)
         try:
             plot_runtime(data, orders, groups, csv_path, label)
-        except ImportError:
-            print("(matplotlib not available, skipping plot)")
+        except ImportError as e:
+            print(f"(matplotlib not available, skipping plot: {e})")
 
 
 if __name__ == "__main__":

@@ -37,9 +37,8 @@ fi
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-RESULTS_DIR="$SCRIPT_DIR/results"
+RESULTS_DIR="$REPO_ROOT/docs/profiling/results"
 COMPILE_DIR="$SCRIPT_DIR/compile_time"
-BUILD_DIR="$SCRIPT_DIR/build"
 
 mkdir -p "$RESULTS_DIR"
 
@@ -56,6 +55,9 @@ else
     COMPILER_ID=$(basename "$COMPILER")
     echo "Warning: unrecognized compiler family"
 fi
+
+BUILD_DIR="$SCRIPT_DIR/build-$COMPILER_ID"
+
 
 CT_RESULTS_FILE="$RESULTS_DIR/compile_times_${COMPILER_ID}_${COMPILER_VER}.csv"
 RT_RESULTS_FILE="$RESULTS_DIR/runtime_${COMPILER_ID}_${COMPILER_VER}.csv"
@@ -230,17 +232,17 @@ fi
 # Step 8: Analysis
 echo ""
 echo "=== Compile-time summary ==="
-uv run "$SCRIPT_DIR/analyze_results.py" "$CT_RESULTS_FILE" 2>/dev/null || \
+uv run --project "$SCRIPT_DIR" "$SCRIPT_DIR/analyze_results.py" "$CT_RESULTS_FILE" 2>/dev/null || \
     echo "(uv not available, run: uv run profiling/analyze_results.py <csv>)"
 
 echo ""
 echo "=== Runtime summary ==="
-uv run "$SCRIPT_DIR/analyze_results.py" "$RT_RESULTS_FILE" 2>/dev/null || \
+uv run --project "$SCRIPT_DIR" "$SCRIPT_DIR/analyze_results.py" "$RT_RESULTS_FILE" 2>/dev/null || \
     echo "(uv not available, run: uv run profiling/analyze_results.py <csv>)"
 
 if [ -f "$ACC_RESULTS_FILE" ]; then
     echo ""
     echo "=== Accuracy summary ==="
-    uv run "$SCRIPT_DIR/analyze_results.py" "$ACC_RESULTS_FILE" 2>/dev/null || \
+    uv run --project "$SCRIPT_DIR" "$SCRIPT_DIR/analyze_results.py" "$ACC_RESULTS_FILE" 2>/dev/null || \
         echo "(uv not available, run: uv run profiling/analyze_results.py <csv>)"
 fi

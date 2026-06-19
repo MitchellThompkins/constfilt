@@ -11,7 +11,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/mitchellthompkins/consteig_dev_image:latest
+      image: ghcr.io/mitchellthompkins/consteig_dev_image:2026-04-27
     steps:
       - name: Checkout
         env:
@@ -31,7 +31,7 @@ jobs:
     needs: lint
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/mitchellthompkins/consteig_dev_image:latest
+      image: ghcr.io/mitchellthompkins/consteig_dev_image:2026-04-27
     strategy:
       matrix:
         compiler: [gcc, clang]
@@ -54,7 +54,7 @@ jobs:
     needs: lint
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/mitchellthompkins/consteig_dev_image:latest
+      image: ghcr.io/mitchellthompkins/consteig_dev_image:2026-04-27
     strategy:
       fail-fast: false
       matrix:

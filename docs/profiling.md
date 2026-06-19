@@ -2,7 +2,7 @@
 
 constfilt includes a profiling suite that measures compile-time cost, runtime
 throughput, and numerical accuracy. Results are committed under
-`profiling/results/` so that it is easy to track regressions and improvements.
+`docs/profiling/results/` so that it is easy to track regressions and improvements.
 
 ## Running
 
@@ -25,7 +25,7 @@ Each file under `profiling/compile_time/` forces a `static constexpr` filter
 instantiation; the compiler must evaluate all coefficient math at compile time.
 Wall time and peak RSS are recorded by the shell.
 
-![Compile times](../profiling/results/compile_times_gcc_15.2.0.png)
+![Compile times](profiling/results/compile_times_gcc_15.2.0.png)
 
 Compile time grows roughly exponentially with order. Orders 1 and 2 for
 Butterworth and order 2 for Elliptic complete successfully under default
@@ -37,9 +37,9 @@ runs slightly slower than ZOH and MatchedZ at each order.
 Benchmarks process 5 million samples and report the best time across 5
 repetitions, in nanoseconds per sample.
 
-![Runtime throughput](../profiling/results/runtime_gcc_15.2.0.png)
+![Runtime throughput](profiling/results/runtime_gcc_15.2.0.png)
 
-constfilt and iir1 scale linearly with filter order and are within a few
+constfilt and iir1 scale roughly linearly with filter order and are within a few
 nanoseconds of each other. Elliptic throughput matches Butterworth at the same
 order because both use the same Direct Form II Transposed runtime path. See the
 Comparison libraries section for notes on the kfr results.
@@ -49,7 +49,7 @@ Comparison libraries section for notes on the kfr results.
 Coefficient and step response accuracy are measured against an Octave reference
 for orders 1 through 12.
 
-![Accuracy](../profiling/results/accuracy_gcc_15.2.0.png)
+![Accuracy](profiling/results/accuracy_gcc_15.2.0.png)
 
 ZOH accuracy degrades sharply above order 8 because the matrix exponential uses
 eigendecomposition, which loses precision as eigenvalues spread at high orders.

@@ -39,7 +39,7 @@ repetitions, in nanoseconds per sample.
 
 ![Runtime throughput](profiling/results/runtime_gcc_15.2.0.png)
 
-constfilt and iir1 scale linearly with filter order and are within a few
+constfilt and iir1 scale roughly linearly with filter order and are within a few
 nanoseconds of each other. Elliptic throughput matches Butterworth at the same
 order because both use the same Direct Form II Transposed runtime path. See the
 Comparison libraries section for notes on the kfr results.

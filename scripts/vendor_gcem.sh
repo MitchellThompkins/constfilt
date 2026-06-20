@@ -7,7 +7,7 @@
 set -eu
 
 REPO_URL="${1:-https://github.com/MitchellThompkins/gcem.git}"
-REF="${2:-v.1.19.0-consteig.1}"
+REF="${2:-v.1.19.0-mitchellthompkins.2}"
 DEST="include/constfilt/vendor/gcem"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

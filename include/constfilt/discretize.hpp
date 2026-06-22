@@ -536,9 +536,9 @@ constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_discretize_tf(
 //
 //   M  = I - (1/alpha)*Ac
 //   P  = I + (1/alpha)*Ac
-//   Ad = P * M^{-1}
+//   Ad = P * M^{-1}              (right-solve: M^T * Ad^T = P^T)
 //   Bd = (1/alpha) * (Ad + I) * Bc
-//   Cd = Cc * M^{-1}
+//   Cd = Cc * M^{-1}             (right-solve: M^T * Cd^T = Cc^T)
 //   Dd = Dc + (1/alpha) * Cd * Bc
 //
 // M is LU-factorized once and reused for both Ad and Cd.

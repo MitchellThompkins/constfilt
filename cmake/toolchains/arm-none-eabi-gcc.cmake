@@ -4,6 +4,9 @@ set(CMAKE_SYSTEM_PROCESSOR arm)
 set(CMAKE_C_COMPILER arm-none-eabi-gcc)
 set(CMAKE_CXX_COMPILER arm-none-eabi-g++)
 
+set(CMAKE_C_FLAGS_INIT "-ffreestanding")
+set(CMAKE_CXX_FLAGS_INIT "-ffreestanding")
+
 # Bare-metal ARM has no C runtime, so CMake's default compile-and-link detection
 # test would fail. Build a static library (.o only) instead to verify the compiler.
 set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)

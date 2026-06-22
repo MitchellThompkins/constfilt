@@ -16,8 +16,8 @@ set(ARM_CXX_INC "${ARM_GCC_ROOT}/cxx-include")
 set(ARM_C_INC "${ARM_GCC_ROOT}/arm-none-eabi/include")
 set(ARM_GCC_INC "${ARM_GCC_ROOT}/gcc-include")
 
-set(CMAKE_C_FLAGS_INIT "--target=arm-none-eabi")
-set(CMAKE_CXX_FLAGS_INIT "--target=arm-none-eabi -isystem ${ARM_CXX_INC} -isystem ${ARM_CXX_INC}/arm-none-eabi -isystem ${ARM_GCC_INC} -isystem ${ARM_C_INC}")
+set(CMAKE_C_FLAGS_INIT "--target=arm-none-eabi -ffreestanding")
+set(CMAKE_CXX_FLAGS_INIT "--target=arm-none-eabi -ffreestanding -isystem ${ARM_CXX_INC} -isystem ${ARM_CXX_INC}/arm-none-eabi -isystem ${ARM_GCC_INC} -isystem ${ARM_C_INC}")
 
 # Bare-metal ARM has no C runtime, so CMake's default compile-and-link detection
 # test would fail. Build a static library (.o only) instead to verify the compiler.

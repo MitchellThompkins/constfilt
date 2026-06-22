@@ -30,14 +30,15 @@ struct TustinPW // Prewarped bilinear; warp_omega set by Butterworth/Elliptic
 // Build the method tag from a cutoff frequency.
 // For TustinPW<T>, fills in warp_omega = 2*pi*cutoff_hz.
 // For all other methods, returns a default-constructed tag (cutoff unused).
-template <typename T, typename M>
-constexpr M make_tustin_tag(T, M) { return M{}; }
+template <typename T, typename M> constexpr M make_tustin_tag(T, M)
+{
+    return M{};
+}
 
 template <typename T>
 constexpr TustinPW<T> make_tustin_tag(T cutoff_hz, TustinPW<T>)
 {
-    return TustinPW<T>{static_cast<T>(2) * static_cast<T>(GCEM_PI) *
-                       cutoff_hz};
+    return TustinPW<T>{static_cast<T>(2) * static_cast<T>(GCEM_PI) * cutoff_hz};
 }
 
 // Data structures

@@ -135,32 +135,32 @@ FULL_MATRIX(EllipticHPMatchedZ, hp_mz_3_10rp_60rs_200Hz_4000Hz,
 // =============================================================================
 
 FULL_MATRIX(EllipticLPTustin, lp_tu_2_5rp_40rs_100Hz_1000Hz,
-            constfilt::Elliptic<double, 2, constfilt::TustinNW>(100.0, 0.5, 40.0,
-                                                              1000.0))
+            constfilt::Elliptic<double, 2, constfilt::TustinNW>(100.0, 0.5,
+                                                                40.0, 1000.0))
 
 FULL_MATRIX(EllipticLPTustin, lp_tu_4_5rp_40rs_100Hz_1000Hz,
-            constfilt::Elliptic<double, 4, constfilt::TustinNW>(100.0, 0.5, 40.0,
-                                                              1000.0))
+            constfilt::Elliptic<double, 4, constfilt::TustinNW>(100.0, 0.5,
+                                                                40.0, 1000.0))
 
 FULL_MATRIX(EllipticLPTustin, lp_tu_5_5rp_40rs_100Hz_1000Hz,
-            constfilt::Elliptic<double, 5, constfilt::TustinNW>(100.0, 0.5, 40.0,
-                                                              1000.0))
+            constfilt::Elliptic<double, 5, constfilt::TustinNW>(100.0, 0.5,
+                                                                40.0, 1000.0))
 
 FULL_MATRIX(EllipticLPTustin, lp_tu_6_5rp_40rs_100Hz_1000Hz,
-            constfilt::Elliptic<double, 6, constfilt::TustinNW>(100.0, 0.5, 40.0,
-                                                              1000.0))
+            constfilt::Elliptic<double, 6, constfilt::TustinNW>(100.0, 0.5,
+                                                                40.0, 1000.0))
 
 FULL_MATRIX(EllipticLPTustin, lp_tu_7_5rp_40rs_100Hz_1000Hz,
-            constfilt::Elliptic<double, 7, constfilt::TustinNW>(100.0, 0.5, 40.0,
-                                                              1000.0))
+            constfilt::Elliptic<double, 7, constfilt::TustinNW>(100.0, 0.5,
+                                                                40.0, 1000.0))
 
 FULL_MATRIX(EllipticLPTustin, lp_tu_8_5rp_40rs_100Hz_1000Hz,
-            constfilt::Elliptic<double, 8, constfilt::TustinNW>(100.0, 0.5, 40.0,
-                                                              1000.0))
+            constfilt::Elliptic<double, 8, constfilt::TustinNW>(100.0, 0.5,
+                                                                40.0, 1000.0))
 
 FULL_MATRIX(EllipticLPTustin, lp_tu_3_10rp_60rs_200Hz_4000Hz,
-            constfilt::Elliptic<double, 3, constfilt::TustinNW>(200.0, 1.0, 60.0,
-                                                              4000.0))
+            constfilt::Elliptic<double, 3, constfilt::TustinNW>(200.0, 1.0,
+                                                                60.0, 4000.0))
 
 // =============================================================================
 // Elliptic high-pass, TustinNW discretization

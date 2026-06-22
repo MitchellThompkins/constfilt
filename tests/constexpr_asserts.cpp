@@ -463,8 +463,8 @@ static_assert(array_near_eq(kBwTu2Chirp.v,
 // =============================================================================
 constexpr Arr<256> bw_tu_hp2_step()
 {
-    constfilt::Butterworth<double, 2, constfilt::TustinNW, constfilt::HighPass> f(
-        100.0, 1000.0);
+    constfilt::Butterworth<double, 2, constfilt::TustinNW, constfilt::HighPass>
+        f(100.0, 1000.0);
     double in[256]{};
     for (unsigned i = 0; i < 256; ++i)
         in[i] = 1.0;
@@ -479,8 +479,8 @@ static_assert(array_near_eq(kBwTuHp2Step.v,
 
 constexpr Arr<256> bw_tu_hp2_impulse()
 {
-    constfilt::Butterworth<double, 2, constfilt::TustinNW, constfilt::HighPass> f(
-        100.0, 1000.0);
+    constfilt::Butterworth<double, 2, constfilt::TustinNW, constfilt::HighPass>
+        f(100.0, 1000.0);
     double in[256]{};
     in[0] = 1.0;
     Arr<256> out{};
@@ -488,16 +488,16 @@ constexpr Arr<256> bw_tu_hp2_impulse()
     return out;
 }
 constexpr Arr<256> kBwTuHp2Impulse = bw_tu_hp2_impulse();
-static_assert(array_near_eq(kBwTuHp2Impulse.v,
-                            bw_ref::case_tu_hp_2_100Hz_1000Hz::impulse,
-                            kStepTol),
-              "Butterworth TustinNW HP N=2: batch impulse disagrees with Octave");
+static_assert(
+    array_near_eq(kBwTuHp2Impulse.v, bw_ref::case_tu_hp_2_100Hz_1000Hz::impulse,
+                  kStepTol),
+    "Butterworth TustinNW HP N=2: batch impulse disagrees with Octave");
 
 constexpr Arr<4096> bw_tu_hp2_chirp()
 {
     using Ref = bw_ref::case_tu_hp_2_100Hz_1000Hz;
-    constfilt::Butterworth<double, 2, constfilt::TustinNW, constfilt::HighPass> f(
-        100.0, 1000.0);
+    constfilt::Butterworth<double, 2, constfilt::TustinNW, constfilt::HighPass>
+        f(100.0, 1000.0);
     double in[4096]{};
     for (unsigned i = 0; i < 4096; ++i)
         in[i] = Ref::chirp_in[i];
@@ -516,7 +516,7 @@ static_assert(array_near_eq(kBwTuHp2Chirp.v,
 constexpr Arr<256> el_tu_lp2_step()
 {
     constfilt::Elliptic<double, 2, constfilt::TustinNW> f(100.0, 0.5, 40.0,
-                                                        1000.0);
+                                                          1000.0);
     double in[256]{};
     for (unsigned i = 0; i < 256; ++i)
         in[i] = 1.0;
@@ -533,7 +533,7 @@ static_assert(array_near_eq(kElTuLp2Step.v,
 constexpr Arr<256> el_tu_lp2_impulse()
 {
     constfilt::Elliptic<double, 2, constfilt::TustinNW> f(100.0, 0.5, 40.0,
-                                                        1000.0);
+                                                          1000.0);
     double in[256]{};
     in[0] = 1.0;
     Arr<256> out{};
@@ -550,7 +550,7 @@ constexpr Arr<4096> el_tu_lp2_chirp()
 {
     using Ref = el_ref::lp_tu_2_5rp_40rs_100Hz_1000Hz;
     constfilt::Elliptic<double, 2, constfilt::TustinNW> f(100.0, 0.5, 40.0,
-                                                        1000.0);
+                                                          1000.0);
     double in[4096]{};
     for (unsigned i = 0; i < 4096; ++i)
         in[i] = Ref::chirp_in[i];

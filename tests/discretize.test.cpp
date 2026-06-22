@@ -154,7 +154,8 @@ TEST(MatchedZ, FirstOrder_Float_DCGain)
     EXPECT_NEAR(num / den, 1.0f, 1e-4f);
 }
 
-// --- TustinNW: 1st-order H_c(s) = 1/(s+1) -------------------------------------
+// --- TustinNW: 1st-order H_c(s) = 1/(s+1)
+// -------------------------------------
 //
 // Substituting s = (2/Ts)*(z-1)/(z+1) = 20*(z-1)/(z+1):
 //   H(z) = (z+1) / (21z - 19)

@@ -16,8 +16,8 @@ namespace constfilt
 // Template parameters:
 //   T          - floating-point scalar type
 //   N          - filter order (>= 1)
-//   Method     - discretization method (TustinPW<T> default), TustinNW, ZOH, or MatchedZ
-//   FilterType - LowPass (default) or HighPass
+//   Method     - discretization method (TustinPW<T> default), TustinNW, ZOH, or
+//   MatchedZ FilterType - LowPass (default) or HighPass
 //
 // Constructor parameters:
 //   cutoff_hz      - passband edge (-Rp dB point)
@@ -40,8 +40,7 @@ class Elliptic : public AnalogFilter<T, N, Method>
                        T sample_rate_hz)
         : AnalogFilter<T, N, Method>(
               compute_continuous_tf(cutoff_hz, ripple_db, attenuation_db),
-              sample_rate_hz,
-              make_tustin_tag(cutoff_hz, Method{}))
+              sample_rate_hz, make_tustin_tag(cutoff_hz, Method{}))
     {
     }
 

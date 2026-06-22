@@ -51,6 +51,9 @@ class AnalogFilter : public Filter<T, N + 1u, N + 1u>
         : AnalogFilter(
               checked_discretize(b_c, a_c, sample_rate_hz, BoundMethod{}))
     {
+        static_assert(!is_tustinpw_tag<Method>::value,
+                      "TustinPW requires a warp frequency; use the "
+                      "method-tag constructor with constfilt::prewarp(wc_hz)");
     }
 
     constexpr AnalogFilter(const T (&b_c)[N + 1u], const T (&a_c)[N + 1u],
@@ -64,6 +67,9 @@ class AnalogFilter : public Filter<T, N + 1u, N + 1u>
         : AnalogFilter(checked_discretize(continuous_tf.b, continuous_tf.a,
                                           sample_rate_hz, BoundMethod{}))
     {
+        static_assert(!is_tustinpw_tag<Method>::value,
+                      "TustinPW requires a warp frequency; use the "
+                      "method-tag constructor with constfilt::prewarp(wc_hz)");
     }
 
     constexpr AnalogFilter(TransferFunction<T, N + 1u, N + 1u> continuous_tf,

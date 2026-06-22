@@ -49,6 +49,18 @@ template <typename T> struct bind_method<T, TustinPW>
     using type = TustinPWData<T>;
 };
 
+// True only for the TustinPW tag — used by AnalogFilter to static_assert that
+// the no-tag constructors are not used when Method = TustinPW.
+template <typename M> struct is_tustinpw_tag
+{
+    static constexpr bool value = false;
+};
+
+template <> struct is_tustinpw_tag<TustinPW>
+{
+    static constexpr bool value = true;
+};
+
 // Build the method tag from a cutoff frequency.
 // For TustinPWData<T>, fills in warp_omega = 2*pi*cutoff_hz.
 // For all other methods, returns a default-constructed tag (cutoff unused).

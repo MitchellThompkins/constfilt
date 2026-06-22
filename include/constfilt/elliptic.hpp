@@ -16,7 +16,7 @@ namespace constfilt
 // Template parameters:
 //   T          - floating-point scalar type
 //   N          - filter order (>= 1)
-//   Method     - TustinPW<T> (default), TustinNW, ZOH, or MatchedZ
+//   Method     - TustinPW (default), TustinNW, ZOH, or MatchedZ
 //   FilterType - LowPass (default) or HighPass
 //
 // Constructor parameters:
@@ -29,18 +29,21 @@ namespace constfilt
 // with one deviation: Step 2 uses the modular identity q = q1^(1/N) instead of
 // ncauer's iterative degree-equation solver. Steps 1 and 3 onward are
 // identical. All coefficient math is constexpr.
-template <typename T, consteig::Size N, typename Method = TustinPW<T>,
+template <typename T, consteig::Size N, typename Method = TustinPW,
           typename FilterType = LowPass>
-class Elliptic : public AnalogFilter<T, N, Method>
+class Elliptic
+    : public AnalogFilter<T, N, typename bind_method<T, Method>::type>
 {
     static_assert(N >= 1u, "Elliptic order must be at least 1");
+
+    using BoundMethod = typename bind_method<T, Method>::type;
 
   public:
     constexpr Elliptic(T cutoff_hz, T ripple_db, T attenuation_db,
                        T sample_rate_hz)
-        : AnalogFilter<T, N, Method>(
+        : AnalogFilter<T, N, BoundMethod>(
               compute_continuous_tf(cutoff_hz, ripple_db, attenuation_db),
-              sample_rate_hz, make_tustin_tag(cutoff_hz, Method{}))
+              sample_rate_hz, make_tustin_tag(cutoff_hz, BoundMethod{}))
     {
     }
 

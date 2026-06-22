@@ -124,17 +124,7 @@ for ci = 1:length(lpf_cases)
               ord, fc, fs, b_tu, a_tu, y_step_tu, y_imp_tu, u_c, y_c_tu);
 
     % --- TustinPW (prewarped bilinear) ---
-    % Equivalent to prewarped alpha = wc/tan(wc*Ts/2): design the analog
-    % prototype at the prewarped frequency wc_pw = (2/Ts)*tan(wc*Ts/2), then
-    % apply standard Tustin.  This matches constfilt's TustinPW<T> default.
-    Ts_lp  = 1.0 / fs;
-    wc_pw  = (2.0 / Ts_lp) * tan(wc * Ts_lp / 2.0);
-    [z_pw, p_pw, k_pw] = buttap(ord);
-    p_pw_scaled = p_pw * wc_pw;
-    k_pw_scaled = k_pw * wc_pw^ord;
-    [b_s_pw, a_s_pw] = zp2tf(z_pw, p_pw_scaled, k_pw_scaled);
-    sys_c_pw  = tf(b_s_pw, a_s_pw);
-    sys_tupw  = c2d(sys_c_pw, Ts_lp, 'tustin');
+    sys_tupw  = c2d(sys_c, 1.0/fs, 'prewarp', wc);
     [b_tupw, a_tupw] = tfdata(sys_tupw, 'v');
 
     while length(b_tupw) < length(a_tupw)
@@ -218,14 +208,7 @@ for ci = 1:length(hpf_cases)
               ord, fc, fs, b_tu, a_tu, y_step_tu, y_imp_tu, u_c, y_c_tu);
 
     % --- TustinPW HP (prewarped bilinear) ---
-    Ts_hp  = 1.0 / fs;
-    wc_pw  = (2.0 / Ts_hp) * tan(wc * Ts_hp / 2.0);
-    [z_p2, p_p2, ~] = buttap(ord);
-    p_hp_pw = wc_pw ./ p_p2;
-    z_hp_pw = zeros(ord, 1);
-    [b_s_hp_pw, a_s_hp_pw] = zp2tf(z_hp_pw, p_hp_pw, 1);
-    sys_c_hp_pw  = tf(b_s_hp_pw, a_s_hp_pw);
-    sys_tupw_hp  = c2d(sys_c_hp_pw, Ts_hp, 'tustin');
+    sys_tupw_hp  = c2d(sys_c, 1.0/fs, 'prewarp', wc);
     [b_tupw_hp, a_tupw_hp] = tfdata(sys_tupw_hp, 'v');
 
     y_step_tupw_hp = filter(b_tupw_hp, a_tupw_hp, u);

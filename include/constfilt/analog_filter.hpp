@@ -17,7 +17,7 @@ namespace constfilt
 // Template parameters:
 //   T         - numeric type (float, double, ...)
 //   N         - filter order (degree of denominator)
-//   Method    - TustinNW (default), TustinPW<T>, ZOH, or MatchedZ
+//   Method    - TustinNW (default), TustinPW, ZOH, or MatchedZ
 //   CheckStab - reserved for future use; currently has no effect (see below).
 //
 // Constructors:
@@ -26,31 +26,48 @@ namespace constfilt
 //     a_c            - s-domain denominator array [N+1], descending order
 //     sample_rate_hz - sample rate in Hz
 //
+//   AnalogFilter(b_c, a_c, sample_rate_hz, method_tag)
+//     method_tag     - method instance; for TustinPW supply
+//                      constfilt::prewarp(warp_hz)
+//
 //   AnalogFilter(continuous_tf, sample_rate_hz)
 //     continuous_tf  - s-domain TransferFunction (e.g. from a subclass)
 //     sample_rate_hz - sample rate in Hz
+//
+//   AnalogFilter(continuous_tf, sample_rate_hz, method_tag)
+//     method_tag     - method instance; for TustinPW supply
+//                      constfilt::prewarp(warp_hz)
 template <typename T, consteig::Size N, typename Method = TustinNW,
           bool CheckStab = true>
 class AnalogFilter : public Filter<T, N + 1u, N + 1u>
 {
     static_assert(N >= 1u, "Filter order must be at least 1");
 
+    using BoundMethod = typename bind_method<T, Method>::type;
+
   public:
     constexpr AnalogFilter(const T (&b_c)[N + 1u], const T (&a_c)[N + 1u],
                            T sample_rate_hz)
-        : AnalogFilter(checked_discretize(b_c, a_c, sample_rate_hz, Method{}))
+        : AnalogFilter(
+              checked_discretize(b_c, a_c, sample_rate_hz, BoundMethod{}))
+    {
+    }
+
+    constexpr AnalogFilter(const T (&b_c)[N + 1u], const T (&a_c)[N + 1u],
+                           T sample_rate_hz, BoundMethod method_tag)
+        : AnalogFilter(checked_discretize(b_c, a_c, sample_rate_hz, method_tag))
     {
     }
 
     constexpr AnalogFilter(TransferFunction<T, N + 1u, N + 1u> continuous_tf,
                            T sample_rate_hz)
         : AnalogFilter(checked_discretize(continuous_tf.b, continuous_tf.a,
-                                          sample_rate_hz, Method{}))
+                                          sample_rate_hz, BoundMethod{}))
     {
     }
 
     constexpr AnalogFilter(TransferFunction<T, N + 1u, N + 1u> continuous_tf,
-                           T sample_rate_hz, Method method_tag)
+                           T sample_rate_hz, BoundMethod method_tag)
         : AnalogFilter(checked_discretize(continuous_tf.b, continuous_tf.a,
                                           sample_rate_hz, method_tag))
     {
@@ -65,7 +82,7 @@ class AnalogFilter : public Filter<T, N + 1u, N + 1u>
 
     static constexpr TransferFunction<T, N + 1u, N + 1u> checked_discretize(
         const T (&b_c)[N + 1u], const T (&a_c)[N + 1u], T sample_rate_hz,
-        Method method_tag)
+        BoundMethod method_tag)
     {
         // Stability check is currently disabled. See:
         // https://github.com/MitchellThompkins/constfilt/issues/14

@@ -90,16 +90,13 @@ function [b_d, a_d, y_step, y_imp, u_c, y_c] = design_and_filter(Rp, Rs, N, wc, 
 end
 
 function [b_d, a_d, y_step, y_imp, u_c, y_c] = design_and_filter_pw(Rp, Rs, N, wc, mode, fs, STEP_LEN, CHIRP_LEN)
-    % Prewarped bilinear: design analog filter at wc_pw = (2/Ts)*tan(wc*Ts/2),
-    % then apply standard Tustin.  Matches constfilt's TustinPW<T> default.
-    Ts    = 1.0 / fs;
-    wc_pw = (2.0 / Ts) * tan(wc * Ts / 2.0);
+    Ts = 1.0 / fs;
     if strcmp(mode, 'high')
-        [b_s, a_s] = ellip(N, Rp, Rs, wc_pw, 'high', 's');
+        [b_s, a_s] = ellip(N, Rp, Rs, wc, 'high', 's');
     else
-        [b_s, a_s] = ellip(N, Rp, Rs, wc_pw, 's');
+        [b_s, a_s] = ellip(N, Rp, Rs, wc, 's');
     end
-    sys_d      = c2d(tf(b_s, a_s), Ts, 'tustin');
+    sys_d      = c2d(tf(b_s, a_s), Ts, 'prewarp', wc);
     [b_d, a_d] = tfdata(sys_d, 'v');
     while length(b_d) < length(a_d)
         b_d = [0, b_d];

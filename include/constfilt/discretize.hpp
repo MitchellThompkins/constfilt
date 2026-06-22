@@ -21,14 +21,36 @@ struct TustinNW // Bilinear, non-prewarped
 {
 };
 
+// TustinPW is a non-template tag so that users can write
+// Butterworth<double, 2, TustinPW> without repeating the scalar type.
+// Butterworth and Elliptic use bind_method<T, Method> to resolve it to
+// TustinPWData<T>, which carries warp_omega.  TustinPWData is not part of
+// the user-facing API.
+struct TustinPW // Prewarped bilinear tag
+{
+};
+
 template <typename T>
-struct TustinPW // Prewarped bilinear; warp_omega set by Butterworth/Elliptic
+struct TustinPWData // Internal: holds warp_omega after bind_method resolves
+                    // TustinPW
 {
     T warp_omega{}; // rad/s
 };
 
+// Resolves TustinPW (non-template tag) to TustinPWData<T> given the filter's
+// scalar type T.  All other method tags pass through unchanged.
+template <typename T, typename M> struct bind_method
+{
+    using type = M;
+};
+
+template <typename T> struct bind_method<T, TustinPW>
+{
+    using type = TustinPWData<T>;
+};
+
 // Build the method tag from a cutoff frequency.
-// For TustinPW<T>, fills in warp_omega = 2*pi*cutoff_hz.
+// For TustinPWData<T>, fills in warp_omega = 2*pi*cutoff_hz.
 // For all other methods, returns a default-constructed tag (cutoff unused).
 template <typename T, typename M> constexpr M make_tustin_tag(T, M)
 {
@@ -36,9 +58,20 @@ template <typename T, typename M> constexpr M make_tustin_tag(T, M)
 }
 
 template <typename T>
-constexpr TustinPW<T> make_tustin_tag(T cutoff_hz, TustinPW<T>)
+constexpr TustinPWData<T> make_tustin_tag(T cutoff_hz, TustinPWData<T>)
 {
-    return TustinPW<T>{static_cast<T>(2) * static_cast<T>(GCEM_PI) * cutoff_hz};
+    return TustinPWData<T>{static_cast<T>(2) * static_cast<T>(GCEM_PI) *
+                           cutoff_hz};
+}
+
+// Creates a TustinPWData<T> tag from a warp frequency in Hz.
+// T is deduced from the argument: prewarp(100.0) -> TustinPWData<double>.
+// Use with AnalogFilter's method-tag constructor to supply the warp frequency
+// explicitly (Butterworth and Elliptic derive it automatically from cutoff_hz).
+template <typename T> constexpr TustinPWData<T> prewarp(T warp_hz)
+{
+    return TustinPWData<T>{static_cast<T>(2) * static_cast<T>(GCEM_PI) *
+                           warp_hz};
 }
 
 // Data structures
@@ -605,7 +638,7 @@ constexpr StateSpace<T, N> tustin_discretize(const StateSpace<T, N> &sys_c,
 
 template <typename T, consteig::Size N>
 constexpr StateSpace<T, N> tustin_discretize(const StateSpace<T, N> &sys_c,
-                                             T Ts, TustinPW<T> tag)
+                                             T Ts, TustinPWData<T> tag)
 {
     const T alpha =
         tag.warp_omega / gcem::tan(tag.warp_omega * Ts / static_cast<T>(2));
@@ -649,7 +682,7 @@ constexpr TransferFunction<T, N + 1u, N + 1u> analog_to_digital(
 
 template <typename T, consteig::Size N>
 constexpr TransferFunction<T, N + 1u, N + 1u> analog_to_digital(
-    const StateSpace<T, N> &sys_c, T Ts, TustinPW<T> tag)
+    const StateSpace<T, N> &sys_c, T Ts, TustinPWData<T> tag)
 {
     return ss_to_tf(tustin_discretize(sys_c, Ts, tag));
 }
@@ -679,7 +712,7 @@ constexpr TransferFunction<T, N + 1u, N + 1u> analog_to_digital(
 
 template <typename T, consteig::Size N>
 constexpr TransferFunction<T, N + 1u, N + 1u> analog_to_digital(
-    const T (&b_c)[N + 1u], const T (&a_c)[N + 1u], T Ts, TustinPW<T> tag)
+    const T (&b_c)[N + 1u], const T (&a_c)[N + 1u], T Ts, TustinPWData<T> tag)
 {
     return ss_to_tf(tustin_discretize(tf_to_ss<T, N>(b_c, a_c), Ts, tag));
 }

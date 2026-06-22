@@ -46,12 +46,44 @@ function [b_d, a_d, y_step, y_imp, u_c, y_c] = design_and_filter(b_s, a_s, fs, m
     y_c    = filter(b_d, a_d, u_c);
 end
 
+function [b_d, a_d, y_step, y_imp, u_c, y_c] = design_and_filter_pw(b_s, a_s, fs, wc_hz, STEP_LEN, CHIRP_LEN)
+    Ts     = 1.0 / fs;
+    wc_rad = 2 * pi * wc_hz;
+    sys_c  = tf(b_s, a_s);
+    sys_d  = c2d(sys_c, Ts, 'prewarp', wc_rad);
+    [b_d, a_d] = tfdata(sys_d, 'v');
+    while length(b_d) < length(a_d)
+        b_d = [0, b_d];
+    end
+    y_step = filter(b_d, a_d, ones(1, STEP_LEN));
+    y_imp  = filter(b_d, a_d, [1, zeros(1, STEP_LEN-1)]);
+    t_c    = (0:CHIRP_LEN-1) / fs;
+    u_c    = chirp(t_c, 0, t_c(end), fs/2);
+    y_c    = filter(b_d, a_d, u_c);
+end
+
 function emit_case(fid, sname, comment, b_s, a_s, fs, b_d, a_d, y_step, y_imp, u_c, y_c)
     fprintf(fid, 'struct %s\n{\n', sname);
     fprintf(fid, '    // %s\n', comment);
     emit_arr(fid, 'b_s', b_s);
     emit_arr(fid, 'a_s', a_s);
     fprintf(fid, '    static constexpr double sample_rate_hz = %.1f;\n\n', fs);
+    emit_arr(fid, 'b', b_d);
+    emit_arr(fid, 'a', a_d);
+    emit_arr(fid, 'step',     y_step);
+    emit_arr(fid, 'impulse',  y_imp);
+    emit_arr(fid, 'chirp_in', u_c);
+    emit_arr(fid, 'chirp',    y_c);
+    fprintf(fid, '};\n\n');
+end
+
+function emit_case_pw(fid, sname, comment, b_s, a_s, fs, wc_hz, b_d, a_d, y_step, y_imp, u_c, y_c)
+    fprintf(fid, 'struct %s\n{\n', sname);
+    fprintf(fid, '    // %s\n', comment);
+    emit_arr(fid, 'b_s', b_s);
+    emit_arr(fid, 'a_s', a_s);
+    fprintf(fid, '    static constexpr double sample_rate_hz = %.1f;\n', fs);
+    fprintf(fid, '    static constexpr double warp_hz = %.17g;\n\n', wc_hz);
     emit_arr(fid, 'b', b_d);
     emit_arr(fid, 'a', a_d);
     emit_arr(fid, 'step',     y_step);
@@ -112,6 +144,20 @@ fs  = 10.0;
 [b_d, a_d, y_step, y_imp, u_c, y_c] = design_and_filter(b_s, a_s, fs, 'tustin', STEP_LEN, CHIRP_LEN);
 emit_case(fid, 'case_5_tustin_fs10', 'H(s) = 1/(s^2+3s+2), Tustin, fs=10 Hz', ...
           b_s, a_s, fs, b_d, a_d, y_step, y_imp, u_c, y_c);
+
+% ---------------------------------------------------------------------------
+% Case 6: H(s) = 1/(s^2 + 3s + 2), TustinPW, fs=10 Hz, wc=2.5 Hz
+%   wc = 2.5 Hz -> wc_rad = 5*pi rad/s
+%   alpha_pw = 5*pi / tan(5*pi * 0.1 / 2) = 5*pi / tan(pi/4) = 5*pi
+% ---------------------------------------------------------------------------
+b_s   = [0, 0, 1];
+a_s   = [1, 3, 2];
+fs    = 10.0;
+wc_hz = 2.5;
+[b_d, a_d, y_step, y_imp, u_c, y_c] = design_and_filter_pw(b_s, a_s, fs, wc_hz, STEP_LEN, CHIRP_LEN);
+emit_case_pw(fid, 'case_6_tustinpw_fs10_wc2p5hz', ...
+    'H(s) = 1/(s^2+3s+2), TustinPW, fs=10 Hz, wc=2.5 Hz', ...
+    b_s, a_s, fs, wc_hz, b_d, a_d, y_step, y_imp, u_c, y_c);
 
 fprintf(fid, '} // namespace ctf_ref\n\n');
 fprintf(fid, '#endif // CONSTFILT_CONTINUOUS_TF_REFERENCE_HPP\n');

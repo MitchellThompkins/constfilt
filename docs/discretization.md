@@ -19,8 +19,8 @@ directly, then convert to discrete time in a single well-defined step.
 
 ## State-space Representation
 
-The discretization methods used here (ZOH, Matched-Z, and Tustin) all work on a
-continuous state-space model of the form:
+The discretization methods used here (ZOH, Matched-Z, TustinNW, and TustinPW)
+all work on a continuous state-space model of the form:
 
 $$\dot{x} = A_c x + B_c u, \quad y = C_c x + D_c u$$
 
@@ -37,11 +37,11 @@ more poles than zeros).
 ZOH requires $e^{A_c T_s}$ to compute the full discrete state-space.
 Matched-Z maps continuous poles and zeros with scalar exponentials
 ($z = e^{sT_s}$) rather than forming the full matrix exponential.
-Tustin does not use the matrix exponential. It operates on
+TustinNW and TustinPW do not use the matrix exponential. They operate on
 $(A_c, B_c, C_c, D_c)$ directly via a matrix inversion. consteig provides
 the eigendecomposition of $A_c$ at compile time. ZOH needs the full
 decomposition (eigenvalues and eigenvectors) to compute $B_d$ accurately.
-Matched-Z only needs the eigenvalues. Tustin needs neither.
+Matched-Z only needs the eigenvalues. The Tustin variants need neither.
 
 The $A_c$ matrix itself is a companion matrix built directly from the
 denominator polynomial coefficients in controllable canonical form, which is the
@@ -49,7 +49,7 @@ shared first step before either method is applied.
 
 ## Transfer function to state-space
 
-This is that shared first step for ZOH, Matched-Z, and Tustin. Given the
+This is that shared first step for ZOH, Matched-Z, and the Tustin variants. Given the
 continuous-time transfer function that describes the filter (Butterworth,
 Elliptic, etc.), the $(A_c, B_c, C_c, D_c)$ matrices are constructed in
 controllable canonical form. All three discretization methods then operate on this
@@ -87,11 +87,12 @@ $$A_c = \begin{bmatrix} 0 & 1 \\ -\omega_n^2 & -2\zeta\omega_n \end{bmatrix}, \q
 B_c = \begin{bmatrix} 0 \\ \omega_n^2 \end{bmatrix}, \qquad
 C_c = \begin{bmatrix} 1 & 0 \end{bmatrix}, \qquad D_c = 0$$
 
-All three methods take this $A_c$ as their starting point. ZOH computes
+All methods take this $A_c$ as their starting point. ZOH computes
 $e^{A_c T_s}$ to get $A_d$ and solves for $B_d$. Matched-Z uses the eigenvalues
 of $A_c$ to map poles and evaluates the continuous transfer function at a test
-frequency for gain matching. Tustin applies the bilinear substitution directly
-to $(A_c, B_c, C_c, D_c)$ via a single matrix inversion.
+frequency for gain matching. TustinNW and TustinPW apply the bilinear
+substitution directly to $(A_c, B_c, C_c, D_c)$ via a single matrix inversion,
+differing only in the value of $\alpha$.
 
 
 ## Discretization
@@ -99,8 +100,8 @@ to $(A_c, B_c, C_c, D_c)$ via a single matrix inversion.
 ### Choosing a method
 
 ZOH and Matched-Z both map continuous poles to discrete poles via
-$z = e^{s T_s}$. Tustin maps them via the bilinear substitution
-$s = \frac{2}{T_s}\frac{z-1}{z+1}$, which places poles at different locations
+$z = e^{s T_s}$. The Tustin variants map them via the bilinear substitution
+$s = \alpha\frac{z-1}{z+1}$, which places poles at different locations
 than the other two.
 
 ZOH asks: given that the input is held constant between samples, what is the
@@ -115,12 +116,24 @@ continuous poles and zeros to discrete ones via $z = e^{s T_s}$ and sets the
 gain by evaluating both filters at a test frequency. The result preserves the
 shape of the continuous frequency response.
 
-Tustin asks: what discrete filter results from substituting the bilinear
+TustinNW asks: what discrete filter results from substituting the bilinear
 approximation $s \approx \frac{2}{T_s}\frac{z-1}{z+1}$ into the continuous
 transfer function? The substitution is applied directly to the state-space
 matrices. The result warps the frequency axis (frequencies near Nyquist are
 compressed), but the discrete filter is stable whenever the continuous filter
 is stable and preserves the frequency-domain shape up to that warping.
+
+TustinPW (prewarped) adjusts $\alpha$ so that the bilinear mapping is exact at
+the filter's cutoff frequency $\omega_c$:
+
+$$\alpha = \frac{\omega_c}{\tan(\omega_c T_s / 2)}$$
+
+This guarantees that the digital cutoff lands exactly at $\omega_c$, regardless
+of sample rate. All other frequencies are still warped, but the passband edge
+is preserved. TustinPW is the default for `Butterworth` and `Elliptic` because
+it matches the behavior of standard filter design tools (MATLAB `c2d` with
+`PrewarpFrequency`, scipy `bilinear_zpk` with `fs`). TustinNW is the default
+for `AnalogFilter`, which does not have a cutoff frequency concept.
 
 The choice comes down to what fidelity matters. ZOH is exact for
 piecewise-constant (sample-and-hold) inputs, making it the natural choice when
@@ -128,10 +141,11 @@ time-domain behavior matters: step response, impulse response, control systems,
 and signal reconstruction. Matched-Z explicitly places zeros to match the
 continuous-time frequency response shape, which can give better stopband
 attenuation when the cutoff is a significant fraction of the sample rate.
-Tustin is a good choice when frequency-domain shape is important and
-prewarping is acceptable. It is the most commonly used method in digital
-control and audio signal processing. The difference is small when
-$f_c \ll f_s$. If you are unsure, use Tustin (the default).
+TustinPW is the default and the right choice when the digital cutoff frequency
+must match the specified analog cutoff exactly. TustinNW is available when the
+bilinear substitution is needed without frequency correction, such as when
+operating on a state-space system that does not have a single design frequency.
+The difference between TustinNW and TustinPW is small when $f_c \ll f_s$.
 
 Given a continuous state-space model with $(A_c, B_c, C_c, D_c)$, the goal is a
 discrete state-space model $(A_d, B_d, C_d, D_d)$ valid at sample rate $f_s$.
@@ -209,11 +223,11 @@ The steps are:
 3. Match the gain by evaluating the continuous and discrete transfer functions at a test frequency $\omega_c$ (chosen to avoid poles and zeros) and scaling $b$ so that $|H_d(e^{j\omega_c T_s})| = |H_c(j\omega_c)|$.
 
 
-### Tustin (Bilinear)
+### Tustin / Bilinear (TustinNW and TustinPW)
 
-Tustin substitutes $s = \frac{2}{T_s}\frac{z-1}{z+1}$ into the continuous
-state-space equations and applies a coordinate transformation to put the result
-in standard discrete form[^4]. With $\alpha = 2 / T_s$:
+Both Tustin variants substitute $s = \alpha\frac{z-1}{z+1}$ into the continuous
+state-space equations and apply a coordinate transformation to put the result
+in standard discrete form[^4]:
 
 $$M = I - \frac{1}{\alpha}A_c$$
 
@@ -230,6 +244,17 @@ $C_d$. Unlike ZOH, no matrix exponential is required. Unlike Matched-Z, no
 companion-matrix eigendecomposition is needed for the zeros. The resulting
 discrete state-space is then converted to $(b, a)$ via the same characteristic
 polynomial and Markov parameter steps used by ZOH.
+
+The two variants differ only in $\alpha$:
+
+| Variant | $\alpha$ | Digital cutoff |
+|---------|----------|----------------|
+| TustinNW | $2 / T_s$ | Warped away from $\omega_c$ |
+| TustinPW | $\omega_c / \tan(\omega_c T_s / 2)$ | Exactly $\omega_c$ |
+
+TustinPW pins the bilinear map to be exact at $\omega_c$ by solving
+$\alpha \tan(\omega_c T_s / 2) = \omega_c$ for $\alpha$. At any other
+frequency the axis is still warped, but the passband edge is preserved.
 
 ## References
 

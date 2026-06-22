@@ -89,6 +89,25 @@ function [b_d, a_d, y_step, y_imp, u_c, y_c] = design_and_filter(Rp, Rs, N, wc, 
     y_c    = filter(b_d, a_d, u_c);
 end
 
+function [b_d, a_d, y_step, y_imp, u_c, y_c] = design_and_filter_pw(Rp, Rs, N, wc, mode, fs, STEP_LEN, CHIRP_LEN)
+    Ts = 1.0 / fs;
+    if strcmp(mode, 'high')
+        [b_s, a_s] = ellip(N, Rp, Rs, wc, 'high', 's');
+    else
+        [b_s, a_s] = ellip(N, Rp, Rs, wc, 's');
+    end
+    sys_d      = c2d(tf(b_s, a_s), Ts, 'prewarp', wc);
+    [b_d, a_d] = tfdata(sys_d, 'v');
+    while length(b_d) < length(a_d)
+        b_d = [0, b_d];
+    end
+    y_step = filter(b_d, a_d, ones(1, STEP_LEN));
+    y_imp  = filter(b_d, a_d, [1, zeros(1, STEP_LEN-1)]);
+    t_c    = (0:CHIRP_LEN-1) / fs;
+    u_c    = chirp(t_c, 0, t_c(end), fs/2);
+    y_c    = filter(b_d, a_d, u_c);
+end
+
 % =============================================================================
 % Low-pass cases (ZOH and Matched-Z)
 % =============================================================================
@@ -125,6 +144,9 @@ for ci = 1:length(lp_cases)
 
     [b_d, a_d, y_step, y_imp, u_c, y_c] = design_and_filter(Rp, Rs, N, wc, 'low', fs, STEP_LEN, CHIRP_LEN, 'tustin');
     emit_case(fid, 'lp_tu', N, Rp, Rs, fc, fs, b_d, a_d, y_step, y_imp, u_c, y_c);
+
+    [b_d, a_d, y_step, y_imp, u_c, y_c] = design_and_filter_pw(Rp, Rs, N, wc, 'low', fs, STEP_LEN, CHIRP_LEN);
+    emit_case(fid, 'lp_tupw', N, Rp, Rs, fc, fs, b_d, a_d, y_step, y_imp, u_c, y_c);
 end
 
 % =============================================================================
@@ -157,6 +179,9 @@ for ci = 1:length(hp_cases)
 
     [b_d, a_d, y_step, y_imp, u_c, y_c] = design_and_filter(Rp, Rs, N, wc, 'high', fs, STEP_LEN, CHIRP_LEN, 'tustin');
     emit_case(fid, 'hp_tu', N, Rp, Rs, fc, fs, b_d, a_d, y_step, y_imp, u_c, y_c);
+
+    [b_d, a_d, y_step, y_imp, u_c, y_c] = design_and_filter_pw(Rp, Rs, N, wc, 'high', fs, STEP_LEN, CHIRP_LEN);
+    emit_case(fid, 'hp_tupw', N, Rp, Rs, fc, fs, b_d, a_d, y_step, y_imp, u_c, y_c);
 end
 
 fprintf(fid, '} // namespace el_ref\n\n');

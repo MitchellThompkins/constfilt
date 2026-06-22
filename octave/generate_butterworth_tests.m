@@ -122,6 +122,20 @@ for ci = 1:length(lpf_cases)
     y_c_tu    = filter(b_tu, a_tu, u_c);
     emit_case(fid, sprintf('case_tu_%d_%dHz_%dHz', ord, fc, fs), ...
               ord, fc, fs, b_tu, a_tu, y_step_tu, y_imp_tu, u_c, y_c_tu);
+
+    % --- TustinPW (prewarped bilinear) ---
+    sys_tupw  = c2d(sys_c, 1.0/fs, 'prewarp', wc);
+    [b_tupw, a_tupw] = tfdata(sys_tupw, 'v');
+
+    while length(b_tupw) < length(a_tupw)
+        b_tupw = [0, b_tupw];
+    end
+
+    y_step_tupw = filter(b_tupw, a_tupw, u);
+    y_imp_tupw  = filter(b_tupw, a_tupw, [1, zeros(1, STEP_LEN-1)]);
+    y_c_tupw    = filter(b_tupw, a_tupw, u_c);
+    emit_case(fid, sprintf('case_tupw_%d_%dHz_%dHz', ord, fc, fs), ...
+              ord, fc, fs, b_tupw, a_tupw, y_step_tupw, y_imp_tupw, u_c, y_c_tupw);
 end
 
 % =============================================================================
@@ -192,6 +206,16 @@ for ci = 1:length(hpf_cases)
     y_c_tu    = filter(b_tu, a_tu, u_c);
     emit_case(fid, sprintf('case_tu_hp_%d_%dHz_%dHz', ord, fc, fs), ...
               ord, fc, fs, b_tu, a_tu, y_step_tu, y_imp_tu, u_c, y_c_tu);
+
+    % --- TustinPW HP (prewarped bilinear) ---
+    sys_tupw_hp  = c2d(sys_c, 1.0/fs, 'prewarp', wc);
+    [b_tupw_hp, a_tupw_hp] = tfdata(sys_tupw_hp, 'v');
+
+    y_step_tupw_hp = filter(b_tupw_hp, a_tupw_hp, u);
+    y_imp_tupw_hp  = filter(b_tupw_hp, a_tupw_hp, [1, zeros(1, STEP_LEN-1)]);
+    y_c_tupw_hp    = filter(b_tupw_hp, a_tupw_hp, u_c);
+    emit_case(fid, sprintf('case_tupw_hp_%d_%dHz_%dHz', ord, fc, fs), ...
+              ord, fc, fs, b_tupw_hp, a_tupw_hp, y_step_tupw_hp, y_imp_tupw_hp, u_c, y_c_tupw_hp);
 end
 
 fprintf(fid, '} // namespace bw_ref\n\n');

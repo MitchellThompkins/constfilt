@@ -23,8 +23,8 @@ All at compile time, constfilt supports:
   frequency and sample rate.
 - Elliptic (Cauer) lowpass and highpass filters of arbitrary order, from
   cutoff frequency, passband ripple, and stopband attenuation.
-- ZOH, Matched-Z, and Tustin (bilinear) discretization of arbitrary
-  continuous-time transfer functions.
+- ZOH, Matched-Z, and Tustin bilinear discretization (`TustinPW` prewarped
+  default, `TustinNW` standard) of arbitrary continuous-time transfer functions.
 - Direct Form II Transposed filter implementation, with both a real-time
   sample-by-sample interface and a `constexpr`-capable batch interface.
 

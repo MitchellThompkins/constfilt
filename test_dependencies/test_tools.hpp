@@ -14,8 +14,6 @@
 #define CONSTFILT_STEP_TOL 1e-7
 #endif
 
-#include <cmath>
-
 // Absolute-value comparison helper (no std::abs in constexpr context).
 template <typename T> static constexpr bool withinTol(T a, T b, T tol)
 {

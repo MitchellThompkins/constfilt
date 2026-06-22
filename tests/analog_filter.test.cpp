@@ -175,15 +175,23 @@ FULL_MATRIX(AnalogFilter, case_4_mz_fs10,
                 Ref::b_s, Ref::a_s, Ref::sample_rate_hz))
 
 FULL_MATRIX(AnalogFilter, case_5_tustin_fs10,
-            constfilt::AnalogFilter<double, 2u, constfilt::Tustin>(
+            constfilt::AnalogFilter<double, 2u, constfilt::TustinNW>(
                 Ref::b_s, Ref::a_s, Ref::sample_rate_hz))
 
-// --- AnalogFilter: default discretization (must be Tustin)
+// --- AnalogFilter: default discretization (must be TustinNW)
 // ------------------
 
 FULL_MATRIX(AnalogFilterDefault, case_5_tustin_fs10,
             constfilt::AnalogFilter<double, 2u>(Ref::b_s, Ref::a_s,
                                                 Ref::sample_rate_hz))
+
+// --- AnalogFilter: prewarped Tustin (TustinPW with explicit warp frequency)
+// -------------------------
+
+FULL_MATRIX(AnalogFilterTustinPW, case_6_tustinpw_fs10_wc2p5hz,
+            constfilt::AnalogFilter<double, 2u, constfilt::TustinPW>(
+                Ref::b_s, Ref::a_s, Ref::sample_rate_hz,
+                constfilt::prewarp(Ref::warp_hz)))
 
 // --- AnalogFilter: stability check disabled allows unstable filter
 // ---------------

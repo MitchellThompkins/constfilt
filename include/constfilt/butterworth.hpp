@@ -19,19 +19,23 @@ struct HighPass
 // Template parameters:
 //   T          - floating-point scalar type
 //   N          - filter order (>= 1)
-//   Method     - discretization method (Tustin default), ZOH, or MatchedZ
+//   Method     - TustinPW (default), TustinNW, ZOH, or MatchedZ
 //   FilterType - LowPass (default) or HighPass
-template <typename T, consteig::Size N, typename Method = Tustin,
+template <typename T, consteig::Size N, typename Method = TustinPW,
           typename FilterType = LowPass>
-class Butterworth : public AnalogFilter<T, N, Method>
+class Butterworth
+    : public AnalogFilter<T, N, typename bind_method<T, Method>::type>
 {
     static_assert(N >= 1u, "Butterworth order must be at least 1");
+
+    using BoundMethod = typename bind_method<T, Method>::type;
 
   public:
     // Construct from filter specification; all math is constexpr.
     constexpr Butterworth(T cutoff_hz, T sample_rate_hz)
-        : AnalogFilter<T, N, Method>(compute_continuous_tf(cutoff_hz),
-                                     sample_rate_hz)
+        : AnalogFilter<T, N, BoundMethod>(
+              compute_continuous_tf(cutoff_hz), sample_rate_hz,
+              make_tustin_tag(cutoff_hz, BoundMethod{}))
     {
     }
 
@@ -132,10 +136,10 @@ class Butterworth : public AnalogFilter<T, N, Method>
 };
 
 // Convenience aliases for first-order RC-equivalent filters.
-template <typename T, typename Method = Tustin>
+template <typename T, typename Method = TustinPW>
 using FirstOrderLowPass = Butterworth<T, 1u, Method, LowPass>;
 
-template <typename T, typename Method = Tustin>
+template <typename T, typename Method = TustinPW>
 using FirstOrderHighPass = Butterworth<T, 1u, Method, HighPass>;
 
 } // namespace constfilt

@@ -16,8 +16,8 @@ namespace constfilt
 // Template parameters:
 //   T          - floating-point scalar type
 //   N          - filter order (>= 1)
-//   Method     - discretization method (TustinPW<T> default), TustinNW, ZOH, or
-//   MatchedZ FilterType - LowPass (default) or HighPass
+//   Method     - TustinPW<T> (default), TustinNW, ZOH, or MatchedZ
+//   FilterType - LowPass (default) or HighPass
 //
 // Constructor parameters:
 //   cutoff_hz      - passband edge (-Rp dB point)

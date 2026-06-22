@@ -54,9 +54,10 @@ for orders 1 through 12.
 ZOH accuracy degrades sharply above order 8 because the matrix exponential uses
 eigendecomposition, which loses precision as eigenvalues spread at high orders.
 MatchedZ and Tustin remain near machine precision through order 12. kfr's
-elliptic step responses differ from the Octave reference by roughly 1e-5 to
-1e-6 across all tested orders, reflecting a different pole placement algorithm
-rather than a numerical precision problem.
+elliptic step responses differ from the Octave reference by roughly 1e-5 to 1e-6
+across all tested orders, which I think reflects a different pole placement
+algorithm rather than a numerical precision problem
+([issue #41](https://github.com/MitchellThompkins/constfilt/issues/41)).
 
 ## Comparison libraries
 
@@ -70,9 +71,9 @@ call heap-allocates a wrapper for the input pointer, substitutes it into a
 type-erased expression tree, then dispatches each chunk through two levels of
 virtual function pointers. The benchmarks are built without optimization flags,
 so none of this inlines and the overhead dominates. At `-O2` or `-O3` the
-compiler collapses the expression chain and the gap with scalar implementations
-narrows substantially. The kfr runtime numbers reflect abstraction cost at zero
-optimization, not kfr's peak IIR throughput.
+compiler very likely ([issue #42](https://github.com/MitchellThompkins/constfilt/issues/42)) collapses the expression chain and the gap with scalar
+implementations narrows substantially. The kfr runtime numbers reflect
+abstraction cost at zero optimization, not kfr's peak IIR throughput.
 
 ## Interpreting results
 

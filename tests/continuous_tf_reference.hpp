@@ -69,7 +69,7 @@ struct case_4_mz_fs10
 
 struct case_5_tustin_fs10
 {
-    // H(s) = 1/(s^2+3s+2), Tustin, fs=10 Hz
+    // H(s) = 1/(s^2+3s+2), TustinNW, fs=10 Hz
     static constexpr double b_s[3] = {0, 0, 1};
     static constexpr double a_s[3] = {1, 3, 2};
     static constexpr double sample_rate_hz = 10.0;

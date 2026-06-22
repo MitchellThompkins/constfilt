@@ -411,11 +411,11 @@ static_assert(array_near_eq(kAfMzChirp.v, ctf_ref::case_4_mz_fs10::chirp,
               "AnalogFilter MZ N=2: batch chirp disagrees with Octave");
 
 // =============================================================================
-// Butterworth low-pass (Tustin), N=2, fc=100Hz, fs=1000Hz
+// Butterworth low-pass (TustinNW), N=2, fc=100Hz, fs=1000Hz
 // =============================================================================
 constexpr Arr<256> bw_tu2_step()
 {
-    constfilt::Butterworth<double, 2, constfilt::Tustin> f(100.0, 1000.0);
+    constfilt::Butterworth<double, 2, constfilt::TustinNW> f(100.0, 1000.0);
     double in[256]{};
     for (unsigned i = 0; i < 256; ++i)
         in[i] = 1.0;
@@ -426,11 +426,11 @@ constexpr Arr<256> bw_tu2_step()
 constexpr Arr<256> kBwTu2Step = bw_tu2_step();
 static_assert(array_near_eq(kBwTu2Step.v, bw_ref::case_tu_2_100Hz_1000Hz::step,
                             kStepTol),
-              "Butterworth Tustin N=2: batch step disagrees with Octave");
+              "Butterworth TustinNW N=2: batch step disagrees with Octave");
 
 constexpr Arr<256> bw_tu2_impulse()
 {
-    constfilt::Butterworth<double, 2, constfilt::Tustin> f(100.0, 1000.0);
+    constfilt::Butterworth<double, 2, constfilt::TustinNW> f(100.0, 1000.0);
     double in[256]{};
     in[0] = 1.0;
     Arr<256> out{};
@@ -440,12 +440,12 @@ constexpr Arr<256> bw_tu2_impulse()
 constexpr Arr<256> kBwTu2Impulse = bw_tu2_impulse();
 static_assert(array_near_eq(kBwTu2Impulse.v,
                             bw_ref::case_tu_2_100Hz_1000Hz::impulse, kStepTol),
-              "Butterworth Tustin N=2: batch impulse disagrees with Octave");
+              "Butterworth TustinNW N=2: batch impulse disagrees with Octave");
 
 constexpr Arr<4096> bw_tu2_chirp()
 {
     using Ref = bw_ref::case_tu_2_100Hz_1000Hz;
-    constfilt::Butterworth<double, 2, constfilt::Tustin> f(100.0, 1000.0);
+    constfilt::Butterworth<double, 2, constfilt::TustinNW> f(100.0, 1000.0);
     double in[4096]{};
     for (unsigned i = 0; i < 4096; ++i)
         in[i] = Ref::chirp_in[i];
@@ -456,14 +456,14 @@ constexpr Arr<4096> bw_tu2_chirp()
 constexpr Arr<4096> kBwTu2Chirp = bw_tu2_chirp();
 static_assert(array_near_eq(kBwTu2Chirp.v,
                             bw_ref::case_tu_2_100Hz_1000Hz::chirp, kStepTol),
-              "Butterworth Tustin N=2: batch chirp disagrees with Octave");
+              "Butterworth TustinNW N=2: batch chirp disagrees with Octave");
 
 // =============================================================================
-// Butterworth high-pass (Tustin), N=2, fc=100Hz, fs=1000Hz
+// Butterworth high-pass (TustinNW), N=2, fc=100Hz, fs=1000Hz
 // =============================================================================
 constexpr Arr<256> bw_tu_hp2_step()
 {
-    constfilt::Butterworth<double, 2, constfilt::Tustin, constfilt::HighPass> f(
+    constfilt::Butterworth<double, 2, constfilt::TustinNW, constfilt::HighPass> f(
         100.0, 1000.0);
     double in[256]{};
     for (unsigned i = 0; i < 256; ++i)
@@ -475,11 +475,11 @@ constexpr Arr<256> bw_tu_hp2_step()
 constexpr Arr<256> kBwTuHp2Step = bw_tu_hp2_step();
 static_assert(array_near_eq(kBwTuHp2Step.v,
                             bw_ref::case_tu_hp_2_100Hz_1000Hz::step, kStepTol),
-              "Butterworth Tustin HP N=2: batch step disagrees with Octave");
+              "Butterworth TustinNW HP N=2: batch step disagrees with Octave");
 
 constexpr Arr<256> bw_tu_hp2_impulse()
 {
-    constfilt::Butterworth<double, 2, constfilt::Tustin, constfilt::HighPass> f(
+    constfilt::Butterworth<double, 2, constfilt::TustinNW, constfilt::HighPass> f(
         100.0, 1000.0);
     double in[256]{};
     in[0] = 1.0;
@@ -491,12 +491,12 @@ constexpr Arr<256> kBwTuHp2Impulse = bw_tu_hp2_impulse();
 static_assert(array_near_eq(kBwTuHp2Impulse.v,
                             bw_ref::case_tu_hp_2_100Hz_1000Hz::impulse,
                             kStepTol),
-              "Butterworth Tustin HP N=2: batch impulse disagrees with Octave");
+              "Butterworth TustinNW HP N=2: batch impulse disagrees with Octave");
 
 constexpr Arr<4096> bw_tu_hp2_chirp()
 {
     using Ref = bw_ref::case_tu_hp_2_100Hz_1000Hz;
-    constfilt::Butterworth<double, 2, constfilt::Tustin, constfilt::HighPass> f(
+    constfilt::Butterworth<double, 2, constfilt::TustinNW, constfilt::HighPass> f(
         100.0, 1000.0);
     double in[4096]{};
     for (unsigned i = 0; i < 4096; ++i)
@@ -508,14 +508,14 @@ constexpr Arr<4096> bw_tu_hp2_chirp()
 constexpr Arr<4096> kBwTuHp2Chirp = bw_tu_hp2_chirp();
 static_assert(array_near_eq(kBwTuHp2Chirp.v,
                             bw_ref::case_tu_hp_2_100Hz_1000Hz::chirp, kStepTol),
-              "Butterworth Tustin HP N=2: batch chirp disagrees with Octave");
+              "Butterworth TustinNW HP N=2: batch chirp disagrees with Octave");
 
 // =============================================================================
-// Elliptic low-pass (Tustin), N=2, Rp=0.5dB, Rs=40dB, fc=100Hz, fs=1000Hz
+// Elliptic low-pass (TustinNW), N=2, Rp=0.5dB, Rs=40dB, fc=100Hz, fs=1000Hz
 // =============================================================================
 constexpr Arr<256> el_tu_lp2_step()
 {
-    constfilt::Elliptic<double, 2, constfilt::Tustin> f(100.0, 0.5, 40.0,
+    constfilt::Elliptic<double, 2, constfilt::TustinNW> f(100.0, 0.5, 40.0,
                                                         1000.0);
     double in[256]{};
     for (unsigned i = 0; i < 256; ++i)
@@ -528,11 +528,11 @@ constexpr Arr<256> kElTuLp2Step = el_tu_lp2_step();
 static_assert(array_near_eq(kElTuLp2Step.v,
                             el_ref::lp_tu_2_5rp_40rs_100Hz_1000Hz::step,
                             kStepTol),
-              "Elliptic Tustin LP N=2: batch step disagrees with Octave");
+              "Elliptic TustinNW LP N=2: batch step disagrees with Octave");
 
 constexpr Arr<256> el_tu_lp2_impulse()
 {
-    constfilt::Elliptic<double, 2, constfilt::Tustin> f(100.0, 0.5, 40.0,
+    constfilt::Elliptic<double, 2, constfilt::TustinNW> f(100.0, 0.5, 40.0,
                                                         1000.0);
     double in[256]{};
     in[0] = 1.0;
@@ -544,12 +544,12 @@ constexpr Arr<256> kElTuLp2Impulse = el_tu_lp2_impulse();
 static_assert(array_near_eq(kElTuLp2Impulse.v,
                             el_ref::lp_tu_2_5rp_40rs_100Hz_1000Hz::impulse,
                             kStepTol),
-              "Elliptic Tustin LP N=2: batch impulse disagrees with Octave");
+              "Elliptic TustinNW LP N=2: batch impulse disagrees with Octave");
 
 constexpr Arr<4096> el_tu_lp2_chirp()
 {
     using Ref = el_ref::lp_tu_2_5rp_40rs_100Hz_1000Hz;
-    constfilt::Elliptic<double, 2, constfilt::Tustin> f(100.0, 0.5, 40.0,
+    constfilt::Elliptic<double, 2, constfilt::TustinNW> f(100.0, 0.5, 40.0,
                                                         1000.0);
     double in[4096]{};
     for (unsigned i = 0; i < 4096; ++i)
@@ -562,15 +562,15 @@ constexpr Arr<4096> kElTuLp2Chirp = el_tu_lp2_chirp();
 static_assert(array_near_eq(kElTuLp2Chirp.v,
                             el_ref::lp_tu_2_5rp_40rs_100Hz_1000Hz::chirp,
                             kStepTol),
-              "Elliptic Tustin LP N=2: batch chirp disagrees with Octave");
+              "Elliptic TustinNW LP N=2: batch chirp disagrees with Octave");
 
 // =============================================================================
-// AnalogFilter (Tustin), H(s) = 1/(s^2+3s+2), fs=10Hz
+// AnalogFilter (TustinNW), H(s) = 1/(s^2+3s+2), fs=10Hz
 // =============================================================================
 constexpr Arr<256> af_tu_step()
 {
     using Ref = ctf_ref::case_5_tustin_fs10;
-    constfilt::AnalogFilter<double, 2u, constfilt::Tustin> f(
+    constfilt::AnalogFilter<double, 2u, constfilt::TustinNW> f(
         Ref::b_s, Ref::a_s, Ref::sample_rate_hz);
     double in[256]{};
     for (unsigned i = 0; i < 256; ++i)
@@ -582,12 +582,12 @@ constexpr Arr<256> af_tu_step()
 constexpr Arr<256> kAfTuStep = af_tu_step();
 static_assert(array_near_eq(kAfTuStep.v, ctf_ref::case_5_tustin_fs10::step,
                             kStepTol),
-              "AnalogFilter Tustin N=2: batch step disagrees with Octave");
+              "AnalogFilter TustinNW N=2: batch step disagrees with Octave");
 
 constexpr Arr<256> af_tu_impulse()
 {
     using Ref = ctf_ref::case_5_tustin_fs10;
-    constfilt::AnalogFilter<double, 2u, constfilt::Tustin> f(
+    constfilt::AnalogFilter<double, 2u, constfilt::TustinNW> f(
         Ref::b_s, Ref::a_s, Ref::sample_rate_hz);
     double in[256]{};
     in[0] = 1.0;
@@ -598,12 +598,12 @@ constexpr Arr<256> af_tu_impulse()
 constexpr Arr<256> kAfTuImpulse = af_tu_impulse();
 static_assert(array_near_eq(kAfTuImpulse.v,
                             ctf_ref::case_5_tustin_fs10::impulse, kStepTol),
-              "AnalogFilter Tustin N=2: batch impulse disagrees with Octave");
+              "AnalogFilter TustinNW N=2: batch impulse disagrees with Octave");
 
 constexpr Arr<4096> af_tu_chirp()
 {
     using Ref = ctf_ref::case_5_tustin_fs10;
-    constfilt::AnalogFilter<double, 2u, constfilt::Tustin> f(
+    constfilt::AnalogFilter<double, 2u, constfilt::TustinNW> f(
         Ref::b_s, Ref::a_s, Ref::sample_rate_hz);
     double in[4096]{};
     for (unsigned i = 0; i < 4096; ++i)
@@ -615,7 +615,7 @@ constexpr Arr<4096> af_tu_chirp()
 constexpr Arr<4096> kAfTuChirp = af_tu_chirp();
 static_assert(array_near_eq(kAfTuChirp.v, ctf_ref::case_5_tustin_fs10::chirp,
                             kStepTol),
-              "AnalogFilter Tustin N=2: batch chirp disagrees with Octave");
+              "AnalogFilter TustinNW N=2: batch chirp disagrees with Octave");
 
 // =============================================================================
 // Butterworth low-pass (ZOH), N=8, fc=100Hz, fs=1000Hz
@@ -691,15 +691,15 @@ static_assert(near_eq(kElLp2.coeffs_a()[1],
                       el_ref::lp_2_5rp_40rs_100Hz_1000Hz::a[1], kCoeffTol),
               "Elliptic LP N=2: constexpr ctor a[1] disagrees");
 
-// Default method must be Tustin: a[1] differs between ZOH and Tustin,
+// Default method must be TustinPW: a[1] differs between ZOH and TustinNW,
 // so checking against the Tustin reference (and != ZOH) pins the default.
 static constexpr constfilt::Butterworth<double, 2> kBwDefaultLp2(100.0, 1000.0);
 static_assert(near_eq(kBwDefaultLp2.coeffs_b()[1],
                       bw_ref::case_tu_2_100Hz_1000Hz::b[1], kCoeffTol),
-              "Butterworth default method must be Tustin: b[1] disagrees");
+              "Butterworth default method must be TustinPW: b[1] disagrees");
 static_assert(near_eq(kBwDefaultLp2.coeffs_a()[1],
                       bw_ref::case_tu_2_100Hz_1000Hz::a[1], kCoeffTol),
-              "Butterworth default method must be Tustin: a[1] disagrees");
+              "Butterworth default method must be TustinPW: a[1] disagrees");
 static_assert(!near_eq(kBwDefaultLp2.coeffs_a()[1],
                        bw_ref::case_2_100Hz_1000Hz::a[1], kCoeffTol),
               "Butterworth default method must not be ZOH");
@@ -708,10 +708,10 @@ static constexpr constfilt::Elliptic<double, 2> kElDefaultLp2(100.0, 0.5, 40.0,
                                                               1000.0);
 static_assert(near_eq(kElDefaultLp2.coeffs_b()[0],
                       el_ref::lp_tu_2_5rp_40rs_100Hz_1000Hz::b[0], kCoeffTol),
-              "Elliptic default method must be Tustin: b[0] disagrees");
+              "Elliptic default method must be TustinPW: b[0] disagrees");
 static_assert(near_eq(kElDefaultLp2.coeffs_a()[1],
                       el_ref::lp_tu_2_5rp_40rs_100Hz_1000Hz::a[1], kCoeffTol),
-              "Elliptic default method must be Tustin: a[1] disagrees");
+              "Elliptic default method must be TustinPW: a[1] disagrees");
 static_assert(!near_eq(kElDefaultLp2.coeffs_a()[1],
                        el_ref::lp_2_5rp_40rs_100Hz_1000Hz::a[1], kCoeffTol),
               "Elliptic default method must not be ZOH");

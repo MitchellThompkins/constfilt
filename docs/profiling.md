@@ -27,10 +27,10 @@ Wall time and peak RSS are recorded by the shell.
 
 ![Compile times](profiling/results/compile_times_gcc_15.2.0.png)
 
-Compile time grows roughly exponentially with order. Orders 1 and 2 for
-Butterworth and order 2 for Elliptic complete successfully under default
-compiler limits; higher orders hit the constexpr recursion depth limit. Tustin
-runs slightly slower than ZOH and MatchedZ at each order.
+Compile time grows roughly exponentially with order. All tested orders (up to
+12) compile successfully. For Butterworth, Tustin sits between MatchedZ and ZOH
+at each order. For Elliptic, Tustin compiles faster than MatchedZ at every
+tested order, and faster than ZOH by a wider margin.
 
 ### Runtime throughput
 
@@ -53,7 +53,9 @@ for orders 1 through 12.
 
 ZOH accuracy degrades sharply above order 8 because the matrix exponential uses
 eigendecomposition, which loses precision as eigenvalues spread at high orders.
-MatchedZ and Tustin remain near machine precision through order 12. kfr's
+MatchedZ and Tustin (prewarped) remain near machine precision through order 12;
+TustinNW would show a systematic cutoff-frequency offset against this reference
+because the Octave reference uses the prewarped bilinear transform. kfr's
 elliptic step responses differ from the Octave reference by roughly 1e-5 to 1e-6
 across all tested orders, which I think reflects a different pole placement
 algorithm rather than a numerical precision problem
@@ -88,4 +90,6 @@ comparison.
 
 Accuracy is measured against Octave's Signal Processing Toolbox. constfilt ZOH
 diverges from the reference above order 8 due to eigendecomposition
-conditioning; constfilt MatchedZ and Tustin remain accurate through order 12.
+conditioning; constfilt MatchedZ and Tustin (prewarped) remain accurate through order 12.
+TustinNW accuracy against this reference would reflect cutoff warping, not
+numerical precision loss.

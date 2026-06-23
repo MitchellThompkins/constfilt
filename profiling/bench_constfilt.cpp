@@ -27,12 +27,12 @@
 
 int main()
 {
-    std::fputs("  [constfilt  Butterworth  Tustin]\n", stderr);
-    RUN_CF(Butterworth, 1, Tustin, "tustin");
-    RUN_CF(Butterworth, 2, Tustin, "tustin");
-    RUN_CF(Butterworth, 4, Tustin, "tustin");
-    RUN_CF(Butterworth, 6, Tustin, "tustin");
-    RUN_CF(Butterworth, 8, Tustin, "tustin");
+    std::fputs("  [constfilt  Butterworth  TustinPW]\n", stderr);
+    RUN_CF(Butterworth, 1, TustinPW, "tustin");
+    RUN_CF(Butterworth, 2, TustinPW, "tustin");
+    RUN_CF(Butterworth, 4, TustinPW, "tustin");
+    RUN_CF(Butterworth, 6, TustinPW, "tustin");
+    RUN_CF(Butterworth, 8, TustinPW, "tustin");
 
     std::fputs("  [constfilt  Butterworth  ZOH]\n", stderr);
     RUN_CF(Butterworth, 1, ZOH, "zoh");
@@ -48,11 +48,11 @@ int main()
     RUN_CF(Butterworth, 6, MatchedZ, "matchedz");
     RUN_CF(Butterworth, 8, MatchedZ, "matchedz");
 
-    std::fputs("  [constfilt  Elliptic  Tustin]\n", stderr);
-    RUN_EL(2, Tustin, "tustin");
-    RUN_EL(4, Tustin, "tustin");
-    RUN_EL(6, Tustin, "tustin");
-    RUN_EL(8, Tustin, "tustin");
+    std::fputs("  [constfilt  Elliptic  TustinPW]\n", stderr);
+    RUN_EL(2, TustinPW, "tustin");
+    RUN_EL(4, TustinPW, "tustin");
+    RUN_EL(6, TustinPW, "tustin");
+    RUN_EL(8, TustinPW, "tustin");
 
     std::fputs("  [constfilt  Elliptic  ZOH]\n", stderr);
     RUN_EL(2, ZOH, "zoh");

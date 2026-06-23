@@ -14,17 +14,17 @@ generate-reference:
 
 .PHONY: remove
 remove:
-	rm -rf build/ build-gcc/ build-clang/ profiling/build/
+	rm -rf build/ build-gcc/ build-clang/ profiling/build/ profiling/build-gcc/ profiling/build-clang/
 
 .PHONY: format
 format:
-	find . \( -path "./test_dependencies/googletest" -o -path "./build*" -o -path "./profiling/build" -o -path "./include/constfilt/vendor/*" -o -path "./.worktree/*" \) -prune \
+	find . \( -path "./test_dependencies/googletest" -o -path "./build*" -o -path "./profiling/build*" -o -path "./include/constfilt/vendor/*" -o -path "./.worktree/*" \) -prune \
 		-o -type f \( -name "*.hpp" -o -name "*.cpp" \) ! -name "*_reference.hpp" -print \
 		| xargs clang-format -i
 
 .PHONY: check-format
 check-format:
-	find . \( -path "./test_dependencies/googletest" -o -path "./build*" -o -path "./profiling/build" -o -path "./include/constfilt/vendor/*" -o -path "./.worktree/*" \) -prune \
+	find . \( -path "./test_dependencies/googletest" -o -path "./build*" -o -path "./profiling/build*" -o -path "./include/constfilt/vendor/*" -o -path "./.worktree/*" \) -prune \
 		-o -type f \( -name "*.hpp" -o -name "*.cpp" \) ! -name "*_reference.hpp" -print \
 		| xargs clang-format --dry-run --Werror
 

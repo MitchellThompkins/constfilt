@@ -1,3 +1,3 @@
 #include <constfilt/constfilt.hpp>
-static constexpr constfilt::Elliptic<double, 9u, constfilt::Tustin> kFilter(
+static constexpr constfilt::Elliptic<double, 9u, constfilt::TustinPW> kFilter(
     100.0, 0.5, 40.0, 1000.0);

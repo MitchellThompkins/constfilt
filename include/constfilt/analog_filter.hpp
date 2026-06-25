@@ -37,6 +37,11 @@ namespace constfilt
 //   AnalogFilter(continuous_tf, sample_rate_hz, method_tag)
 //     method_tag     - method instance; for TustinPW supply
 //                      constfilt::prewarp(warp_hz)
+//
+//   AnalogFilter(continuous_tf, ftf, sample_rate_hz, method_tag)
+//     ftf            - factored (pole/zero/gain) form of continuous_tf;
+//                      used by Butterworth and Elliptic to bypass roundtrip
+//                      eigendecompositions in ZOH and MatchedZ discretization
 template <typename T, consteig::Size N, typename Method = TustinNW,
           bool CheckStab = true>
 class AnalogFilter : public Filter<T, N + 1u, N + 1u>

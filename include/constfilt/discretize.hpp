@@ -178,20 +178,35 @@ constexpr consteig::Matrix<T, N, N> matrix_exp(
     return result;
 }
 
-// matrix_exp variant that accepts precomputed eigenvalues of A.
-// Identical to matrix_exp except consteig::eigenvalues(A) is skipped;
-// the caller supplies the eigenvalues directly via `evals`.
-// For ZOH use: pass (Ts*Ac, scaled_evals) where scaled_evals(i,0) = Ts*pole_i.
+// matrix_exp for controllable-canonical-form (CCF) matrices given analytic poles.
+//
+// The CCF matrix A_c has eigenvectors v_i = [1, p_i, p_i^2, ..., p_i^(N-1)]^T
+// where p_i are the analog poles (eigenvalues of A_c).  This Vandermonde
+// structure lets us build V analytically from the poles, bypassing
+// consteig::eigenvectors (inverse iteration on the ill-conditioned CCF matrix).
+//
+// exp(Ts*Ac) = V * diag(exp(Ts*p_i)) * V^{-1}
+//   V[r][i]     = p_i^r          (Vandermonde, built from UNSCALED poles)
+//   exp factor  = exp(Ts * p_i)  (spectral scaling)
 template <typename T, consteig::Size N>
-constexpr consteig::Matrix<T, N, N> matrix_exp_with_evals(
-    const consteig::Matrix<T, N, N> &A,
-    const consteig::Matrix<consteig::Complex<T>, N, 1> &evals)
+constexpr consteig::Matrix<T, N, N> matrix_exp_ccf(
+    const FactoredTF<T, N> &ftf, T Ts)
 {
     using Complex = consteig::Complex<T>;
     using ComplexMat_NN = consteig::Matrix<Complex, N, N>;
     using ComplexMat_N1 = consteig::Matrix<Complex, N, 1>;
 
-    const auto V = consteig::eigenvectors(A, evals);
+    // Build Vandermonde V: V[r][i] = poles[i]^r  (unscaled analog poles)
+    ComplexMat_NN V{};
+    for (consteig::Size i = 0; i < N; ++i)
+    {
+        Complex power{static_cast<T>(1), static_cast<T>(0)};
+        for (consteig::Size r = 0; r < N; ++r)
+        {
+            V(r, i) = power;
+            power = power * ftf.poles[i];
+        }
+    }
 
     const auto lu_V = consteig::lu(V);
     ComplexMat_NN V_inv{};
@@ -207,7 +222,8 @@ constexpr consteig::Matrix<T, N, N> matrix_exp_with_evals(
     ComplexMat_NN result_c{};
     for (consteig::Size i = 0; i < N; ++i)
     {
-        Complex exp_lambda = consteig::exp(evals(i, 0));
+        const Complex exp_lambda = consteig::exp(
+            Complex{Ts * ftf.poles[i].real, Ts * ftf.poles[i].imag});
         for (consteig::Size r = 0; r < N; ++r)
             for (consteig::Size c = 0; c < N; ++c)
                 result_c(r, c) =
@@ -258,23 +274,13 @@ constexpr StateSpace<T, N> zoh_discretize(const StateSpace<T, N> &sys_c, T Ts,
 }
 
 // ZOH discretization using analytically known poles from a FactoredTF.
-// Avoids the QR eigenvalue search inside matrix_exp by supplying
-// the scaled analog poles (eigenvalues of Ts*Ac) directly.
+// Bypasses both the QR eigenvalue search and eigenvector inverse iteration
+// by exploiting the Vandermonde structure of the CCF eigenvectors.
 template <typename T, consteig::Size N>
 constexpr StateSpace<T, N> zoh_discretize_with_evals(
     const StateSpace<T, N> &sys_c, T Ts, const FactoredTF<T, N> &ftf)
 {
-    using Complex = consteig::Complex<T>;
-
-    const consteig::Matrix<T, N, N> TsAc = Ts * sys_c.A;
-
-    consteig::Matrix<Complex, N, 1> scaled_evals{};
-    for (consteig::Size i = 0; i < N; ++i)
-        scaled_evals(i, 0) =
-            Complex{Ts * ftf.poles[i].real, Ts * ftf.poles[i].imag};
-
-    const consteig::Matrix<T, N, N> Ad =
-        matrix_exp_with_evals(TsAc, scaled_evals);
+    const consteig::Matrix<T, N, N> Ad = matrix_exp_ccf(ftf, Ts);
 
     const consteig::Matrix<T, N, N> AdmI = Ad - consteig::eye<T, N>();
     const consteig::Matrix<T, N, 1> rhs = AdmI * sys_c.B;
@@ -927,8 +933,8 @@ constexpr TransferFunction<T, N + 1u, N + 1u> discretize_with_factored(
 
 template <typename T, consteig::Size N>
 constexpr TransferFunction<T, N + 1u, N + 1u> discretize_with_factored(
-    const T (&b_c)[N + 1u], const T (&a_c)[N + 1u], const FactoredTF<T, N> &ftf,
-    T Ts, MatchedZ)
+    const T (& /*b_c*/)[N + 1u], const T (& /*a_c*/)[N + 1u],
+    const FactoredTF<T, N> &ftf, T Ts, MatchedZ)
 {
     return matched_z_discretize_factored<T, N>(ftf, Ts);
 }

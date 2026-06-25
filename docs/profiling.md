@@ -37,17 +37,17 @@ tested order, and faster than ZOH by a wider margin.
 Benchmarks process 5 million samples and report the best time across 5
 repetitions, in nanoseconds per sample.
 
-**Library comparison – Butterworth** (constfilt averaged across discretization methods):
+**Butterworth library comparison** (constfilt averaged across discretization methods):
 
-![Runtime throughput – Butterworth](profiling/results/runtime_gcc_15.2.0_butterworth.png)
+![Runtime throughput Butterworth](profiling/results/runtime_gcc_15.2.0_butterworth.png)
 
-**Library comparison – Elliptic** (constfilt averaged across discretization methods):
+**Elliptic library comparison** (constfilt averaged across discretization methods):
 
-![Runtime throughput – Elliptic](profiling/results/runtime_gcc_15.2.0_elliptic.png)
+![Runtime throughput Elliptic](profiling/results/runtime_gcc_15.2.0_elliptic.png)
 
-**constfilt only – all filter types and discretization methods:**
+**constfilt all filter types and discretization methods:**
 
-![Runtime throughput – constfilt](profiling/results/runtime_gcc_15.2.0_constfilt.png)
+![Runtime throughput constfilt](profiling/results/runtime_gcc_15.2.0_constfilt.png)
 
 constfilt and iir1 scale roughly linearly with filter order and are within a few
 nanoseconds of each other. Elliptic throughput matches Butterworth at the same
@@ -59,17 +59,17 @@ Comparison libraries section for notes on the kfr results.
 Coefficient and step response accuracy are measured against an Octave reference
 for orders 1 through 12.
 
-**Library comparison – Butterworth:**
+**Butterworth library comparison:**
 
-![Accuracy – Butterworth](profiling/results/accuracy_gcc_15.2.0_butterworth.png)
+![Accuracy Butterworth](profiling/results/accuracy_gcc_15.2.0_butterworth.png)
 
-**Library comparison – Elliptic:**
+**Elliptic library comparison:**
 
-![Accuracy – Elliptic](profiling/results/accuracy_gcc_15.2.0_elliptic.png)
+![Accuracy Elliptic](profiling/results/accuracy_gcc_15.2.0_elliptic.png)
 
-**constfilt only – all filter types and discretization methods:**
+**constfilt all filter types and discretization methods:**
 
-![Accuracy – constfilt](profiling/results/accuracy_gcc_15.2.0_constfilt.png)
+![Accuracy constfilt](profiling/results/accuracy_gcc_15.2.0_constfilt.png)
 
 ZOH accuracy degrades sharply above order 8 because the matrix exponential uses
 eigendecomposition, which loses precision as eigenvalues spread at high orders.

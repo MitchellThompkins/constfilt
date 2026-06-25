@@ -193,38 +193,82 @@ def print_runtime_table(data, dc, orders, groups):
     print()
 
 
+def _parse_group(grp):
+    """Return (lib, filter_type, method) from a 'lib_filtertype_method' group string."""
+    for lib in ("constfilt", "iir1", "kfr"):
+        if grp.startswith(lib + "_"):
+            rest = grp[len(lib) + 1:]
+            idx = rest.rfind("_")
+            return lib, rest[:idx], rest[idx + 1:]
+    parts = grp.split("_", 2)
+    return (parts + ["", ""])[:3]
+
+
 def plot_runtime(data, orders, groups, csv_path, label):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     import itertools
 
-    fig, ax = plt.subplots(figsize=(12, 7))
-    colors = {g: c["color"] for g, c in
-              zip(groups, itertools.cycle(plt.rcParams["axes.prop_cycle"]))}
+    base = os.path.splitext(csv_path)[0]
+    parsed = {grp: _parse_group(grp) for grp in groups}
+    filter_types = sorted({ft for _, ft, _ in parsed.values()})
 
-    for grp in groups:
+    # One comparison plot per filter type: one line per library (constfilt averaged)
+    for ftype in filter_types:
+        lib_data = defaultdict(lambda: defaultdict(list))
+        for grp, (lib, ft, _) in parsed.items():
+            if ft != ftype:
+                continue
+            for o in orders:
+                vals = data.get((grp, o), [])
+                lib_data[lib][o].extend(vals)
+
+        fig, ax = plt.subplots(figsize=(10, 6))
+        cycle = itertools.cycle(plt.rcParams["axes.prop_cycle"])
+        for lib in sorted(lib_data):
+            col = next(cycle)["color"]
+            xs = sorted(o for o in lib_data[lib] if lib_data[lib][o])
+            ys = [sum(lib_data[lib][o]) / len(lib_data[lib][o]) for o in xs]
+            ls = "--" if lib == "kfr" else "-"
+            note = " (SIMD batch=256)" if lib == "kfr" else ""
+            ax.plot(xs, ys, marker="o", linestyle=ls,
+                    label=f"{lib} {ftype}{note}", color=col)
+
+        ax.set_xlabel("Filter Order")
+        ax.set_ylabel("ns / sample")
+        ax.set_title(
+            f"{ftype} Runtime Throughput – Library Comparison\n{label}\n"
+            "constfilt averaged across discretization methods; KFR uses SIMD (dashed)"
+        )
+        ax.set_xticks(orders)
+        ax.grid(True, alpha=0.3)
+        ax.legend(loc="best", fontsize=9)
+        fig.tight_layout()
+        png_path = f"{base}_{ftype.lower()}.png"
+        fig.savefig(png_path, dpi=150)
+        plt.close(fig)
+        print(f"Plot saved: {png_path}")
+
+    # constfilt-only plot: every filter_type × method combination
+    fig, ax = plt.subplots(figsize=(10, 6))
+    cycle = itertools.cycle(plt.rcParams["axes.prop_cycle"])
+    for grp in sorted(grp for grp, (lib, _, _) in parsed.items() if lib == "constfilt"):
+        _, ft, method = parsed[grp]
+        col = next(cycle)["color"]
         xs = [o for o in orders if data.get((grp, o))]
         ys = [sum(data[(grp, o)]) / len(data[(grp, o)]) for o in xs]
         if xs:
-            # Mark KFR visually to signal different measurement methodology
-            ls = "--" if "kfr" in grp else "-"
-            display = grp + (" (batch=256)" if "kfr" in grp else "")
-            ax.plot(xs, ys, marker="o", linestyle=ls, label=display,
-                    color=colors[grp])
+            ax.plot(xs, ys, marker="o", label=f"{ft} / {method}", color=col)
 
     ax.set_xlabel("Filter Order")
     ax.set_ylabel("ns / sample")
-    ax.set_title(
-        f"Filter Runtime Throughput\n{label}\n"
-        "Note: KFR uses SIMD batch processing (dashed); others are single-sample"
-    )
+    ax.set_title(f"constfilt Runtime Throughput – All Filter Types and Methods\n{label}")
     ax.set_xticks(orders)
     ax.grid(True, alpha=0.3)
-    ax.legend(bbox_to_anchor=(1.05, 1), loc="upper left", fontsize=8)
+    ax.legend(loc="best", fontsize=9)
     fig.tight_layout()
-
-    png_path = os.path.splitext(csv_path)[0] + ".png"
+    png_path = f"{base}_constfilt.png"
     fig.savefig(png_path, dpi=150)
     plt.close(fig)
     print(f"Plot saved: {png_path}")
@@ -295,28 +339,69 @@ def plot_accuracy(data, orders, groups, csv_path, label):
     import matplotlib.pyplot as plt
     import itertools
 
-    fig, ax = plt.subplots(figsize=(12, 7))
-    colors = {g: c["color"] for g, c in
-              zip(groups, itertools.cycle(plt.rcParams["axes.prop_cycle"]))}
+    base = os.path.splitext(csv_path)[0]
+    parsed = {grp: _parse_group(grp) for grp in groups}
+    filter_types = sorted({ft for _, ft, _ in parsed.values()})
 
-    for grp in groups:
-        xs = [o for o in sorted(data[grp].keys())
-              if data[grp][o]["step"] is not None and data[grp][o]["step"] > 0]
+    # One comparison plot per filter type: one line per library (constfilt best method)
+    for ftype in filter_types:
+        lib_best = defaultdict(dict)  # lib -> order -> min step error
+        for grp, (lib, ft, _) in parsed.items():
+            if ft != ftype:
+                continue
+            for o, entry in data[grp].items():
+                if entry["step"] is None:
+                    continue
+                prev = lib_best[lib].get(o)
+                if prev is None or entry["step"] < prev:
+                    lib_best[lib][o] = entry["step"]
+
+        fig, ax = plt.subplots(figsize=(10, 6))
+        cycle = itertools.cycle(plt.rcParams["axes.prop_cycle"])
+        for lib in sorted(lib_best):
+            col = next(cycle)["color"]
+            xs = sorted(o for o, v in lib_best[lib].items() if v > 0)
+            ys = [lib_best[lib][o] for o in xs]
+            if xs:
+                note = " (best method)" if lib == "constfilt" else ""
+                ax.semilogy(xs, ys, marker="o", label=f"{lib} {ftype}{note}", color=col)
+
+        ax.axhline(ACCURACY_THRESHOLD, color="red", linestyle="--",
+                   label=f"threshold ({ACCURACY_THRESHOLD:.0e})")
+        ax.set_xlabel("Filter Order")
+        ax.set_ylabel("Max |step error| vs Octave")
+        ax.set_title(f"{ftype} Accuracy – Library Comparison\n{label}")
+        ax.set_xticks(orders)
+        ax.grid(True, alpha=0.3, which="both")
+        ax.legend(loc="best", fontsize=9)
+        fig.tight_layout()
+        png_path = f"{base}_{ftype.lower()}.png"
+        fig.savefig(png_path, dpi=150)
+        plt.close(fig)
+        print(f"Plot saved: {png_path}")
+
+    # constfilt-only plot: every filter_type × method combination
+    fig, ax = plt.subplots(figsize=(10, 6))
+    cycle = itertools.cycle(plt.rcParams["axes.prop_cycle"])
+    for grp in sorted(grp for grp, (lib, _, _) in parsed.items() if lib == "constfilt"):
+        _, ft, method = parsed[grp]
+        col = next(cycle)["color"]
+        xs = sorted(o for o, e in data[grp].items()
+                    if e["step"] is not None and e["step"] > 0)
         ys = [data[grp][o]["step"] for o in xs]
         if xs:
-            ax.semilogy(xs, ys, marker="o", label=grp, color=colors[grp])
+            ax.semilogy(xs, ys, marker="o", label=f"{ft} / {method}", color=col)
 
     ax.axhline(ACCURACY_THRESHOLD, color="red", linestyle="--",
                label=f"threshold ({ACCURACY_THRESHOLD:.0e})")
     ax.set_xlabel("Filter Order")
     ax.set_ylabel("Max |step error| vs Octave")
-    ax.set_title(f"constfilt Accuracy by Filter Order and Method\n{label}")
+    ax.set_title(f"constfilt Accuracy – All Filter Types and Methods\n{label}")
     ax.set_xticks(orders)
     ax.grid(True, alpha=0.3, which="both")
-    ax.legend(bbox_to_anchor=(1.05, 1), loc="upper left", fontsize=8)
+    ax.legend(loc="best", fontsize=9)
     fig.tight_layout()
-
-    png_path = os.path.splitext(csv_path)[0] + ".png"
+    png_path = f"{base}_constfilt.png"
     fig.savefig(png_path, dpi=150)
     plt.close(fig)
     print(f"Plot saved: {png_path}")

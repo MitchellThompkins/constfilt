@@ -513,16 +513,16 @@ class Elliptic
         compute_prototype_poles_zeros(q, sig0, k, poles_proto, pole_cnt,
                                       zeros_proto, zero_cnt);
 
-        FactoredTF<T, N> ftf{};
-        ftf.nz = zero_cnt;
+        FactoredTF<T, N> factored_tf{};
+        factored_tf.nz = zero_cnt;
         for (consteig::Size i = 0u; i < pole_cnt; ++i)
         {
-            ftf.poles[i] =
+            factored_tf.poles[i] =
                 Complex{wc * poles_proto[i].real, wc * poles_proto[i].imag};
         }
         for (consteig::Size i = 0u; i < zero_cnt; ++i)
         {
-            ftf.zeros[i] =
+            factored_tf.zeros[i] =
                 Complex{wc * zeros_proto[i].real, wc * zeros_proto[i].imag};
         }
 
@@ -536,9 +536,10 @@ class Elliptic
         {
             ++d_b;
         }
-        ftf.gain = (d_b > N) ? static_cast<T>(0) : b_tmp[d_b] / a_tmp[0];
+        factored_tf.gain =
+            (d_b > N) ? static_cast<T>(0) : b_tmp[d_b] / a_tmp[0];
 
-        return ftf;
+        return factored_tf;
     }
 
     // HP FactoredTF: derive from LP prototype via LP-to-HP transform (s ->
@@ -558,14 +559,14 @@ class Elliptic
         const FactoredTF<T, N> lp = compute_factored_tf(
             norm_cutoff, ripple_db, attenuation_db, LowPass{});
 
-        FactoredTF<T, N> ftf{};
+        FactoredTF<T, N> factored_tf{};
 
         // HP poles: wc / lp_pole  (complex division)
         for (consteig::Size i = 0u; i < N; ++i)
         {
             const Complex &p = lp.poles[i];
             const T denom_sq = p.real * p.real + p.imag * p.imag;
-            ftf.poles[i] =
+            factored_tf.poles[i] =
                 Complex{wc * p.real / denom_sq, -wc * p.imag / denom_sq};
         }
 
@@ -576,15 +577,16 @@ class Elliptic
         {
             const Complex &z = lp.zeros[i];
             const T denom_sq = z.real * z.real + z.imag * z.imag;
-            ftf.zeros[hp_nz++] =
+            factored_tf.zeros[hp_nz++] =
                 Complex{wc * z.real / denom_sq, -wc * z.imag / denom_sq};
         }
         // For odd N: LP->HP adds a zero at s=0 (from the strictly-proper LP).
         if (N % 2u == 1u)
         {
-            ftf.zeros[hp_nz++] = Complex{static_cast<T>(0), static_cast<T>(0)};
+            factored_tf.zeros[hp_nz++] =
+                Complex{static_cast<T>(0), static_cast<T>(0)};
         }
-        ftf.nz = hp_nz;
+        factored_tf.nz = hp_nz;
 
         // Gain from the HP polynomial TF.
         T b_tmp[N + 1u]{};
@@ -595,9 +597,10 @@ class Elliptic
         {
             ++d_b;
         }
-        ftf.gain = (d_b > N) ? static_cast<T>(0) : b_tmp[d_b] / a_tmp[0];
+        factored_tf.gain =
+            (d_b > N) ? static_cast<T>(0) : b_tmp[d_b] / a_tmp[0];
 
-        return ftf;
+        return factored_tf;
     }
 };
 

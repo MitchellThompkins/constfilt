@@ -38,8 +38,8 @@ namespace constfilt
 //     method_tag     - method instance; for TustinPW supply
 //                      constfilt::prewarp(warp_hz)
 //
-//   AnalogFilter(continuous_tf, ftf, sample_rate_hz, method_tag)
-//     ftf            - factored (pole/zero/gain) form of continuous_tf;
+//   AnalogFilter(continuous_tf, factored_tf, sample_rate_hz, method_tag)
+//     factored_tf            - factored (pole/zero/gain) form of continuous_tf;
 //                      used by Butterworth and Elliptic to bypass roundtrip
 //                      eigendecompositions in ZOH and MatchedZ discretization
 template <typename T, consteig::Size N, typename Method = TustinNW,
@@ -85,10 +85,10 @@ class AnalogFilter : public Filter<T, N + 1u, N + 1u>
     }
 
     constexpr AnalogFilter(TransferFunction<T, N + 1u, N + 1u> continuous_tf,
-                           const FactoredTF<T, N> &ftf, T sample_rate_hz,
-                           BoundMethod method_tag)
+                           const FactoredTF<T, N> &factored_tf,
+                           T sample_rate_hz, BoundMethod method_tag)
         : AnalogFilter(checked_discretize_factored(continuous_tf.b,
-                                                   continuous_tf.a, ftf,
+                                                   continuous_tf.a, factored_tf,
                                                    sample_rate_hz, method_tag))
     {
     }
@@ -137,11 +137,12 @@ class AnalogFilter : public Filter<T, N + 1u, N + 1u>
 
     static constexpr TransferFunction<T, N + 1u, N + 1u>
     checked_discretize_factored(const T (&b_c)[N + 1u], const T (&a_c)[N + 1u],
-                                const FactoredTF<T, N> &ftf, T sample_rate_hz,
-                                BoundMethod method_tag)
+                                const FactoredTF<T, N> &factored_tf,
+                                T sample_rate_hz, BoundMethod method_tag)
     {
         return discretize_with_factored<T, N>(
-            b_c, a_c, ftf, static_cast<T>(1) / sample_rate_hz, method_tag);
+            b_c, a_c, factored_tf, static_cast<T>(1) / sample_rate_hz,
+            method_tag);
     }
 };
 

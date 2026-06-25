@@ -96,17 +96,18 @@ class Butterworth
     static constexpr FactoredTF<T, N> compute_factored_tf(T cutoff_hz, LowPass)
     {
         const T wc = static_cast<T>(2) * static_cast<T>(GCEM_PI) * cutoff_hz;
-        FactoredTF<T, N> ftf{};
-        ftf.nz = 0;
-        ftf.gain = gcem::pow(wc, static_cast<int>(N));
+        FactoredTF<T, N> factored_tf{};
+        factored_tf.nz = 0;
+        factored_tf.gain = gcem::pow(wc, static_cast<int>(N));
         for (consteig::Size k = 1u; k <= N; ++k)
         {
             const T theta = static_cast<T>(GCEM_PI) *
                             static_cast<T>(2u * k + N - 1u) /
                             static_cast<T>(2u * N);
-            ftf.poles[k - 1u] = {wc * gcem::cos(theta), wc * gcem::sin(theta)};
+            factored_tf.poles[k - 1u] = {wc * gcem::cos(theta),
+                                         wc * gcem::sin(theta)};
         }
-        return ftf;
+        return factored_tf;
     }
 
     // HP: poles at wc*exp(-j*theta_k) (magnitude wc), N zeros at s=0, gain=1.
@@ -114,18 +115,20 @@ class Butterworth
     {
         using Complex = consteig::Complex<T>;
         const T wc = static_cast<T>(2) * static_cast<T>(GCEM_PI) * cutoff_hz;
-        FactoredTF<T, N> ftf{};
-        ftf.nz = N;
-        ftf.gain = static_cast<T>(1);
+        FactoredTF<T, N> factored_tf{};
+        factored_tf.nz = N;
+        factored_tf.gain = static_cast<T>(1);
         for (consteig::Size k = 1u; k <= N; ++k)
         {
             const T theta = static_cast<T>(GCEM_PI) *
                             static_cast<T>(2u * k + N - 1u) /
                             static_cast<T>(2u * N);
-            ftf.poles[k - 1u] = {wc * gcem::cos(theta), -wc * gcem::sin(theta)};
-            ftf.zeros[k - 1u] = Complex{static_cast<T>(0), static_cast<T>(0)};
+            factored_tf.poles[k - 1u] = {wc * gcem::cos(theta),
+                                         -wc * gcem::sin(theta)};
+            factored_tf.zeros[k - 1u] =
+                Complex{static_cast<T>(0), static_cast<T>(0)};
         }
-        return ftf;
+        return factored_tf;
     }
 
     // Normalized Butterworth denominator coefficients (wc=1, monic).

@@ -238,7 +238,7 @@ def plot_runtime(data, orders, groups, csv_path, label):
         ax.set_xlabel("Filter Order")
         ax.set_ylabel("ns / sample")
         ax.set_title(
-            f"{ftype} Runtime Throughput – Library Comparison\n{label}\n"
+            f"{ftype} Runtime Throughput - Library Comparison\n{label}\n"
             "constfilt averaged across discretization methods; KFR uses SIMD (dashed)"
         )
         ax.set_xticks(orders)
@@ -250,7 +250,7 @@ def plot_runtime(data, orders, groups, csv_path, label):
         plt.close(fig)
         print(f"Plot saved: {png_path}")
 
-    # constfilt-only plot: every filter_type × method combination
+    # constfilt-only plot: every filter_type x method combination
     fig, ax = plt.subplots(figsize=(10, 6))
     cycle = itertools.cycle(plt.rcParams["axes.prop_cycle"])
     for grp in sorted(grp for grp, (lib, _, _) in parsed.items() if lib == "constfilt"):
@@ -263,7 +263,7 @@ def plot_runtime(data, orders, groups, csv_path, label):
 
     ax.set_xlabel("Filter Order")
     ax.set_ylabel("ns / sample")
-    ax.set_title(f"constfilt Runtime Throughput – All Filter Types and Methods\n{label}")
+    ax.set_title(f"constfilt Runtime Throughput - All Filter Types and Methods\n{label}")
     ax.set_xticks(orders)
     ax.grid(True, alpha=0.3)
     ax.legend(loc="best", fontsize=9)
@@ -369,7 +369,7 @@ def plot_accuracy(data, orders, groups, csv_path, label):
                    label=f"threshold ({ACCURACY_THRESHOLD:.0e})")
         ax.set_xlabel("Filter Order")
         ax.set_ylabel("Max |step error| vs Octave")
-        ax.set_title(f"{ftype} Accuracy – Library Comparison\n{label}")
+        ax.set_title(f"{ftype} Accuracy - Library Comparison\n{label}")
         ax.set_xticks(orders)
         ax.grid(True, alpha=0.3, which="both")
         ax.legend(loc="best", fontsize=9)
@@ -379,7 +379,7 @@ def plot_accuracy(data, orders, groups, csv_path, label):
         plt.close(fig)
         print(f"Plot saved: {png_path}")
 
-    # constfilt-only plot: every filter_type × method combination
+    # constfilt-only plot: every filter_type x method combination
     fig, ax = plt.subplots(figsize=(10, 6))
     cycle = itertools.cycle(plt.rcParams["axes.prop_cycle"])
     for grp in sorted(grp for grp, (lib, _, _) in parsed.items() if lib == "constfilt"):
@@ -395,7 +395,7 @@ def plot_accuracy(data, orders, groups, csv_path, label):
                label=f"threshold ({ACCURACY_THRESHOLD:.0e})")
     ax.set_xlabel("Filter Order")
     ax.set_ylabel("Max |step error| vs Octave")
-    ax.set_title(f"constfilt Accuracy – All Filter Types and Methods\n{label}")
+    ax.set_title(f"constfilt Accuracy - All Filter Types and Methods\n{label}")
     ax.set_xticks(orders)
     ax.grid(True, alpha=0.3, which="both")
     ax.legend(loc="best", fontsize=9)

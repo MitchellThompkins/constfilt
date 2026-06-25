@@ -103,6 +103,20 @@ struct TransferFunction
     T a[NA]{};
 };
 
+// An analog transfer function in factored (pole/zero/gain) form.
+//
+//   H(s) = gain * prod_i(s - zeros[i]) / prod_j(s - poles[j])
+//
+// Only the first `nz` entries of zeros[] are meaningful; the rest are
+// zero-initialized and must not be read by callers.
+template <typename T, consteig::Size N> struct FactoredTF
+{
+    consteig::Complex<T> poles[N]{}; // all N analog poles
+    consteig::Complex<T> zeros[N]{}; // first nz finite analog zeros
+    consteig::Size nz{0};            // number of populated zeros entries
+    T gain{};                        // k_c = b[d_b] / a[0]
+};
+
 // Matrix exponential
 
 // matrix_exp(A) via eigendecomposition:
@@ -164,6 +178,49 @@ constexpr consteig::Matrix<T, N, N> matrix_exp(
     return result;
 }
 
+// matrix_exp variant that accepts precomputed eigenvalues of A.
+// Identical to matrix_exp except consteig::eigenvalues(A) is skipped;
+// the caller supplies the eigenvalues directly via `evals`.
+// For ZOH use: pass (Ts*Ac, scaled_evals) where scaled_evals(i,0) = Ts*pole_i.
+template <typename T, consteig::Size N>
+constexpr consteig::Matrix<T, N, N> matrix_exp_with_evals(
+    const consteig::Matrix<T, N, N> &A,
+    const consteig::Matrix<consteig::Complex<T>, N, 1> &evals)
+{
+    using Complex = consteig::Complex<T>;
+    using ComplexMat_NN = consteig::Matrix<Complex, N, N>;
+    using ComplexMat_N1 = consteig::Matrix<Complex, N, 1>;
+
+    const auto V = consteig::eigenvectors(A, evals);
+
+    const auto lu_V = consteig::lu(V);
+    ComplexMat_NN V_inv{};
+    for (consteig::Size col = 0; col < N; ++col)
+    {
+        ComplexMat_N1 e_col{};
+        e_col(col, 0) = Complex{static_cast<T>(1), static_cast<T>(0)};
+        auto col_vec = consteig::lu_solve(lu_V, e_col);
+        for (consteig::Size row = 0; row < N; ++row)
+            V_inv(row, col) = col_vec(row, 0);
+    }
+
+    ComplexMat_NN result_c{};
+    for (consteig::Size i = 0; i < N; ++i)
+    {
+        Complex exp_lambda = consteig::exp(evals(i, 0));
+        for (consteig::Size r = 0; r < N; ++r)
+            for (consteig::Size c = 0; c < N; ++c)
+                result_c(r, c) =
+                    result_c(r, c) + exp_lambda * V(r, i) * V_inv(i, c);
+    }
+
+    consteig::Matrix<T, N, N> result{};
+    for (consteig::Size r = 0; r < N; ++r)
+        for (consteig::Size c = 0; c < N; ++c)
+            result(r, c) = result_c(r, c).real;
+    return result;
+}
+
 // ZOH discretization
 
 // ZOH: Ad = matrix_exp(Ac*Ts),  Bd = Ac^{-1} * (Ad - I) * Bc
@@ -190,6 +247,38 @@ constexpr StateSpace<T, N> zoh_discretize(const StateSpace<T, N> &sys_c, T Ts,
 
     // Bd = Ac^{-1} * rhs  ->  solve Ac * Bd = rhs
     const auto lu_Ac = consteig::lu(Ac);
+    const auto Bd = consteig::lu_solve(lu_Ac, rhs);
+
+    StateSpace<T, N> sys_d{};
+    sys_d.A = Ad;
+    sys_d.B = Bd;
+    sys_d.C = sys_c.C;
+    sys_d.D = sys_c.D;
+    return sys_d;
+}
+
+// ZOH discretization using analytically known poles from a FactoredTF.
+// Avoids the QR eigenvalue search inside matrix_exp by supplying
+// the scaled analog poles (eigenvalues of Ts*Ac) directly.
+template <typename T, consteig::Size N>
+constexpr StateSpace<T, N> zoh_discretize_with_evals(
+    const StateSpace<T, N> &sys_c, T Ts, const FactoredTF<T, N> &ftf)
+{
+    using Complex = consteig::Complex<T>;
+
+    const consteig::Matrix<T, N, N> TsAc = Ts * sys_c.A;
+
+    consteig::Matrix<Complex, N, 1> scaled_evals{};
+    for (consteig::Size i = 0; i < N; ++i)
+        scaled_evals(i, 0) =
+            Complex{Ts * ftf.poles[i].real, Ts * ftf.poles[i].imag};
+
+    const consteig::Matrix<T, N, N> Ad =
+        matrix_exp_with_evals(TsAc, scaled_evals);
+
+    const consteig::Matrix<T, N, N> AdmI = Ad - consteig::eye<T, N>();
+    const consteig::Matrix<T, N, 1> rhs = AdmI * sys_c.B;
+    const auto lu_Ac = consteig::lu(sys_c.A);
     const auto Bd = consteig::lu_solve(lu_Ac, rhs);
 
     StateSpace<T, N> sys_d{};
@@ -576,6 +665,130 @@ constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_discretize_tf(
     return tf;
 }
 
+// Matched-Z discretization from a FactoredTF (precomputed poles/zeros).
+// Bypasses both companion-matrix eigendecompositions in
+// matched_z_discretize_tf. Uses ftf.poles, ftf.zeros[0..ftf.nz-1], and ftf.gain
+// directly.
+template <typename T, consteig::Size N>
+constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_discretize_factored(
+    const FactoredTF<T, N> &ftf, T Ts)
+{
+    using Complex = consteig::Complex<T>;
+
+    const consteig::Size nz = ftf.nz;
+    const T k_c = ftf.gain;
+
+    // Map poles to z-domain; build monic denominator polynomial.
+    Complex p_d_vals[N]{};
+    Complex pole_poly[N + 1u]{};
+    pole_poly[0] = Complex{static_cast<T>(1), static_cast<T>(0)};
+    for (consteig::Size k = 0; k < N; ++k)
+    {
+        p_d_vals[k] =
+            consteig::exp(ftf.poles[k] * Complex{Ts, static_cast<T>(0)});
+        const Complex zk = p_d_vals[k];
+        pole_poly[k + 1u] =
+            Complex{static_cast<T>(0), static_cast<T>(0)} - zk * pole_poly[k];
+        for (consteig::Size i = k; i > 0u; --i)
+            pole_poly[i] = pole_poly[i] - zk * pole_poly[i - 1u];
+    }
+
+    // Map finite zeros to z-domain; build monic numerator polynomial.
+    // No companion matrix or spurious-eigenvalue filtering needed.
+    Complex z_d_finite[N]{};
+    Complex zero_poly[N + 1u]{};
+    zero_poly[0] = Complex{static_cast<T>(1), static_cast<T>(0)};
+    for (consteig::Size k = 0; k < nz; ++k)
+    {
+        z_d_finite[k] =
+            consteig::exp(ftf.zeros[k] * Complex{Ts, static_cast<T>(0)});
+        const Complex zk = z_d_finite[k];
+        zero_poly[k + 1u] =
+            Complex{static_cast<T>(0), static_cast<T>(0)} - zk * zero_poly[k];
+        for (consteig::Size i = k; i > 0u; --i)
+            zero_poly[i] = zero_poly[i] - zk * zero_poly[i - 1u];
+    }
+
+    // Pad with zeros at z = -1 to reach numerator degree N-1.
+    const consteig::Size n_extra = (nz + 1u < N) ? (N - nz - 1u) : 0u;
+    for (consteig::Size e = 0; e < n_extra; ++e)
+    {
+        const consteig::Size cur_deg = nz + e;
+        zero_poly[cur_deg + 1u] = zero_poly[cur_deg + 1u] + zero_poly[cur_deg];
+        for (consteig::Size i = cur_deg; i > 0u; --i)
+            zero_poly[i] = zero_poly[i] + zero_poly[i - 1u];
+    }
+    const consteig::Size num_deg = nz + n_extra;
+
+    // Find matching frequency w_c (avoid collision with poles/zeros).
+    const T tol = gcem::sqrt(consteig::epsilon<T>());
+    T w_c = static_cast<T>(0);
+    for (consteig::Size attempt = 0; attempt < 1000u; ++attempt)
+    {
+        bool collision = false;
+        for (consteig::Size i = 0; i < N && !collision; ++i)
+        {
+            const T dr = w_c - ftf.poles[i].real;
+            const T di = ftf.poles[i].imag;
+            if (dr * dr + di * di < tol * tol)
+                collision = true;
+        }
+        for (consteig::Size i = 0; i < nz && !collision; ++i)
+        {
+            const T dr = w_c - ftf.zeros[i].real;
+            const T di = ftf.zeros[i].imag;
+            if (dr * dr + di * di < tol * tol)
+                collision = true;
+        }
+        if (!collision)
+            break;
+        w_c += static_cast<T>(0.1) / Ts;
+    }
+
+    // Compute discrete gain k_d matching H_d(w_d) = H_c(w_c).
+    const Complex w_c_cx{w_c, static_cast<T>(0)};
+    const Complex w_d_cx =
+        consteig::exp(w_c_cx * Complex{Ts, static_cast<T>(0)});
+
+    Complex num_c_cx{static_cast<T>(1), static_cast<T>(0)};
+    for (consteig::Size i = 0; i < nz; ++i)
+        num_c_cx = num_c_cx * (w_c_cx - ftf.zeros[i]);
+
+    Complex den_c_cx{static_cast<T>(1), static_cast<T>(0)};
+    for (consteig::Size i = 0; i < N; ++i)
+        den_c_cx = den_c_cx * (w_c_cx - ftf.poles[i]);
+
+    Complex num_d_cx{static_cast<T>(1), static_cast<T>(0)};
+    for (consteig::Size i = 0; i < N; ++i)
+        num_d_cx = num_d_cx * (w_d_cx - p_d_vals[i]);
+
+    Complex den_d_cx{static_cast<T>(1), static_cast<T>(0)};
+    for (consteig::Size i = 0; i < nz; ++i)
+        den_d_cx = den_d_cx * (w_d_cx - z_d_finite[i]);
+    for (consteig::Size e = 0; e < n_extra; ++e)
+        den_d_cx = den_d_cx *
+                   (w_d_cx - Complex{static_cast<T>(-1), static_cast<T>(0)});
+
+    const Complex gain_num =
+        Complex{k_c, static_cast<T>(0)} * num_c_cx * num_d_cx;
+    const Complex gain_den = den_c_cx * den_d_cx;
+    const T gain_den_sq =
+        gain_den.real * gain_den.real + gain_den.imag * gain_den.imag;
+    const T k_d =
+        (gain_num.real * gain_den.real + gain_num.imag * gain_den.imag) /
+        gain_den_sq;
+
+    // Assemble output TF.
+    TransferFunction<T, N + 1u, N + 1u> tf{};
+    for (consteig::Size i = 0; i <= N; ++i)
+        tf.a[i] = pole_poly[i].real;
+    const consteig::Size pad = N - num_deg;
+    for (consteig::Size i = 0; i <= num_deg; ++i)
+        tf.b[pad + i] = k_d * zero_poly[i].real;
+
+    return tf;
+}
+
 // Tustin (bilinear) discretization
 //
 // Parameterized by alpha = 2/Ts (standard) or wc/tan(wc*Ts/2) (prewarped).
@@ -697,6 +910,35 @@ constexpr TransferFunction<T, N + 1u, N + 1u> analog_to_digital(
     const StateSpace<T, N> &sys_c, T Ts, TustinPWData<T> tag)
 {
     return ss_to_tf(tustin_discretize(sys_c, Ts, tag));
+}
+
+// discretize_with_factored: tag-dispatched TF discretization using FactoredTF.
+// ZOH and MatchedZ use the factored path; Tustin falls back to the polynomial
+// path.
+
+template <typename T, consteig::Size N>
+constexpr TransferFunction<T, N + 1u, N + 1u> discretize_with_factored(
+    const T (&b_c)[N + 1u], const T (&a_c)[N + 1u], const FactoredTF<T, N> &ftf,
+    T Ts, ZOH)
+{
+    return ss_to_tf(
+        zoh_discretize_with_evals(tf_to_ss<T, N>(b_c, a_c), Ts, ftf));
+}
+
+template <typename T, consteig::Size N>
+constexpr TransferFunction<T, N + 1u, N + 1u> discretize_with_factored(
+    const T (&b_c)[N + 1u], const T (&a_c)[N + 1u], const FactoredTF<T, N> &ftf,
+    T Ts, MatchedZ)
+{
+    return matched_z_discretize_factored<T, N>(ftf, Ts);
+}
+
+template <typename T, consteig::Size N, typename M>
+constexpr TransferFunction<T, N + 1u, N + 1u> discretize_with_factored(
+    const T (&b_c)[N + 1u], const T (&a_c)[N + 1u],
+    const FactoredTF<T, N> & /*ftf*/, T Ts, M method_tag)
+{
+    return analog_to_digital<T, N>(b_c, a_c, Ts, method_tag);
 }
 
 // analog_to_digital (TF overloads)

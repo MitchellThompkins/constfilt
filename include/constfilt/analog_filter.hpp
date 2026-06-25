@@ -79,6 +79,15 @@ class AnalogFilter : public Filter<T, N + 1u, N + 1u>
     {
     }
 
+    constexpr AnalogFilter(TransferFunction<T, N + 1u, N + 1u> continuous_tf,
+                           const FactoredTF<T, N> &ftf, T sample_rate_hz,
+                           BoundMethod method_tag)
+        : AnalogFilter(checked_discretize_factored(continuous_tf.b,
+                                                   continuous_tf.a, ftf,
+                                                   sample_rate_hz, method_tag))
+    {
+    }
+
   private:
     constexpr explicit AnalogFilter(
         TransferFunction<T, N + 1u, N + 1u> digital_tf)
@@ -119,6 +128,15 @@ class AnalogFilter : public Filter<T, N + 1u, N + 1u>
         // }
         return analog_to_digital<T, N>(
             b_c, a_c, static_cast<T>(1) / sample_rate_hz, method_tag);
+    }
+
+    static constexpr TransferFunction<T, N + 1u, N + 1u>
+    checked_discretize_factored(const T (&b_c)[N + 1u], const T (&a_c)[N + 1u],
+                                const FactoredTF<T, N> &ftf, T sample_rate_hz,
+                                BoundMethod method_tag)
+    {
+        return discretize_with_factored<T, N>(
+            b_c, a_c, ftf, static_cast<T>(1) / sample_rate_hz, method_tag);
     }
 };
 

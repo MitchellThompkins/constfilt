@@ -178,7 +178,8 @@ constexpr consteig::Matrix<T, N, N> matrix_exp(
     return result;
 }
 
-// matrix_exp for controllable-canonical-form (CCF) matrices given analytic poles.
+// matrix_exp for controllable-canonical-form (CCF) matrices given analytic
+// poles.
 //
 // The CCF matrix A_c has eigenvectors v_i = [1, p_i, p_i^2, ..., p_i^(N-1)]^T
 // where p_i are the analog poles (eigenvalues of A_c).  This Vandermonde
@@ -189,8 +190,8 @@ constexpr consteig::Matrix<T, N, N> matrix_exp(
 //   V[r][i]     = p_i^r          (Vandermonde, built from UNSCALED poles)
 //   exp factor  = exp(Ts * p_i)  (spectral scaling)
 template <typename T, consteig::Size N>
-constexpr consteig::Matrix<T, N, N> matrix_exp_ccf(
-    const FactoredTF<T, N> &ftf, T Ts)
+constexpr consteig::Matrix<T, N, N> matrix_exp_ccf(const FactoredTF<T, N> &ftf,
+                                                   T Ts)
 {
     using Complex = consteig::Complex<T>;
     using ComplexMat_NN = consteig::Matrix<Complex, N, N>;
@@ -216,7 +217,9 @@ constexpr consteig::Matrix<T, N, N> matrix_exp_ccf(
         e_col(col, 0) = Complex{static_cast<T>(1), static_cast<T>(0)};
         auto col_vec = consteig::lu_solve(lu_V, e_col);
         for (consteig::Size row = 0; row < N; ++row)
+        {
             V_inv(row, col) = col_vec(row, 0);
+        }
     }
 
     ComplexMat_NN result_c{};
@@ -225,15 +228,23 @@ constexpr consteig::Matrix<T, N, N> matrix_exp_ccf(
         const Complex exp_lambda = consteig::exp(
             Complex{Ts * ftf.poles[i].real, Ts * ftf.poles[i].imag});
         for (consteig::Size r = 0; r < N; ++r)
+        {
             for (consteig::Size c = 0; c < N; ++c)
+            {
                 result_c(r, c) =
                     result_c(r, c) + exp_lambda * V(r, i) * V_inv(i, c);
+            }
+        }
     }
 
     consteig::Matrix<T, N, N> result{};
     for (consteig::Size r = 0; r < N; ++r)
+    {
         for (consteig::Size c = 0; c < N; ++c)
+        {
             result(r, c) = result_c(r, c).real;
+        }
+    }
     return result;
 }
 
@@ -696,7 +707,9 @@ constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_discretize_factored(
         pole_poly[k + 1u] =
             Complex{static_cast<T>(0), static_cast<T>(0)} - zk * pole_poly[k];
         for (consteig::Size i = k; i > 0u; --i)
+        {
             pole_poly[i] = pole_poly[i] - zk * pole_poly[i - 1u];
+        }
     }
 
     // Map finite zeros to z-domain; build monic numerator polynomial.
@@ -712,7 +725,9 @@ constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_discretize_factored(
         zero_poly[k + 1u] =
             Complex{static_cast<T>(0), static_cast<T>(0)} - zk * zero_poly[k];
         for (consteig::Size i = k; i > 0u; --i)
+        {
             zero_poly[i] = zero_poly[i] - zk * zero_poly[i - 1u];
+        }
     }
 
     // Pad with zeros at z = -1 to reach numerator degree N-1.
@@ -722,7 +737,9 @@ constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_discretize_factored(
         const consteig::Size cur_deg = nz + e;
         zero_poly[cur_deg + 1u] = zero_poly[cur_deg + 1u] + zero_poly[cur_deg];
         for (consteig::Size i = cur_deg; i > 0u; --i)
+        {
             zero_poly[i] = zero_poly[i] + zero_poly[i - 1u];
+        }
     }
     const consteig::Size num_deg = nz + n_extra;
 
@@ -737,17 +754,23 @@ constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_discretize_factored(
             const T dr = w_c - ftf.poles[i].real;
             const T di = ftf.poles[i].imag;
             if (dr * dr + di * di < tol * tol)
+            {
                 collision = true;
+            }
         }
         for (consteig::Size i = 0; i < nz && !collision; ++i)
         {
             const T dr = w_c - ftf.zeros[i].real;
             const T di = ftf.zeros[i].imag;
             if (dr * dr + di * di < tol * tol)
+            {
                 collision = true;
+            }
         }
         if (!collision)
+        {
             break;
+        }
         w_c += static_cast<T>(0.1) / Ts;
     }
 
@@ -758,22 +781,32 @@ constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_discretize_factored(
 
     Complex num_c_cx{static_cast<T>(1), static_cast<T>(0)};
     for (consteig::Size i = 0; i < nz; ++i)
+    {
         num_c_cx = num_c_cx * (w_c_cx - ftf.zeros[i]);
+    }
 
     Complex den_c_cx{static_cast<T>(1), static_cast<T>(0)};
     for (consteig::Size i = 0; i < N; ++i)
+    {
         den_c_cx = den_c_cx * (w_c_cx - ftf.poles[i]);
+    }
 
     Complex num_d_cx{static_cast<T>(1), static_cast<T>(0)};
     for (consteig::Size i = 0; i < N; ++i)
+    {
         num_d_cx = num_d_cx * (w_d_cx - p_d_vals[i]);
+    }
 
     Complex den_d_cx{static_cast<T>(1), static_cast<T>(0)};
     for (consteig::Size i = 0; i < nz; ++i)
+    {
         den_d_cx = den_d_cx * (w_d_cx - z_d_finite[i]);
+    }
     for (consteig::Size e = 0; e < n_extra; ++e)
+    {
         den_d_cx = den_d_cx *
                    (w_d_cx - Complex{static_cast<T>(-1), static_cast<T>(0)});
+    }
 
     const Complex gain_num =
         Complex{k_c, static_cast<T>(0)} * num_c_cx * num_d_cx;
@@ -787,10 +820,14 @@ constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_discretize_factored(
     // Assemble output TF.
     TransferFunction<T, N + 1u, N + 1u> tf{};
     for (consteig::Size i = 0; i <= N; ++i)
+    {
         tf.a[i] = pole_poly[i].real;
+    }
     const consteig::Size pad = N - num_deg;
     for (consteig::Size i = 0; i <= num_deg; ++i)
+    {
         tf.b[pad + i] = k_d * zero_poly[i].real;
+    }
 
     return tf;
 }

@@ -59,11 +59,11 @@ Comparison libraries section for notes on the kfr results.
 Coefficient and step response accuracy are measured against an Octave reference
 for orders 1 through 12.
 
-**Library comparison – Butterworth** (constfilt best method per order):
+**Library comparison – Butterworth:**
 
 ![Accuracy – Butterworth](profiling/results/accuracy_gcc_15.2.0_butterworth.png)
 
-**Library comparison – Elliptic** (constfilt best method per order):
+**Library comparison – Elliptic:**
 
 ![Accuracy – Elliptic](profiling/results/accuracy_gcc_15.2.0_elliptic.png)
 

@@ -363,8 +363,7 @@ def plot_accuracy(data, orders, groups, csv_path, label):
             xs = sorted(o for o, v in lib_best[lib].items() if v > 0)
             ys = [lib_best[lib][o] for o in xs]
             if xs:
-                note = " (best method)" if lib == "constfilt" else ""
-                ax.semilogy(xs, ys, marker="o", label=f"{lib} {ftype}{note}", color=col)
+                ax.semilogy(xs, ys, marker="o", label=f"{lib} {ftype}", color=col)
 
         ax.axhline(ACCURACY_THRESHOLD, color="red", linestyle="--",
                    label=f"threshold ({ACCURACY_THRESHOLD:.0e})")

@@ -204,15 +204,37 @@ constexpr StateSpace<T, N> zoh_discretize(const StateSpace<T, N> &sys_c, T Ts,
 
 // Fills monic characteristic polynomial of Ad:
 //   [1, c_1, c_2, ..., c_N]   (N+1 coefficients)
-// Uses the Faddeev-LeVerrier algorithm via consteig::char_poly:
-// iterative matrix multiplications and traces, no eigenvalues.
+// Uses consteig::eigenvalues to obtain lam_1..lam_N, then builds
+//   (z - lam_1)(z - lam_2)...(z - lam_N) in complex arithmetic.
+// Real parts are extracted at the end (imaginary parts cancel for real A).
 template <typename T, consteig::Size N>
 constexpr void char_poly(const consteig::Matrix<T, N, N> &Ad,
                          T (&coeffs)[N + 1u])
 {
-    const auto res = consteig::char_poly(Ad);
+    using Complex = consteig::Complex<T>;
+
+    const auto evals = consteig::eigenvalues(Ad); // Matrix<Complex, N, 1>
+
+    // p[0..k] holds the monic polynomial of degree k after k iterations.
+    Complex p[N + 1u]{};
+    p[0] = Complex{static_cast<T>(1), static_cast<T>(0)};
+
+    for (consteig::Size k = 0; k < N; ++k)
+    {
+        const Complex lam = evals(k, 0);
+        // Multiply degree-k poly by (z - lam), working high-to-low in-place.
+        p[k + 1u] = Complex{static_cast<T>(0), static_cast<T>(0)} - lam * p[k];
+        for (consteig::Size i = k; i > 0u; --i)
+        {
+            p[i] = p[i] - lam * p[i - 1u];
+        }
+        // p[0] is unchanged (stays 1)
+    }
+
     for (consteig::Size i = 0; i <= N; ++i)
-        coeffs[i] = res(i, 0u);
+    {
+        coeffs[i] = p[i].real;
+    }
 }
 
 // Markov numerator

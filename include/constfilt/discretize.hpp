@@ -119,25 +119,19 @@ template <typename T, consteig::Size N> struct FactoredTF
 
 // Matrix exponential
 
-// matrix_exp(A) via eigendecomposition:
-//   Ad = V * diag(exp(lam_i)) * V^{-1}
-// where V = eigenvectors, lam_i = eigenvalues (complex).
-// Real part extracted at the end (imaginary parts cancel for real A).
+// Shared kernel: given a pre-built eigenvector matrix V and per-eigenvalue
+// exponential factors, compute V * diag(exp_factors) * V^{-1} and return
+// the real part.
 template <typename T, consteig::Size N>
-constexpr consteig::Matrix<T, N, N> matrix_exp(
-    const consteig::Matrix<T, N, N> &A)
+constexpr consteig::Matrix<T, N, N> spectral_matrix_exp(
+    const consteig::Matrix<consteig::Complex<T>, N, N> &V,
+    const consteig::Complex<T> (&exp_factors)[N])
 {
     using Complex = consteig::Complex<T>;
     using ComplexMat_NN = consteig::Matrix<Complex, N, N>;
     using ComplexMat_N1 = consteig::Matrix<Complex, N, 1>;
 
-    // 1. Eigenvalues and eigenvectors
-    const auto evals = consteig::eigenvalues(A);     // Matrix<Complex, N, 1>
-    const auto V = consteig::eigenvectors(A, evals); // Matrix<Complex, N, N>
-
-    // 2. Invert V column-by-column via LU
     const auto lu_V = consteig::lu(V);
-
     ComplexMat_NN V_inv{};
     for (consteig::Size col = 0; col < N; ++col)
     {
@@ -150,23 +144,19 @@ constexpr consteig::Matrix<T, N, N> matrix_exp(
         }
     }
 
-    // 3. Accumulate: matrix_exp = sum_i exp(lam_i) * v_i * w_i^T
-    //    where v_i = column i of V, w_i^T = row i of V_inv
     ComplexMat_NN result_c{};
     for (consteig::Size i = 0; i < N; ++i)
     {
-        Complex exp_lambda = consteig::exp(evals(i, 0));
         for (consteig::Size r = 0; r < N; ++r)
         {
             for (consteig::Size c = 0; c < N; ++c)
             {
                 result_c(r, c) =
-                    result_c(r, c) + exp_lambda * V(r, i) * V_inv(i, c);
+                    result_c(r, c) + exp_factors[i] * V(r, i) * V_inv(i, c);
             }
         }
     }
 
-    // 4. Extract real part
     consteig::Matrix<T, N, N> result{};
     for (consteig::Size r = 0; r < N; ++r)
     {
@@ -176,6 +166,31 @@ constexpr consteig::Matrix<T, N, N> matrix_exp(
         }
     }
     return result;
+}
+
+// matrix_exp(A) via eigendecomposition:
+//   Ad = V * diag(exp(lam_i)) * V^{-1}
+// where V = eigenvectors, lam_i = eigenvalues (complex).
+// Real part extracted at the end (imaginary parts cancel for real A).
+template <typename T, consteig::Size N>
+constexpr consteig::Matrix<T, N, N> matrix_exp(
+    const consteig::Matrix<T, N, N> &A)
+{
+    using Complex = consteig::Complex<T>;
+
+    // 1. Eigenvalues and eigenvectors
+    const auto evals = consteig::eigenvalues(A);     // Matrix<Complex, N, 1>
+    const auto V = consteig::eigenvectors(A, evals); // Matrix<Complex, N, N>
+
+    // 2. Per-eigenvalue exponential factors
+    Complex exp_factors[N]{};
+    for (consteig::Size i = 0; i < N; ++i)
+    {
+        exp_factors[i] = consteig::exp(evals(i, 0));
+    }
+
+    // 3-4. Invert V, accumulate spectral sum, extract real part
+    return spectral_matrix_exp<T, N>(V, exp_factors);
 }
 
 // matrix_exp for controllable-canonical-form (CCF) matrices given analytic
@@ -195,9 +210,7 @@ constexpr consteig::Matrix<T, N, N> matrix_exp_ccf(
 {
     using Complex = consteig::Complex<T>;
     using ComplexMat_NN = consteig::Matrix<Complex, N, N>;
-    using ComplexMat_N1 = consteig::Matrix<Complex, N, 1>;
 
-    // Build Vandermonde V: V[r][i] = poles[i]^r  (unscaled analog poles)
     ComplexMat_NN V{};
     for (consteig::Size i = 0; i < N; ++i)
     {
@@ -209,43 +222,14 @@ constexpr consteig::Matrix<T, N, N> matrix_exp_ccf(
         }
     }
 
-    const auto lu_V = consteig::lu(V);
-    ComplexMat_NN V_inv{};
-    for (consteig::Size col = 0; col < N; ++col)
-    {
-        ComplexMat_N1 e_col{};
-        e_col(col, 0) = Complex{static_cast<T>(1), static_cast<T>(0)};
-        auto col_vec = consteig::lu_solve(lu_V, e_col);
-        for (consteig::Size row = 0; row < N; ++row)
-        {
-            V_inv(row, col) = col_vec(row, 0);
-        }
-    }
-
-    ComplexMat_NN result_c{};
+    Complex exp_factors[N]{};
     for (consteig::Size i = 0; i < N; ++i)
     {
-        const Complex exp_lambda = consteig::exp(Complex{
-            Ts * factored_tf.poles[i].real, Ts * factored_tf.poles[i].imag});
-        for (consteig::Size r = 0; r < N; ++r)
-        {
-            for (consteig::Size c = 0; c < N; ++c)
-            {
-                result_c(r, c) =
-                    result_c(r, c) + exp_lambda * V(r, i) * V_inv(i, c);
-            }
-        }
+        exp_factors[i] = consteig::exp(Complex{Ts * factored_tf.poles[i].real,
+                                               Ts * factored_tf.poles[i].imag});
     }
 
-    consteig::Matrix<T, N, N> result{};
-    for (consteig::Size r = 0; r < N; ++r)
-    {
-        for (consteig::Size c = 0; c < N; ++c)
-        {
-            result(r, c) = result_c(r, c).real;
-        }
-    }
-    return result;
+    return spectral_matrix_exp<T, N>(V, exp_factors);
 }
 
 // ZOH discretization

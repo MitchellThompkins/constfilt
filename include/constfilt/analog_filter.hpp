@@ -40,13 +40,14 @@ namespace constfilt
 //
 //   AnalogFilter(continuous_tf, factored_tf, sample_rate_hz, method_tag)
 //     factored_tf    - factored (pole/zero/gain) form of continuous_tf;
-//                      ZOH and MatchedZ use the known poles to build the
-//                      Vandermonde eigenvector matrix analytically, bypassing
-//                      the polynomial->eigenvalue roundtrip that degrades
-//                      accuracy at high orders. Both continuous_tf (polynomial)
-//                      and factored_tf must be supplied; Butterworth and
-//                      Elliptic compute both and use this path internally.
-//                      Direct callers must also provide both forms.
+//                      ZOH builds the Vandermonde eigenvector matrix
+//                      analytically from the known poles, bypassing the
+//                      polynomial->eigenvalue roundtrip that degrades accuracy
+//                      at high orders. MatchedZ maps the supplied poles/zeros
+//                      directly via z=exp(p*Ts), skipping companion-matrix
+//                      root-finding. Both continuous_tf and factored_tf must
+//                      be provided; Butterworth and Elliptic compute both and
+//                      use this path internally.
 template <typename T, consteig::Size N, typename Method = TustinNW,
           bool CheckStab = true>
 class AnalogFilter : public Filter<T, N + 1u, N + 1u>

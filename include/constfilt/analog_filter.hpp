@@ -39,9 +39,14 @@ namespace constfilt
 //                      constfilt::prewarp(warp_hz)
 //
 //   AnalogFilter(continuous_tf, factored_tf, sample_rate_hz, method_tag)
-//     factored_tf            - factored (pole/zero/gain) form of continuous_tf;
-//                      used by Butterworth and Elliptic to bypass roundtrip
-//                      eigendecompositions in ZOH and MatchedZ discretization
+//     factored_tf    - factored (pole/zero/gain) form of continuous_tf;
+//                      ZOH and MatchedZ use the known poles to build the
+//                      Vandermonde eigenvector matrix analytically, bypassing
+//                      the polynomial->eigenvalue roundtrip that degrades
+//                      accuracy at high orders. Both continuous_tf (polynomial)
+//                      and factored_tf must be supplied; Butterworth and
+//                      Elliptic compute both and use this path internally.
+//                      Direct callers must also provide both forms.
 template <typename T, consteig::Size N, typename Method = TustinNW,
           bool CheckStab = true>
 class AnalogFilter : public Filter<T, N + 1u, N + 1u>

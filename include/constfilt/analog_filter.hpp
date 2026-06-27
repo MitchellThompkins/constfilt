@@ -79,6 +79,13 @@ class AnalogFilter : public Filter<T, N + 1u, N + 1u>
                       "method-tag constructor with constfilt::prewarp(wc_hz)");
     }
 
+    /**
+     * @brief Discretizes a continuous-time transfer function.
+     *
+     * @param continuous_tf Continuous-time transfer function to convert.
+     * @param sample_rate_hz Sampling rate in hertz.
+     * @param method_tag Discretization method tag.
+     */
     constexpr AnalogFilter(TransferFunction<T, N + 1u, N + 1u> continuous_tf,
                            T sample_rate_hz, BoundMethod method_tag)
         : AnalogFilter(checked_discretize(continuous_tf.b, continuous_tf.a,
@@ -86,6 +93,14 @@ class AnalogFilter : public Filter<T, N + 1u, N + 1u>
     {
     }
 
+    /**
+     * @brief Discretizes an analog transfer function using factored pole and zero data.
+     *
+     * @param continuous_tf Continuous-time transfer function to discretize.
+     * @param factored_tf Factored pole and zero representation used during discretization.
+     * @param sample_rate_hz Sampling rate in hertz.
+     * @param method_tag Discretization method tag.
+     */
     constexpr AnalogFilter(TransferFunction<T, N + 1u, N + 1u> continuous_tf,
                            const FactoredTF<T, N> &factored_tf,
                            T sample_rate_hz, BoundMethod method_tag)
@@ -96,12 +111,26 @@ class AnalogFilter : public Filter<T, N + 1u, N + 1u>
     }
 
   private:
+    /**
+     * @brief Initializes an analog filter from a digital transfer function.
+     *
+     * @param digital_tf Digital transfer function to store in the base filter.
+     */
     constexpr explicit AnalogFilter(
         TransferFunction<T, N + 1u, N + 1u> digital_tf)
         : Filter<T, N + 1u, N + 1u>(digital_tf.b, digital_tf.a)
     {
     }
 
+    /**
+     * @brief Discretizes an analog transfer function.
+     *
+     * @param b_c Continuous-time numerator coefficients.
+     * @param a_c Continuous-time denominator coefficients.
+     * @param sample_rate_hz Sampling rate in hertz.
+     * @param method_tag Discretization method tag.
+     * @return TransferFunction<T, N + 1u, N + 1u> Discrete transfer function.
+     */
     static constexpr TransferFunction<T, N + 1u, N + 1u> checked_discretize(
         const T (&b_c)[N + 1u], const T (&a_c)[N + 1u], T sample_rate_hz,
         BoundMethod method_tag)
@@ -137,6 +166,16 @@ class AnalogFilter : public Filter<T, N + 1u, N + 1u>
             b_c, a_c, static_cast<T>(1) / sample_rate_hz, method_tag);
     }
 
+    /**
+     * @brief Discretizes an analog transfer function using factored pole-zero data.
+     *
+     * @param b_c Continuous-time numerator coefficients.
+     * @param a_c Continuous-time denominator coefficients.
+     * @param factored_tf Factored pole-zero representation of the continuous transfer function.
+     * @param sample_rate_hz Sampling rate in hertz.
+     * @param method_tag Discretization method tag.
+     * @return TransferFunction<T, N + 1u, N + 1u> Discrete transfer function coefficients.
+     */
     static constexpr TransferFunction<T, N + 1u, N + 1u>
     checked_discretize_factored(const T (&b_c)[N + 1u], const T (&a_c)[N + 1u],
                                 const FactoredTF<T, N> &factored_tf,

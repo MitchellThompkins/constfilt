@@ -39,6 +39,14 @@ class Elliptic
     using BoundMethod = typename bind_method<T, Method>::type;
 
   public:
+    /**
+     * @brief Constructs an elliptic filter from the specified design parameters.
+     *
+     * @param cutoff_hz Cutoff frequency in hertz.
+     * @param ripple_db Passband ripple in decibels.
+     * @param attenuation_db Stopband attenuation in decibels.
+     * @param sample_rate_hz Sample rate in hertz.
+     */
     constexpr Elliptic(T cutoff_hz, T ripple_db, T attenuation_db,
                        T sample_rate_hz)
         : AnalogFilter<T, N, BoundMethod>(
@@ -296,7 +304,13 @@ class Elliptic
     // In-place multiply polynomial poly (ascending order, currently degree
     // deg-1) by (s - root), bringing it to degree deg. Builds up the full
     // polynomial one root at a time: start with (s - r1), call with r2 to get
-    // (s - r1)(s - r2), call again with r3 to get (s - r1)(s - r2)(s - r3).
+    /**
+     * @brief Multiplies a polynomial by a linear factor in place.
+     *
+     * @param poly Polynomial coefficients in ascending order.
+     * @param deg Current polynomial degree.
+     * @param root Root of the factor to apply.
+     */
     static constexpr void poly_mul_root(Complex (&poly)[N + 1u],
                                         consteig::Size deg, Complex root)
     {
@@ -311,7 +325,20 @@ class Elliptic
     // Fills poles[] and zeros[] with the normalized (wc=1) prototype poles and
     // zeros derived from the elliptic machinery (steps 3-4 of elliptic_tf).
     // Poles: M conjugate pairs + optional real pole for odd N.
-    // Zeros: M conjugate pairs on the imaginary axis (+/-j*omega_z).
+    /**
+     * @brief Computes the normalized elliptic prototype poles and zeros.
+     *
+     * Fills the output arrays with the conjugate pole pairs and imaginary-axis zero pairs for the
+     * low-pass prototype, and appends the extra real pole for odd orders.
+     *
+     * @param q Nome parameter of the elliptic prototype.
+     * @param sig0 Pole-shift parameter derived from the passband ripple.
+     * @param k Elliptic modulus used by the prototype.
+     * @param poles Output array for the prototype poles.
+     * @param pole_cnt Number of poles written to @p poles.
+     * @param zeros Output array for the prototype zeros.
+     * @param zero_cnt Number of zeros written to @p zeros.
+     */
     static constexpr void compute_prototype_poles_zeros(
         T q, T sig0, T k, Complex (&poles)[N], consteig::Size &pole_cnt,
         Complex (&zeros)[N], consteig::Size &zero_cnt)
@@ -474,7 +501,16 @@ class Elliptic
     //
     // Computes the normalized LP prototype (wc = 1 rad/s), then:
     //   a_hp[j] = a_lp[N-j] * wc^j
-    //   b_hp[j] = b_lp[N-j] * wc^j
+    /**
+     * @brief Builds high-pass elliptic transfer-function coefficients.
+     *
+     * Produces the high-pass numerator and denominator polynomials from the normalized low-pass prototype
+     * and scales them by the cutoff frequency.
+     *
+     * @param wc Cutoff angular frequency.
+     * @param ripple_db Passband ripple in dB.
+     * @param attenuation_db Stopband attenuation in dB.
+     */
     static constexpr void elliptic_tf(T wc, T ripple_db, T attenuation_db,
                                       T (&b)[N + 1u], T (&a)[N + 1u], HighPass)
     {
@@ -491,7 +527,18 @@ class Elliptic
         }
     }
 
-    // LP FactoredTF: prototype poles/zeros scaled by wc; gain from polynomial.
+    /**
+     * @brief Builds the low-pass factored elliptic prototype.
+     *
+     * Computes the normalized prototype poles and zeros, scales them by the
+     * cutoff frequency, and derives the gain from the corresponding polynomial
+     * transfer function.
+     *
+     * @param cutoff_hz Passband cutoff frequency in hertz.
+     * @param ripple_db Passband ripple in decibels.
+     * @param attenuation_db Stopband attenuation in decibels.
+     * @return FactoredTF<T, N> Factorized transfer function with scaled poles, zeros, and gain.
+     */
     static constexpr FactoredTF<T, N> compute_factored_tf(T cutoff_hz,
                                                           T ripple_db,
                                                           T attenuation_db,
@@ -545,7 +592,14 @@ class Elliptic
     // HP FactoredTF: derive from LP prototype via LP-to-HP transform (s ->
     // wc/s). LP pole p_lp -> HP pole wc/p_lp; LP zero j*omega_z -> HP zero
     // -j*wc/omega_z. For odd N: one extra zero at s=0 (LP strictly proper -> HP
-    // has zero at origin).
+    /**
+     * @brief Computes the factored high-pass elliptic filter transfer function.
+     *
+     * @param cutoff_hz Cutoff frequency in hertz.
+     * @param ripple_db Passband ripple in decibels.
+     * @param attenuation_db Stopband attenuation in decibels.
+     * @return FactoredTF<T, N> High-pass poles, zeros, gain, and zero count.
+     */
     static constexpr FactoredTF<T, N> compute_factored_tf(T cutoff_hz,
                                                           T ripple_db,
                                                           T attenuation_db,

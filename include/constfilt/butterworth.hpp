@@ -31,7 +31,12 @@ class Butterworth
     using BoundMethod = typename bind_method<T, Method>::type;
 
   public:
-    // Construct from filter specification; all math is constexpr.
+    /**
+     * @brief Constructs a Butterworth filter from its cutoff and sample rate.
+     *
+     * @param cutoff_hz Cutoff frequency in hertz.
+     * @param sample_rate_hz Sampling frequency in hertz.
+     */
     constexpr Butterworth(T cutoff_hz, T sample_rate_hz)
         : AnalogFilter<T, N, BoundMethod>(
               compute_continuous_tf(cutoff_hz),
@@ -78,7 +83,13 @@ class Butterworth
     //
     // Denominator: a[k] = p[N-k] * wc^k. The normalized Butterworth
     // coefficients appear in reversed order, each scaled by wc^k (p[0] = 1
-    // so a[0] = 1, keeping the denominator monic).
+    /**
+     * @brief Computes the continuous-time transfer function for a high-pass Butterworth filter.
+     *
+     * @param wc Cutoff angular frequency in radians per second.
+     * @param b Numerator coefficients in ascending power order.
+     * @param a Denominator coefficients in ascending power order.
+     */
     static constexpr void continuous_tf(T wc, T (&b)[N + 1u], T (&a)[N + 1u],
                                         HighPass)
     {
@@ -92,7 +103,13 @@ class Butterworth
         }
     }
 
-    // LP: poles at wc*exp(j*theta_k), no finite zeros, gain = wc^N.
+    /**
+     * @brief Computes the factored transfer function for a low-pass Butterworth filter.
+     *
+     * @param cutoff_hz Cutoff frequency in hertz.
+     * @param LowPass Low-pass filter selector.
+     * @return FactoredTF<T, N> Factored transfer function with no finite zeros, gain set to the cutoff frequency raised to the filter order, and poles on the Butterworth circle.
+     */
     static constexpr FactoredTF<T, N> compute_factored_tf(T cutoff_hz, LowPass)
     {
         const T wc = static_cast<T>(2) * static_cast<T>(GCEM_PI) * cutoff_hz;
@@ -110,7 +127,13 @@ class Butterworth
         return factored_tf;
     }
 
-    // HP: poles at wc*exp(-j*theta_k) (magnitude wc), N zeros at s=0, gain=1.
+    /**
+     * @brief Computes the factored transfer function for a high-pass Butterworth filter.
+     *
+     * @param cutoff_hz Cutoff frequency in hertz.
+     * @param HighPass High-pass filter tag.
+     * @return FactoredTF<T, N> Factored transfer function with N zeros at the origin, unit gain, and poles on the Butterworth pole circle.
+     */
     static constexpr FactoredTF<T, N> compute_factored_tf(T cutoff_hz, HighPass)
     {
         using Complex = consteig::Complex<T>;

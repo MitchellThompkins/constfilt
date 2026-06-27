@@ -123,6 +123,13 @@ template <typename T, consteig::Size N> struct FactoredTF
 // exponential factors, compute V * diag(exp_factors) * V^{-1} and return
 // the real part.
 template <typename T, consteig::Size N>
+/**
+ * @brief Forms a real matrix exponential from an eigenvector basis and per-mode exponential factors.
+ *
+ * @param V Complex eigenvector matrix.
+ * @param exp_factors Exponential value for each eigenmode.
+ * @return Real part of V * diag(exp_factors) * V^{-1}.
+ */
 constexpr consteig::Matrix<T, N, N> spectral_matrix_exp(
     const consteig::Matrix<consteig::Complex<T>, N, N> &V,
     const consteig::Complex<T> (&exp_factors)[N])
@@ -173,6 +180,11 @@ constexpr consteig::Matrix<T, N, N> spectral_matrix_exp(
 // where V = eigenvectors, lam_i = eigenvalues (complex).
 // Real part extracted at the end (imaginary parts cancel for real A).
 template <typename T, consteig::Size N>
+/**
+ * @brief Computes the matrix exponential of a square matrix.
+ *
+ * @return consteig::Matrix<T, N, N> The matrix exponential of @p A.
+ */
 constexpr consteig::Matrix<T, N, N> matrix_exp(
     const consteig::Matrix<T, N, N> &A)
 {
@@ -205,6 +217,13 @@ constexpr consteig::Matrix<T, N, N> matrix_exp(
 //   V[r][i]     = p_i^r          (Vandermonde, built from UNSCALED poles)
 //   exp factor  = exp(Ts * p_i)  (spectral scaling)
 template <typename T, consteig::Size N>
+/**
+ * @brief Computes the state transition matrix for a controllable canonical form system.
+ *
+ * @param factored_tf Analog poles used to form the canonical eigenvector basis.
+ * @param Ts Sampling period.
+ * @return Matrix exponential of the continuous-time controllable canonical form state matrix.
+ */
 constexpr consteig::Matrix<T, N, N> matrix_exp_ccf(
     const FactoredTF<T, N> &factored_tf, T Ts)
 {
@@ -241,6 +260,13 @@ constexpr consteig::Matrix<T, N, N> matrix_exp_ccf(
 // discrete matrices for callers that need them (e.g. state estimation, observer
 // design).
 template <typename T, consteig::Size N>
+/**
+ * @brief Discretizes a continuous-time state-space model using zero-order hold.
+ *
+ * @param sys_c Continuous-time system.
+ * @param Ts Sampling period.
+ * @return State-space model of the zero-order-hold discretization.
+ */
 constexpr StateSpace<T, N> zoh_discretize(const StateSpace<T, N> &sys_c, T Ts,
                                           ZOH /*tag*/)
 {
@@ -272,6 +298,14 @@ constexpr StateSpace<T, N> zoh_discretize(const StateSpace<T, N> &sys_c, T Ts,
 // Bypasses both the QR eigenvalue search and eigenvector inverse iteration
 // by exploiting the Vandermonde structure of the CCF eigenvectors.
 template <typename T, consteig::Size N>
+/**
+ * @brief Discretizes a continuous-time state-space system with ZOH using factored poles.
+ *
+ * @param sys_c Continuous-time system.
+ * @param Ts Sampling period.
+ * @param factored_tf Analog pole data used to compute the state transition matrix.
+ * @return State-space system with discrete-time A and B matrices and unchanged C and D.
+ */
 constexpr StateSpace<T, N> zoh_discretize_with_evals(
     const StateSpace<T, N> &sys_c, T Ts, const FactoredTF<T, N> &factored_tf)
 {
@@ -456,6 +490,16 @@ constexpr StateSpace<T, N> tf_to_ss(const T (&b)[N + 1u], const T (&a)[N + 1u])
 // and sample period, maps to z-domain, pads missing zeros at z=-1, matches
 // gain, and assembles the discrete TF.
 template <typename T, consteig::Size N>
+/**
+ * @brief Assembles a matched-Z discrete transfer function from analog poles, zeros, and gain.
+ *
+ * @param poles Analog poles to map to the z-plane.
+ * @param zeros Analog finite zeros to map to the z-plane.
+ * @param nz Number of valid entries in @p zeros.
+ * @param k_c Analog gain used for gain matching.
+ * @param Ts Sampling period.
+ * @return TransferFunction<T, N + 1u, N + 1u> Discrete transfer function with matched poles, zeros, and gain.
+ */
 constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_assemble(
     const consteig::Complex<T> (&poles)[N],
     const consteig::Complex<T> (&zeros)[N], consteig::Size nz, T k_c, T Ts)
@@ -604,6 +648,15 @@ constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_assemble(
 // Steps 1-3: extract poles and zeros from polynomial coefficients via companion
 // matrix eigenvalues, then delegate to matched_z_assemble.
 template <typename T, consteig::Size N>
+/**
+ * @brief Discretizes an analog transfer function using the matched-Z method.
+ *
+ * @param b_c Continuous-time numerator coefficients.
+ * @param a_c Continuous-time denominator coefficients.
+ * @param Ts Sampling period.
+ * @param tag Matched-Z method tag.
+ * @return TransferFunction<T, N + 1u, N + 1u> Discrete-time transfer function.
+ */
 constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_discretize_tf(
     const T (&b_c)[N + 1u], const T (&a_c)[N + 1u], T Ts, MatchedZ /*tag*/)
 {
@@ -695,6 +748,13 @@ constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_discretize_tf(
 // Matched-Z discretization from a FactoredTF: poles and zeros are known
 // analytically, so companion-matrix eigendecompositions are not needed.
 template <typename T, consteig::Size N>
+/**
+ * @brief Discretizes a factored transfer function using matched-Z mapping.
+ *
+ * @param factored_tf Analog poles, zeros, gain, and zero count.
+ * @param Ts Sampling period.
+ * @return TransferFunction<T, N + 1u, N + 1u> Discrete transfer function coefficients.
+ */
 constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_discretize_factored(
     const FactoredTF<T, N> &factored_tf, T Ts)
 {
@@ -819,6 +879,12 @@ constexpr TransferFunction<T, N + 1u, N + 1u> analog_to_digital(
 }
 
 template <typename T, consteig::Size N>
+/**
+ * @brief Discretizes a continuous-time state-space system using prewarped Tustin and converts it to a transfer function.
+ *
+ * @param tag Prewarp data containing the warp frequency.
+ * @return Discrete-time transfer function obtained from the prewarped bilinear transform.
+ */
 constexpr TransferFunction<T, N + 1u, N + 1u> analog_to_digital(
     const StateSpace<T, N> &sys_c, T Ts, TustinPWData<T> tag)
 {
@@ -830,6 +896,20 @@ constexpr TransferFunction<T, N + 1u, N + 1u> analog_to_digital(
 // path.
 
 template <typename T, consteig::Size N>
+/**
+ * @brief Discretizes a transfer function with ZOH using factored poles and zeros.
+ *
+ * Converts the analog transfer function to controllable canonical form, applies
+ * zero-order-hold discretization with the stored pole factors, and converts the
+ * result back to transfer-function form.
+ *
+ * @param b_c Continuous-time numerator coefficients.
+ * @param a_c Continuous-time denominator coefficients.
+ * @param factored_tf Analog pole/zero/gain data used to accelerate discretization.
+ * @param Ts Sampling interval.
+ *
+ * @return Discrete-time transfer function.
+ */
 constexpr TransferFunction<T, N + 1u, N + 1u> discretize_with_factored(
     const T (&b_c)[N + 1u], const T (&a_c)[N + 1u],
     const FactoredTF<T, N> &factored_tf, T Ts, ZOH)
@@ -839,6 +919,13 @@ constexpr TransferFunction<T, N + 1u, N + 1u> discretize_with_factored(
 }
 
 template <typename T, consteig::Size N>
+/**
+ * @brief Discretizes a factored analog transfer function with matched-z mapping.
+ *
+ * @param factored_tf Analog poles, zeros, and gain.
+ * @param Ts Sampling period.
+ * @return TransferFunction<T, N + 1u, N + 1u> Discrete transfer function.
+ */
 constexpr TransferFunction<T, N + 1u, N + 1u> discretize_with_factored(
     const T (& /*b_c*/)[N + 1u], const T (& /*a_c*/)[N + 1u],
     const FactoredTF<T, N> &factored_tf, T Ts, MatchedZ)
@@ -847,6 +934,12 @@ constexpr TransferFunction<T, N + 1u, N + 1u> discretize_with_factored(
 }
 
 template <typename T, consteig::Size N, typename M>
+/**
+ * @brief Discretizes a continuous transfer function using the selected method.
+ *
+ * @param method_tag Discretization method tag.
+ * @return TransferFunction<T, N + 1u, N + 1u> Discrete transfer function coefficients.
+ */
 constexpr TransferFunction<T, N + 1u, N + 1u> discretize_with_factored(
     const T (&b_c)[N + 1u], const T (&a_c)[N + 1u],
     const FactoredTF<T, N> & /*factored_tf*/, T Ts, M method_tag)

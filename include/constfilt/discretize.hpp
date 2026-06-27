@@ -452,11 +452,6 @@ constexpr StateSpace<T, N> tf_to_ss(const T (&b)[N + 1u], const T (&a)[N + 1u])
 
 // Matched-Z discretization (TF entry point)
 
-// Full matched-Z from analog transfer function coefficients.
-// Maps each finite analog zero via z = exp(s*Ts), pads with zeros at z = -1
-// for strictly proper systems, and matches gain at a test frequency w_c.
-// Reference: Octave control pkg @tf/__c2d__.m, lines 32-66.
-template <typename T, consteig::Size N>
 // Shared kernel: given analog poles, finite zeros, zero count, continuous gain,
 // and sample period, maps to z-domain, pads missing zeros at z=-1, matches
 // gain, and assembles the discrete TF.
@@ -602,6 +597,10 @@ constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_assemble(
     return tf;
 }
 
+// Full matched-Z from analog transfer function coefficients.
+// Maps each finite analog zero via z = exp(s*Ts), pads with zeros at z = -1
+// for strictly proper systems, and matches gain at a test frequency w_c.
+// Reference: Octave control pkg @tf/__c2d__.m, lines 32-66.
 // Steps 1-3: extract poles and zeros from polynomial coefficients via companion
 // matrix eigenvalues, then delegate to matched_z_assemble.
 template <typename T, consteig::Size N>

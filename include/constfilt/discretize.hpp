@@ -457,40 +457,23 @@ constexpr StateSpace<T, N> tf_to_ss(const T (&b)[N + 1u], const T (&a)[N + 1u])
 // for strictly proper systems, and matches gain at a test frequency w_c.
 // Reference: Octave control pkg @tf/__c2d__.m, lines 32-66.
 template <typename T, consteig::Size N>
-constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_discretize_tf(
-    const T (&b_c)[N + 1u], const T (&a_c)[N + 1u], T Ts, MatchedZ /*tag*/)
+// Shared kernel: given analog poles, finite zeros, zero count, continuous gain,
+// and sample period, maps to z-domain, pads missing zeros at z=-1, matches
+// gain, and assembles the discrete TF.
+template <typename T, consteig::Size N>
+constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_assemble(
+    const consteig::Complex<T> (&poles)[N],
+    const consteig::Complex<T> (&zeros)[N], consteig::Size nz, T k_c, T Ts)
 {
     using Complex = consteig::Complex<T>;
 
-    // Step 1: count leading zeros in b_c; derive nz (finite analog zero count).
-    consteig::Size d_b = 0;
-    while (d_b <= N && b_c[d_b] == static_cast<T>(0))
-    {
-        ++d_b;
-    }
-    const consteig::Size nz = (d_b > N) ? 0u : N - d_b;
-
-    // Step 2: continuous leading-coefficient gain.
-    const T k_c = (d_b > N) ? static_cast<T>(0) : b_c[d_b] / a_c[0];
-
-    // Step 3: find analog poles (roots of a_c) via companion matrix.
-    // consteig exposes eigenvalues, not polynomial roots; a companion matrix
-    // has eigenvalues equal to the polynomial roots by construction.
-    consteig::Matrix<T, N, N> A_pole{};
-    for (consteig::Size i = 0; i < N - 1u; ++i)
-        A_pole(i + 1u, i) = static_cast<T>(1);
-    for (consteig::Size i = 0; i < N; ++i)
-        A_pole(i, N - 1u) = -(a_c[N - i] / a_c[0]);
-    const auto p_c_evals = consteig::eigenvalues(A_pole);
-
-    // Step 4: map poles to z-domain; build monic denominator polynomial.
+    // Step 1: map poles to z-domain; build monic denominator polynomial.
     Complex p_d_vals[N]{};
     Complex pole_poly[N + 1u]{};
     pole_poly[0] = Complex{static_cast<T>(1), static_cast<T>(0)};
     for (consteig::Size k = 0; k < N; ++k)
     {
-        p_d_vals[k] =
-            consteig::exp(p_c_evals(k, 0) * Complex{Ts, static_cast<T>(0)});
+        p_d_vals[k] = consteig::exp(poles[k] * Complex{Ts, static_cast<T>(0)});
         const Complex zk = p_d_vals[k];
         pole_poly[k + 1u] =
             Complex{static_cast<T>(0), static_cast<T>(0)} - zk * pole_poly[k];
@@ -500,23 +483,178 @@ constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_discretize_tf(
         }
     }
 
-    // Steps 5-7: find analog zeros (roots of b_c) via companion matrix,
-    // same trick as above. Embedded in NxN so consteig::eigenvalues can be
-    // called with a fixed size; the top-left nz x nz block holds the actual
-    // companion, the remaining entries are 0, producing d_b spurious
-    // eigenvalues at the origin that are discarded afterward.
-    Complex z_c_finite[N]{};
+    // Step 2: map finite zeros to z-domain; build monic numerator polynomial.
     Complex z_d_finite[N]{};
     Complex zero_poly[N + 1u]{};
     zero_poly[0] = Complex{static_cast<T>(1), static_cast<T>(0)};
+    for (consteig::Size k = 0; k < nz; ++k)
+    {
+        z_d_finite[k] =
+            consteig::exp(zeros[k] * Complex{Ts, static_cast<T>(0)});
+        const Complex zk = z_d_finite[k];
+        zero_poly[k + 1u] =
+            Complex{static_cast<T>(0), static_cast<T>(0)} - zk * zero_poly[k];
+        for (consteig::Size i = k; i > 0u; --i)
+        {
+            zero_poly[i] = zero_poly[i] - zk * zero_poly[i - 1u];
+        }
+    }
 
+    // Step 3: pad with zeros at z = -1 to reach numerator degree N-1.
+    const consteig::Size n_extra = (nz + 1u < N) ? (N - nz - 1u) : 0u;
+    for (consteig::Size e = 0; e < n_extra; ++e)
+    {
+        const consteig::Size cur_deg = nz + e;
+        zero_poly[cur_deg + 1u] = zero_poly[cur_deg + 1u] + zero_poly[cur_deg];
+        for (consteig::Size i = cur_deg; i > 0u; --i)
+        {
+            zero_poly[i] = zero_poly[i] + zero_poly[i - 1u];
+        }
+    }
+    const consteig::Size num_deg = nz + n_extra;
+
+    // Step 4: find matching frequency w_c (avoid collision with poles/zeros).
+    const T tol = gcem::sqrt(consteig::epsilon<T>());
+    T w_c = static_cast<T>(0);
+    for (consteig::Size attempt = 0; attempt < 1000u; ++attempt)
+    {
+        bool collision = false;
+        for (consteig::Size i = 0; i < N && !collision; ++i)
+        {
+            const T dr = w_c - poles[i].real;
+            const T di = poles[i].imag;
+            if (dr * dr + di * di < tol * tol)
+            {
+                collision = true;
+            }
+        }
+        for (consteig::Size i = 0; i < nz && !collision; ++i)
+        {
+            const T dr = w_c - zeros[i].real;
+            const T di = zeros[i].imag;
+            if (dr * dr + di * di < tol * tol)
+            {
+                collision = true;
+            }
+        }
+        if (!collision)
+        {
+            break;
+        }
+        w_c += static_cast<T>(0.1) / Ts;
+    }
+
+    // Step 5: compute discrete gain k_d matching H_d(w_d) = H_c(w_c).
+    const Complex w_c_cx{w_c, static_cast<T>(0)};
+    const Complex w_d_cx =
+        consteig::exp(w_c_cx * Complex{Ts, static_cast<T>(0)});
+
+    Complex num_c_cx{static_cast<T>(1), static_cast<T>(0)};
+    for (consteig::Size i = 0; i < nz; ++i)
+    {
+        num_c_cx = num_c_cx * (w_c_cx - zeros[i]);
+    }
+
+    Complex den_c_cx{static_cast<T>(1), static_cast<T>(0)};
+    for (consteig::Size i = 0; i < N; ++i)
+    {
+        den_c_cx = den_c_cx * (w_c_cx - poles[i]);
+    }
+
+    Complex num_d_cx{static_cast<T>(1), static_cast<T>(0)};
+    for (consteig::Size i = 0; i < N; ++i)
+    {
+        num_d_cx = num_d_cx * (w_d_cx - p_d_vals[i]);
+    }
+
+    Complex den_d_cx{static_cast<T>(1), static_cast<T>(0)};
+    for (consteig::Size i = 0; i < nz; ++i)
+    {
+        den_d_cx = den_d_cx * (w_d_cx - z_d_finite[i]);
+    }
+    for (consteig::Size e = 0; e < n_extra; ++e)
+    {
+        den_d_cx = den_d_cx *
+                   (w_d_cx - Complex{static_cast<T>(-1), static_cast<T>(0)});
+    }
+
+    const Complex gain_num =
+        Complex{k_c, static_cast<T>(0)} * num_c_cx * num_d_cx;
+    const Complex gain_den = den_c_cx * den_d_cx;
+    const T gain_den_sq =
+        gain_den.real * gain_den.real + gain_den.imag * gain_den.imag;
+    const T k_d =
+        (gain_num.real * gain_den.real + gain_num.imag * gain_den.imag) /
+        gain_den_sq;
+
+    // Step 6: assemble output TF.
+    TransferFunction<T, N + 1u, N + 1u> tf{};
+    for (consteig::Size i = 0; i <= N; ++i)
+    {
+        tf.a[i] = pole_poly[i].real;
+    }
+    const consteig::Size pad = N - num_deg;
+    for (consteig::Size i = 0; i <= num_deg; ++i)
+    {
+        tf.b[pad + i] = k_d * zero_poly[i].real;
+    }
+
+    return tf;
+}
+
+// Steps 1-3: extract poles and zeros from polynomial coefficients via companion
+// matrix eigenvalues, then delegate to matched_z_assemble.
+template <typename T, consteig::Size N>
+constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_discretize_tf(
+    const T (&b_c)[N + 1u], const T (&a_c)[N + 1u], T Ts, MatchedZ /*tag*/)
+{
+    using Complex = consteig::Complex<T>;
+
+    // Step 1: count leading zeros in b_c; derive nz and k_c.
+    consteig::Size d_b = 0;
+    while (d_b <= N && b_c[d_b] == static_cast<T>(0))
+    {
+        ++d_b;
+    }
+    const consteig::Size nz = (d_b > N) ? 0u : N - d_b;
+    const T k_c = (d_b > N) ? static_cast<T>(0) : b_c[d_b] / a_c[0];
+
+    // Step 2: find analog poles (roots of a_c) via companion matrix.
+    // consteig exposes eigenvalues, not polynomial roots; a companion matrix
+    // has eigenvalues equal to the polynomial roots by construction.
+    consteig::Matrix<T, N, N> A_pole{};
+    for (consteig::Size i = 0; i < N - 1u; ++i)
+    {
+        A_pole(i + 1u, i) = static_cast<T>(1);
+    }
+    for (consteig::Size i = 0; i < N; ++i)
+    {
+        A_pole(i, N - 1u) = -(a_c[N - i] / a_c[0]);
+    }
+    const auto p_c_evals = consteig::eigenvalues(A_pole);
+    Complex poles[N]{};
+    for (consteig::Size i = 0; i < N; ++i)
+    {
+        poles[i] = p_c_evals(i, 0);
+    }
+
+    // Step 3: find analog zeros (roots of b_c) via companion matrix.
+    // Embedded in NxN so consteig::eigenvalues can be called with a fixed
+    // size; the top-left nz x nz block holds the actual companion, the
+    // remaining entries are 0, producing d_b spurious eigenvalues at the
+    // origin that are discarded afterward.
+    Complex zeros[N]{};
     if (nz > 0u)
     {
         consteig::Matrix<T, N, N> A_zero{};
         for (consteig::Size i = 0; i + 1u < nz; ++i)
+        {
             A_zero(i + 1u, i) = static_cast<T>(1);
+        }
         for (consteig::Size i = 0; i < nz; ++i)
+        {
             A_zero(i, nz - 1u) = -(b_c[d_b + (nz - i)] / b_c[d_b]);
+        }
         const auto z_c_evals = consteig::eigenvalues(A_zero);
 
         // Mark d_b spurious eigenvalues (smallest magnitude = from zero block).
@@ -542,278 +680,27 @@ constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_discretize_tf(
             spurious[min_idx] = true;
         }
 
-        // Collect finite zeros and build zero polynomial prod(z - z_d_k).
         consteig::Size nz_cnt = 0u;
         for (consteig::Size k = 0; k < N; ++k)
         {
             if (!spurious[k])
             {
-                z_c_finite[nz_cnt] = z_c_evals(k, 0);
-                z_d_finite[nz_cnt] = consteig::exp(
-                    z_c_evals(k, 0) * Complex{Ts, static_cast<T>(0)});
-                const Complex zk = z_d_finite[nz_cnt];
-                zero_poly[nz_cnt + 1u] =
-                    Complex{static_cast<T>(0), static_cast<T>(0)} -
-                    zk * zero_poly[nz_cnt];
-                for (consteig::Size i = nz_cnt; i > 0u; --i)
-                {
-                    zero_poly[i] = zero_poly[i] - zk * zero_poly[i - 1u];
-                }
-                ++nz_cnt;
+                zeros[nz_cnt++] = z_c_evals(k, 0);
             }
         }
     }
 
-    // Step 8: pad with zeros at z = -1 to reach numerator degree N-1.
-    const consteig::Size n_extra = (nz + 1u < N) ? (N - nz - 1u) : 0u;
-    for (consteig::Size e = 0; e < n_extra; ++e)
-    {
-        const consteig::Size cur_deg = nz + e;
-        zero_poly[cur_deg + 1u] = zero_poly[cur_deg + 1u] + zero_poly[cur_deg];
-        for (consteig::Size i = cur_deg; i > 0u; --i)
-        {
-            zero_poly[i] = zero_poly[i] + zero_poly[i - 1u];
-        }
-    }
-    const consteig::Size num_deg = nz + n_extra;
-
-    // Step 9: find matching frequency w_c (avoid collision with poles/zeros).
-    const T tol = gcem::sqrt(consteig::epsilon<T>());
-    T w_c = static_cast<T>(0);
-    for (consteig::Size attempt = 0; attempt < 1000u; ++attempt)
-    {
-        bool collision = false;
-        for (consteig::Size i = 0; i < N && !collision; ++i)
-        {
-            const T dr = w_c - p_c_evals(i, 0).real;
-            const T di = p_c_evals(i, 0).imag;
-            if (dr * dr + di * di < tol * tol)
-            {
-                collision = true;
-            }
-        }
-        for (consteig::Size i = 0; i < nz && !collision; ++i)
-        {
-            const T dr = w_c - z_c_finite[i].real;
-            const T di = z_c_finite[i].imag;
-            if (dr * dr + di * di < tol * tol)
-            {
-                collision = true;
-            }
-        }
-        if (!collision)
-        {
-            break;
-        }
-        w_c += static_cast<T>(0.1) / Ts;
-    }
-
-    // Step 10: compute discrete gain k_d matching H_d(w_d) = H_c(w_c).
-    const Complex w_c_cx{w_c, static_cast<T>(0)};
-    const Complex w_d_cx =
-        consteig::exp(w_c_cx * Complex{Ts, static_cast<T>(0)});
-
-    Complex num_c_cx{static_cast<T>(1), static_cast<T>(0)};
-    for (consteig::Size i = 0; i < nz; ++i)
-    {
-        num_c_cx = num_c_cx * (w_c_cx - z_c_finite[i]);
-    }
-
-    Complex den_c_cx{static_cast<T>(1), static_cast<T>(0)};
-    for (consteig::Size i = 0; i < N; ++i)
-    {
-        den_c_cx = den_c_cx * (w_c_cx - p_c_evals(i, 0));
-    }
-
-    Complex num_d_cx{static_cast<T>(1), static_cast<T>(0)};
-    for (consteig::Size i = 0; i < N; ++i)
-    {
-        num_d_cx = num_d_cx * (w_d_cx - p_d_vals[i]);
-    }
-
-    Complex den_d_cx{static_cast<T>(1), static_cast<T>(0)};
-    for (consteig::Size i = 0; i < nz; ++i)
-    {
-        den_d_cx = den_d_cx * (w_d_cx - z_d_finite[i]);
-    }
-    for (consteig::Size e = 0; e < n_extra; ++e)
-    {
-        den_d_cx = den_d_cx *
-                   (w_d_cx - Complex{static_cast<T>(-1), static_cast<T>(0)});
-    }
-
-    const Complex gain_num =
-        Complex{k_c, static_cast<T>(0)} * num_c_cx * num_d_cx;
-    const Complex gain_den = den_c_cx * den_d_cx;
-    const T gain_den_sq =
-        gain_den.real * gain_den.real + gain_den.imag * gain_den.imag;
-    const T k_d =
-        (gain_num.real * gain_den.real + gain_num.imag * gain_den.imag) /
-        gain_den_sq;
-
-    // Step 11: assemble output TF.
-    TransferFunction<T, N + 1u, N + 1u> tf{};
-    for (consteig::Size i = 0; i <= N; ++i)
-    {
-        tf.a[i] = pole_poly[i].real;
-    }
-    const consteig::Size pad = N - num_deg;
-    for (consteig::Size i = 0; i <= num_deg; ++i)
-    {
-        tf.b[pad + i] = k_d * zero_poly[i].real;
-    }
-
-    return tf;
+    return matched_z_assemble<T, N>(poles, zeros, nz, k_c, Ts);
 }
 
-// Matched-Z discretization from a FactoredTF (precomputed poles/zeros).
-// Bypasses both companion-matrix eigendecompositions in
-// matched_z_discretize_tf. Uses factored_tf.poles,
-// factored_tf.zeros[0..factored_tf.nz-1], and factored_tf.gain directly.
+// Matched-Z discretization from a FactoredTF: poles and zeros are known
+// analytically, so companion-matrix eigendecompositions are not needed.
 template <typename T, consteig::Size N>
 constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_discretize_factored(
     const FactoredTF<T, N> &factored_tf, T Ts)
 {
-    using Complex = consteig::Complex<T>;
-
-    const consteig::Size nz = factored_tf.nz;
-    const T k_c = factored_tf.gain;
-
-    // Map poles to z-domain; build monic denominator polynomial.
-    Complex p_d_vals[N]{};
-    Complex pole_poly[N + 1u]{};
-    pole_poly[0] = Complex{static_cast<T>(1), static_cast<T>(0)};
-    for (consteig::Size k = 0; k < N; ++k)
-    {
-        p_d_vals[k] = consteig::exp(factored_tf.poles[k] *
-                                    Complex{Ts, static_cast<T>(0)});
-        const Complex zk = p_d_vals[k];
-        pole_poly[k + 1u] =
-            Complex{static_cast<T>(0), static_cast<T>(0)} - zk * pole_poly[k];
-        for (consteig::Size i = k; i > 0u; --i)
-        {
-            pole_poly[i] = pole_poly[i] - zk * pole_poly[i - 1u];
-        }
-    }
-
-    // Map finite zeros to z-domain; build monic numerator polynomial.
-    // No companion matrix or spurious-eigenvalue filtering needed.
-    Complex z_d_finite[N]{};
-    Complex zero_poly[N + 1u]{};
-    zero_poly[0] = Complex{static_cast<T>(1), static_cast<T>(0)};
-    for (consteig::Size k = 0; k < nz; ++k)
-    {
-        z_d_finite[k] = consteig::exp(factored_tf.zeros[k] *
-                                      Complex{Ts, static_cast<T>(0)});
-        const Complex zk = z_d_finite[k];
-        zero_poly[k + 1u] =
-            Complex{static_cast<T>(0), static_cast<T>(0)} - zk * zero_poly[k];
-        for (consteig::Size i = k; i > 0u; --i)
-        {
-            zero_poly[i] = zero_poly[i] - zk * zero_poly[i - 1u];
-        }
-    }
-
-    // Pad with zeros at z = -1 to reach numerator degree N-1.
-    const consteig::Size n_extra = (nz + 1u < N) ? (N - nz - 1u) : 0u;
-    for (consteig::Size e = 0; e < n_extra; ++e)
-    {
-        const consteig::Size cur_deg = nz + e;
-        zero_poly[cur_deg + 1u] = zero_poly[cur_deg + 1u] + zero_poly[cur_deg];
-        for (consteig::Size i = cur_deg; i > 0u; --i)
-        {
-            zero_poly[i] = zero_poly[i] + zero_poly[i - 1u];
-        }
-    }
-    const consteig::Size num_deg = nz + n_extra;
-
-    // Find matching frequency w_c (avoid collision with poles/zeros).
-    const T tol = gcem::sqrt(consteig::epsilon<T>());
-    T w_c = static_cast<T>(0);
-    for (consteig::Size attempt = 0; attempt < 1000u; ++attempt)
-    {
-        bool collision = false;
-        for (consteig::Size i = 0; i < N && !collision; ++i)
-        {
-            const T dr = w_c - factored_tf.poles[i].real;
-            const T di = factored_tf.poles[i].imag;
-            if (dr * dr + di * di < tol * tol)
-            {
-                collision = true;
-            }
-        }
-        for (consteig::Size i = 0; i < nz && !collision; ++i)
-        {
-            const T dr = w_c - factored_tf.zeros[i].real;
-            const T di = factored_tf.zeros[i].imag;
-            if (dr * dr + di * di < tol * tol)
-            {
-                collision = true;
-            }
-        }
-        if (!collision)
-        {
-            break;
-        }
-        w_c += static_cast<T>(0.1) / Ts;
-    }
-
-    // Compute discrete gain k_d matching H_d(w_d) = H_c(w_c).
-    const Complex w_c_cx{w_c, static_cast<T>(0)};
-    const Complex w_d_cx =
-        consteig::exp(w_c_cx * Complex{Ts, static_cast<T>(0)});
-
-    Complex num_c_cx{static_cast<T>(1), static_cast<T>(0)};
-    for (consteig::Size i = 0; i < nz; ++i)
-    {
-        num_c_cx = num_c_cx * (w_c_cx - factored_tf.zeros[i]);
-    }
-
-    Complex den_c_cx{static_cast<T>(1), static_cast<T>(0)};
-    for (consteig::Size i = 0; i < N; ++i)
-    {
-        den_c_cx = den_c_cx * (w_c_cx - factored_tf.poles[i]);
-    }
-
-    Complex num_d_cx{static_cast<T>(1), static_cast<T>(0)};
-    for (consteig::Size i = 0; i < N; ++i)
-    {
-        num_d_cx = num_d_cx * (w_d_cx - p_d_vals[i]);
-    }
-
-    Complex den_d_cx{static_cast<T>(1), static_cast<T>(0)};
-    for (consteig::Size i = 0; i < nz; ++i)
-    {
-        den_d_cx = den_d_cx * (w_d_cx - z_d_finite[i]);
-    }
-    for (consteig::Size e = 0; e < n_extra; ++e)
-    {
-        den_d_cx = den_d_cx *
-                   (w_d_cx - Complex{static_cast<T>(-1), static_cast<T>(0)});
-    }
-
-    const Complex gain_num =
-        Complex{k_c, static_cast<T>(0)} * num_c_cx * num_d_cx;
-    const Complex gain_den = den_c_cx * den_d_cx;
-    const T gain_den_sq =
-        gain_den.real * gain_den.real + gain_den.imag * gain_den.imag;
-    const T k_d =
-        (gain_num.real * gain_den.real + gain_num.imag * gain_den.imag) /
-        gain_den_sq;
-
-    // Assemble output TF.
-    TransferFunction<T, N + 1u, N + 1u> tf{};
-    for (consteig::Size i = 0; i <= N; ++i)
-    {
-        tf.a[i] = pole_poly[i].real;
-    }
-    const consteig::Size pad = N - num_deg;
-    for (consteig::Size i = 0; i <= num_deg; ++i)
-    {
-        tf.b[pad + i] = k_d * zero_poly[i].real;
-    }
-
-    return tf;
+    return matched_z_assemble<T, N>(factored_tf.poles, factored_tf.zeros,
+                                    factored_tf.nz, factored_tf.gain, Ts);
 }
 
 // Tustin (bilinear) discretization

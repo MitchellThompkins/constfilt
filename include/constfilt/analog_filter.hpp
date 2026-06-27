@@ -41,7 +41,9 @@ namespace constfilt
 //   AnalogFilter(continuous_tf, factored_tf, sample_rate_hz, method_tag)
 //     factored_tf    - the poles, zeros, and gain of continuous_tf in
 //                      factored form. Required alongside continuous_tf.
-//                      Used internally by Butterworth and Elliptic.
+//                      For ZOH, the poles are used to build the Vandermonde
+//                      eigenvector matrix analytically. For MatchedZ, the
+//                      poles and zeros are mapped directly to the z-domain.
 template <typename T, consteig::Size N, typename Method = TustinNW,
           bool CheckStab = true>
 class AnalogFilter : public Filter<T, N + 1u, N + 1u>

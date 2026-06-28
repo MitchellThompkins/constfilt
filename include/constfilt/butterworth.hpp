@@ -40,6 +40,17 @@ class Butterworth
     {
     }
 
+    // Construct with uniform damping ratio zeta across all complex pole pairs.
+    // Routes through generic eigendecomposition (no FactoredTF) to avoid the
+    // Vandermonde singularity that arises when N>=4 produces identical pole
+    // pairs.
+    constexpr Butterworth(T cutoff_hz, T sample_rate_hz, T zeta)
+        : AnalogFilter<T, N, BoundMethod>(
+              compute_continuous_tf_zeta(cutoff_hz, zeta), sample_rate_hz,
+              make_tustin_tag(cutoff_hz, BoundMethod{}))
+    {
+    }
+
   private:
     // Computes the continuous-time Butterworth transfer function.
     static constexpr TransferFunction<T, N + 1u, N + 1u> compute_continuous_tf(
@@ -172,6 +183,72 @@ class Butterworth
         {
             result[i] = poly[N - i].real;
         }
+    }
+
+    // Normalized Butterworth denominator coefficients for uniform damping
+    // ratio. Each complex pair contributes a quadratic factor (s^2 + 2*zeta*s +
+    // 1); an odd-order real pole contributes (s + 1). Pure real arithmetic, no
+    // complex types. Fills result in descending power order: [1, ..., 1].
+    static constexpr void butterworth_poly_coeffs_zeta(T (&result)[N + 1u],
+                                                       T zeta)
+    {
+        // poly[i] holds the coefficient of s^i (ascending order).
+        T poly[N + 1u]{};
+        poly[0] = static_cast<T>(1);
+        for (consteig::Size pair = 0u; pair < N / 2u; ++pair)
+        {
+            const consteig::Size cur = 2u * pair;
+            for (consteig::Size j = cur + 2u; j > 1u; --j)
+            {
+                poly[j] +=
+                    static_cast<T>(2) * zeta * poly[j - 1u] + poly[j - 2u];
+            }
+            poly[1] += static_cast<T>(2) * zeta * poly[0];
+        }
+        if (N % 2u == 1u)
+        {
+            for (consteig::Size j = N; j > 0u; --j)
+            {
+                poly[j] += poly[j - 1u];
+            }
+        }
+        for (consteig::Size i = 0u; i <= N; ++i)
+        {
+            result[i] = poly[N - i];
+        }
+    }
+
+    static constexpr void continuous_tf_zeta(T wc, T zeta, T (&b)[N + 1u],
+                                             T (&a)[N + 1u], LowPass)
+    {
+        b[N] = gcem::pow(wc, static_cast<int>(N));
+        T p[N + 1u]{};
+        butterworth_poly_coeffs_zeta(p, zeta);
+        for (consteig::Size k = 0; k <= N; ++k)
+        {
+            a[k] = p[k] * gcem::pow(wc, static_cast<int>(k));
+        }
+    }
+
+    static constexpr void continuous_tf_zeta(T wc, T zeta, T (&b)[N + 1u],
+                                             T (&a)[N + 1u], HighPass)
+    {
+        b[0] = static_cast<T>(1);
+        T p[N + 1u]{};
+        butterworth_poly_coeffs_zeta(p, zeta);
+        for (consteig::Size k = 0; k <= N; ++k)
+        {
+            a[k] = p[N - k] * gcem::pow(wc, static_cast<int>(k));
+        }
+    }
+
+    static constexpr TransferFunction<T, N + 1u, N + 1u>
+    compute_continuous_tf_zeta(T cutoff_hz, T zeta)
+    {
+        const T wc = static_cast<T>(2) * static_cast<T>(GCEM_PI) * cutoff_hz;
+        TransferFunction<T, N + 1u, N + 1u> tf{};
+        continuous_tf_zeta(wc, zeta, tf.b, tf.a, FilterType{});
+        return tf;
     }
 };
 

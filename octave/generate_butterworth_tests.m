@@ -218,6 +218,156 @@ for ci = 1:length(hpf_cases)
               ord, fc, fs, b_tupw_hp, a_tupw_hp, y_step_tupw_hp, y_imp_tupw_hp, u_c, y_c_tupw_hp);
 end
 
+% =============================================================================
+% Uniform-zeta cases
+% =============================================================================
+%
+% Poles at wc*(-zeta +/- j*sqrt(1-zeta^2)) for each conjugate pair.
+% Avoids Octave's buttap (which uses classical Butterworth angles) so that the
+% Octave reference matches the C++ uniform-zeta constructor exactly.
+
+function [b_s, a_s] = uniform_zeta_lp(N, wc, zeta)
+    omega = sqrt(1 - zeta^2);
+    poles = [];
+    for k = 1:floor(N/2)
+        poles = [poles; wc*(-zeta + 1j*omega); wc*(-zeta - 1j*omega)];
+    end
+    if mod(N,2) == 1; poles = [poles; -wc]; end
+    [b_s, a_s] = zp2tf([], poles, wc^N);
+end
+
+function [b_s, a_s] = uniform_zeta_hp(N, wc, zeta)
+    % HP poles via LP-to-HP transformation: wc^2 / p_lp.
+    % Since |p_lp| = wc and |p_lp|^2 = wc^2, this yields the complex conjugate
+    % of each LP pole, so re-derive directly.
+    omega = sqrt(1 - zeta^2);
+    poles_hp = [];
+    for k = 1:floor(N/2)
+        poles_hp = [poles_hp; wc*(-zeta - 1j*omega); wc*(-zeta + 1j*omega)];
+    end
+    if mod(N,2) == 1; poles_hp = [poles_hp; -wc]; end
+    [b_s, a_s] = zp2tf(zeros(N, 1), poles_hp, 1);
+end
+
+zeta_val = 0.5;
+zeta_tag = 'z50';
+
+zeta_lp_cases = {
+    {2, 100, 1000},
+    {3, 100, 1000},
+    {4, 100, 1000},
+    {5, 100, 1000},
+};
+
+for ci = 1:length(zeta_lp_cases)
+    ord = zeta_lp_cases{ci}{1};
+    fc  = zeta_lp_cases{ci}{2};
+    fs  = zeta_lp_cases{ci}{3};
+    wc  = 2 * pi * fc;
+
+    [b_s, a_s] = uniform_zeta_lp(ord, wc, zeta_val);
+    sys_c = tf(b_s, a_s);
+    u = ones(1, STEP_LEN);
+    t_c = (0:CHIRP_LEN-1) / fs;
+    u_c = chirp(t_c, 0, t_c(end), fs/2);
+
+    % --- ZOH ---
+    sys_d = c2d(sys_c, 1.0/fs, 'zoh');
+    [b_d, a_d] = tfdata(sys_d, 'v');
+    while length(b_d) < length(a_d); b_d = [0, b_d]; end
+    y_step = filter(b_d, a_d, u);
+    y_imp  = filter(b_d, a_d, [1, zeros(1, STEP_LEN-1)]);
+    y_c    = filter(b_d, a_d, u_c);
+    emit_case(fid, sprintf('case_zeta_%d_%dHz_%dHz_%s', ord, fc, fs, zeta_tag), ...
+              ord, fc, fs, b_d, a_d, y_step, y_imp, u_c, y_c);
+
+    % --- Matched-Z ---
+    sys_mz = c2d(sys_c, 1.0/fs, 'matched');
+    [b_mz, a_mz] = tfdata(sys_mz, 'v');
+    while length(b_mz) < length(a_mz); b_mz = [0, b_mz]; end
+    y_step_mz = filter(b_mz, a_mz, u);
+    y_imp_mz  = filter(b_mz, a_mz, [1, zeros(1, STEP_LEN-1)]);
+    y_c_mz    = filter(b_mz, a_mz, u_c);
+    emit_case(fid, sprintf('case_mz_zeta_%d_%dHz_%dHz_%s', ord, fc, fs, zeta_tag), ...
+              ord, fc, fs, b_mz, a_mz, y_step_mz, y_imp_mz, u_c, y_c_mz);
+
+    % --- TustinNW ---
+    sys_tu = c2d(sys_c, 1.0/fs, 'tustin');
+    [b_tu, a_tu] = tfdata(sys_tu, 'v');
+    while length(b_tu) < length(a_tu); b_tu = [0, b_tu]; end
+    y_step_tu = filter(b_tu, a_tu, u);
+    y_imp_tu  = filter(b_tu, a_tu, [1, zeros(1, STEP_LEN-1)]);
+    y_c_tu    = filter(b_tu, a_tu, u_c);
+    emit_case(fid, sprintf('case_tu_zeta_%d_%dHz_%dHz_%s', ord, fc, fs, zeta_tag), ...
+              ord, fc, fs, b_tu, a_tu, y_step_tu, y_imp_tu, u_c, y_c_tu);
+
+    % --- TustinPW ---
+    sys_tupw = c2d(sys_c, 1.0/fs, 'prewarp', wc);
+    [b_tupw, a_tupw] = tfdata(sys_tupw, 'v');
+    while length(b_tupw) < length(a_tupw); b_tupw = [0, b_tupw]; end
+    y_step_tupw = filter(b_tupw, a_tupw, u);
+    y_imp_tupw  = filter(b_tupw, a_tupw, [1, zeros(1, STEP_LEN-1)]);
+    y_c_tupw    = filter(b_tupw, a_tupw, u_c);
+    emit_case(fid, sprintf('case_tupw_zeta_%d_%dHz_%dHz_%s', ord, fc, fs, zeta_tag), ...
+              ord, fc, fs, b_tupw, a_tupw, y_step_tupw, y_imp_tupw, u_c, y_c_tupw);
+end
+
+zeta_hp_cases = {
+    {2, 100, 1000},
+    {3, 100, 1000},
+    {4, 100, 1000},
+    {5, 100, 1000},
+};
+
+for ci = 1:length(zeta_hp_cases)
+    ord = zeta_hp_cases{ci}{1};
+    fc  = zeta_hp_cases{ci}{2};
+    fs  = zeta_hp_cases{ci}{3};
+    wc  = 2 * pi * fc;
+
+    [b_s, a_s] = uniform_zeta_hp(ord, wc, zeta_val);
+    sys_c = tf(b_s, a_s);
+    u = ones(1, STEP_LEN);
+    t_c = (0:CHIRP_LEN-1) / fs;
+    u_c = chirp(t_c, 0, t_c(end), fs/2);
+
+    % --- ZOH ---
+    sys_d = c2d(sys_c, 1.0/fs, 'zoh');
+    [b_d, a_d] = tfdata(sys_d, 'v');
+    y_step = filter(b_d, a_d, u);
+    y_imp  = filter(b_d, a_d, [1, zeros(1, STEP_LEN-1)]);
+    y_c    = filter(b_d, a_d, u_c);
+    emit_case(fid, sprintf('case_hp_zeta_%d_%dHz_%dHz_%s', ord, fc, fs, zeta_tag), ...
+              ord, fc, fs, b_d, a_d, y_step, y_imp, u_c, y_c);
+
+    % --- Matched-Z ---
+    sys_mz = c2d(sys_c, 1.0/fs, 'matched');
+    [b_mz, a_mz] = tfdata(sys_mz, 'v');
+    y_step_mz = filter(b_mz, a_mz, u);
+    y_imp_mz  = filter(b_mz, a_mz, [1, zeros(1, STEP_LEN-1)]);
+    y_c_mz    = filter(b_mz, a_mz, u_c);
+    emit_case(fid, sprintf('case_mz_hp_zeta_%d_%dHz_%dHz_%s', ord, fc, fs, zeta_tag), ...
+              ord, fc, fs, b_mz, a_mz, y_step_mz, y_imp_mz, u_c, y_c_mz);
+
+    % --- TustinNW ---
+    sys_tu = c2d(sys_c, 1.0/fs, 'tustin');
+    [b_tu, a_tu] = tfdata(sys_tu, 'v');
+    y_step_tu = filter(b_tu, a_tu, u);
+    y_imp_tu  = filter(b_tu, a_tu, [1, zeros(1, STEP_LEN-1)]);
+    y_c_tu    = filter(b_tu, a_tu, u_c);
+    emit_case(fid, sprintf('case_tu_hp_zeta_%d_%dHz_%dHz_%s', ord, fc, fs, zeta_tag), ...
+              ord, fc, fs, b_tu, a_tu, y_step_tu, y_imp_tu, u_c, y_c_tu);
+
+    % --- TustinPW ---
+    sys_tupw = c2d(sys_c, 1.0/fs, 'prewarp', wc);
+    [b_tupw, a_tupw] = tfdata(sys_tupw, 'v');
+    y_step_tupw = filter(b_tupw, a_tupw, u);
+    y_imp_tupw  = filter(b_tupw, a_tupw, [1, zeros(1, STEP_LEN-1)]);
+    y_c_tupw    = filter(b_tupw, a_tupw, u_c);
+    emit_case(fid, sprintf('case_tupw_hp_zeta_%d_%dHz_%dHz_%s', ord, fc, fs, zeta_tag), ...
+              ord, fc, fs, b_tupw, a_tupw, y_step_tupw, y_imp_tupw, u_c, y_c_tupw);
+end
+
 fprintf(fid, '} // namespace bw_ref\n\n');
 fprintf(fid, '#endif // CONSTFILT_BUTTERWORTH_REFERENCE_HPP\n');
 fclose(fid);

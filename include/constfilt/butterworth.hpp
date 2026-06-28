@@ -34,7 +34,8 @@ class Butterworth
     // Construct from filter specification; all math is constexpr.
     constexpr Butterworth(T cutoff_hz, T sample_rate_hz)
         : AnalogFilter<T, N, BoundMethod>(
-              compute_continuous_tf(cutoff_hz), sample_rate_hz,
+              compute_continuous_tf(cutoff_hz),
+              compute_factored_tf(cutoff_hz, FilterType{}), sample_rate_hz,
               make_tustin_tag(cutoff_hz, BoundMethod{}))
     {
     }
@@ -89,6 +90,45 @@ class Butterworth
         {
             a[k] = p[N - k] * gcem::pow(wc, static_cast<int>(k));
         }
+    }
+
+    // LP: poles at wc*exp(j*theta_k), no finite zeros, gain = wc^N.
+    static constexpr FactoredTF<T, N> compute_factored_tf(T cutoff_hz, LowPass)
+    {
+        const T wc = static_cast<T>(2) * static_cast<T>(GCEM_PI) * cutoff_hz;
+        FactoredTF<T, N> factored_tf{};
+        factored_tf.nz = 0;
+        factored_tf.gain = gcem::pow(wc, static_cast<int>(N));
+        for (consteig::Size k = 1u; k <= N; ++k)
+        {
+            const T theta = static_cast<T>(GCEM_PI) *
+                            static_cast<T>(2u * k + N - 1u) /
+                            static_cast<T>(2u * N);
+            factored_tf.poles[k - 1u] = {wc * gcem::cos(theta),
+                                         wc * gcem::sin(theta)};
+        }
+        return factored_tf;
+    }
+
+    // HP: poles at wc*exp(-j*theta_k) (magnitude wc), N zeros at s=0, gain=1.
+    static constexpr FactoredTF<T, N> compute_factored_tf(T cutoff_hz, HighPass)
+    {
+        using Complex = consteig::Complex<T>;
+        const T wc = static_cast<T>(2) * static_cast<T>(GCEM_PI) * cutoff_hz;
+        FactoredTF<T, N> factored_tf{};
+        factored_tf.nz = N;
+        factored_tf.gain = static_cast<T>(1);
+        for (consteig::Size k = 1u; k <= N; ++k)
+        {
+            const T theta = static_cast<T>(GCEM_PI) *
+                            static_cast<T>(2u * k + N - 1u) /
+                            static_cast<T>(2u * N);
+            factored_tf.poles[k - 1u] = {wc * gcem::cos(theta),
+                                         -wc * gcem::sin(theta)};
+            factored_tf.zeros[k - 1u] =
+                Complex{static_cast<T>(0), static_cast<T>(0)};
+        }
+        return factored_tf;
     }
 
     // Normalized Butterworth denominator coefficients (wc=1, monic).

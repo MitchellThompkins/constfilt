@@ -43,6 +43,8 @@ class Elliptic
                        T sample_rate_hz)
         : AnalogFilter<T, N, BoundMethod>(
               compute_continuous_tf(cutoff_hz, ripple_db, attenuation_db),
+              compute_factored_tf(cutoff_hz, ripple_db, attenuation_db,
+                                  FilterType{}),
               sample_rate_hz, make_tustin_tag(cutoff_hz, BoundMethod{}))
     {
     }
@@ -306,6 +308,45 @@ class Elliptic
             Complex{static_cast<T>(0), static_cast<T>(0)} - root * poly[0];
     }
 
+    // Fills poles[] and zeros[] with the normalized (wc=1) prototype poles and
+    // zeros derived from the elliptic machinery (steps 3-4 of elliptic_tf).
+    // Poles: M conjugate pairs + optional real pole for odd N.
+    // Zeros: M conjugate pairs on the imaginary axis (+/-j*omega_z).
+    static constexpr void compute_prototype_poles_zeros(
+        T q, T sig0, T k, Complex (&poles)[N], consteig::Size &pole_cnt,
+        Complex (&zeros)[N], consteig::Size &zero_cnt)
+    {
+        const T ws = static_cast<T>(1) / k;
+        const T sqrt_ws = gcem::sqrt(ws);
+        const T w = gcem::sqrt((static_cast<T>(1) + k * sig0 * sig0) *
+                               (static_cast<T>(1) + sig0 * sig0 / k));
+
+        pole_cnt = 0u;
+        zero_cnt = 0u;
+
+        for (consteig::Size ii = 1u; ii <= M; ++ii)
+        {
+            const T wi = compute_wi(ii, q);
+            const T Vi = gcem::sqrt((static_cast<T>(1) - k * wi * wi) *
+                                    (static_cast<T>(1) - wi * wi / k));
+
+            const T omega_z = sqrt_ws / wi;
+            zeros[zero_cnt++] = Complex{static_cast<T>(0), omega_z};
+            zeros[zero_cnt++] = Complex{static_cast<T>(0), -omega_z};
+
+            const T denom = static_cast<T>(1) + sig0 * sig0 * wi * wi;
+            const T p_re = sqrt_ws * (-sig0 * Vi) / denom;
+            const T p_im = sqrt_ws * (wi * w) / denom;
+            poles[pole_cnt++] = Complex{p_re, p_im};
+            poles[pole_cnt++] = Complex{p_re, -p_im};
+        }
+
+        if (N % 2u == 1u)
+        {
+            poles[pole_cnt++] = Complex{-sig0 * sqrt_ws, static_cast<T>(0)};
+        }
+    }
+
     // Low-pass elliptic transfer function (ncauer theta-function algorithm).
     //
     // Steps:
@@ -448,6 +489,118 @@ class Elliptic
             a[j] = a_lp[N - j] * sc;
             b[j] = b_lp[N - j] * sc;
         }
+    }
+
+    // LP FactoredTF: prototype poles/zeros scaled by wc; gain from polynomial.
+    static constexpr FactoredTF<T, N> compute_factored_tf(T cutoff_hz,
+                                                          T ripple_db,
+                                                          T attenuation_db,
+                                                          LowPass)
+    {
+        const T wc = static_cast<T>(2) * static_cast<T>(GCEM_PI) * cutoff_hz;
+        const T ep = gcem::sqrt(from_db10(ripple_db) - static_cast<T>(1));
+        const T es = gcem::sqrt(from_db10(attenuation_db) - static_cast<T>(1));
+        const T k1 = ep / es;
+        const T q1 = compute_nome(k1);
+        const T q = gcem::exp(gcem::log(q1) / static_cast<T>(N));
+        const T k = modulus_from_nome(q);
+        const T sig0 = compute_sig0(ripple_db, q);
+
+        Complex poles_proto[N]{};
+        Complex zeros_proto[N]{};
+        consteig::Size pole_cnt = 0u;
+        consteig::Size zero_cnt = 0u;
+        compute_prototype_poles_zeros(q, sig0, k, poles_proto, pole_cnt,
+                                      zeros_proto, zero_cnt);
+
+        FactoredTF<T, N> factored_tf{};
+        factored_tf.nz = zero_cnt;
+        for (consteig::Size i = 0u; i < pole_cnt; ++i)
+        {
+            factored_tf.poles[i] =
+                Complex{wc * poles_proto[i].real, wc * poles_proto[i].imag};
+        }
+        for (consteig::Size i = 0u; i < zero_cnt; ++i)
+        {
+            factored_tf.zeros[i] =
+                Complex{wc * zeros_proto[i].real, wc * zeros_proto[i].imag};
+        }
+
+        // Gain from the polynomial TF (captures the normalization from steps
+        // 6-7).
+        T b_tmp[N + 1u]{};
+        T a_tmp[N + 1u]{};
+        elliptic_tf(wc, ripple_db, attenuation_db, b_tmp, a_tmp, LowPass{});
+        consteig::Size d_b = 0u;
+        while (d_b <= N && b_tmp[d_b] == static_cast<T>(0))
+        {
+            ++d_b;
+        }
+        factored_tf.gain =
+            (d_b > N) ? static_cast<T>(0) : b_tmp[d_b] / a_tmp[0];
+
+        return factored_tf;
+    }
+
+    // HP FactoredTF: derive from LP prototype via LP-to-HP transform (s ->
+    // wc/s). LP pole p_lp -> HP pole wc/p_lp; LP zero j*omega_z -> HP zero
+    // -j*wc/omega_z. For odd N: one extra zero at s=0 (LP strictly proper -> HP
+    // has zero at origin).
+    static constexpr FactoredTF<T, N> compute_factored_tf(T cutoff_hz,
+                                                          T ripple_db,
+                                                          T attenuation_db,
+                                                          HighPass)
+    {
+        const T wc = static_cast<T>(2) * static_cast<T>(GCEM_PI) * cutoff_hz;
+
+        // Normalized LP prototype at wc=1 (cutoff_hz = 1/(2*pi)).
+        const T norm_cutoff =
+            static_cast<T>(1) / (static_cast<T>(2) * static_cast<T>(GCEM_PI));
+        const FactoredTF<T, N> lp = compute_factored_tf(
+            norm_cutoff, ripple_db, attenuation_db, LowPass{});
+
+        FactoredTF<T, N> factored_tf{};
+
+        // HP poles: wc / lp_pole  (complex division)
+        for (consteig::Size i = 0u; i < N; ++i)
+        {
+            const Complex &p = lp.poles[i];
+            const T denom_sq = p.real * p.real + p.imag * p.imag;
+            factored_tf.poles[i] =
+                Complex{wc * p.real / denom_sq, -wc * p.imag / denom_sq};
+        }
+
+        // HP zeros: wc / lp_zero  (LP zeros are pure imaginary: {0,
+        // +/-omega_z})
+        consteig::Size hp_nz = 0u;
+        for (consteig::Size i = 0u; i < lp.nz; ++i)
+        {
+            const Complex &z = lp.zeros[i];
+            const T denom_sq = z.real * z.real + z.imag * z.imag;
+            factored_tf.zeros[hp_nz++] =
+                Complex{wc * z.real / denom_sq, -wc * z.imag / denom_sq};
+        }
+        // For odd N: LP->HP adds a zero at s=0 (from the strictly-proper LP).
+        if (N % 2u == 1u)
+        {
+            factored_tf.zeros[hp_nz++] =
+                Complex{static_cast<T>(0), static_cast<T>(0)};
+        }
+        factored_tf.nz = hp_nz;
+
+        // Gain from the HP polynomial TF.
+        T b_tmp[N + 1u]{};
+        T a_tmp[N + 1u]{};
+        elliptic_tf(wc, ripple_db, attenuation_db, b_tmp, a_tmp, HighPass{});
+        consteig::Size d_b = 0u;
+        while (d_b <= N && b_tmp[d_b] == static_cast<T>(0))
+        {
+            ++d_b;
+        }
+        factored_tf.gain =
+            (d_b > N) ? static_cast<T>(0) : b_tmp[d_b] / a_tmp[0];
+
+        return factored_tf;
     }
 };
 

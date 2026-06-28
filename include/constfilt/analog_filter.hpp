@@ -37,6 +37,13 @@ namespace constfilt
 //   AnalogFilter(continuous_tf, sample_rate_hz, method_tag)
 //     method_tag     - method instance; for TustinPW supply
 //                      constfilt::prewarp(warp_hz)
+//
+//   AnalogFilter(continuous_tf, factored_tf, sample_rate_hz, method_tag)
+//     factored_tf    - the poles, zeros, and gain of continuous_tf in
+//                      factored form. Required alongside continuous_tf.
+//                      For ZOH, the poles are used to build the Vandermonde
+//                      eigenvector matrix analytically. For MatchedZ, the
+//                      poles and zeros are mapped directly to the z-domain.
 template <typename T, consteig::Size N, typename Method = TustinNW,
           bool CheckStab = true>
 class AnalogFilter : public Filter<T, N + 1u, N + 1u>
@@ -76,6 +83,15 @@ class AnalogFilter : public Filter<T, N + 1u, N + 1u>
                            T sample_rate_hz, BoundMethod method_tag)
         : AnalogFilter(checked_discretize(continuous_tf.b, continuous_tf.a,
                                           sample_rate_hz, method_tag))
+    {
+    }
+
+    constexpr AnalogFilter(TransferFunction<T, N + 1u, N + 1u> continuous_tf,
+                           const FactoredTF<T, N> &factored_tf,
+                           T sample_rate_hz, BoundMethod method_tag)
+        : AnalogFilter(checked_discretize_factored(continuous_tf.b,
+                                                   continuous_tf.a, factored_tf,
+                                                   sample_rate_hz, method_tag))
     {
     }
 
@@ -119,6 +135,16 @@ class AnalogFilter : public Filter<T, N + 1u, N + 1u>
         // }
         return analog_to_digital<T, N>(
             b_c, a_c, static_cast<T>(1) / sample_rate_hz, method_tag);
+    }
+
+    static constexpr TransferFunction<T, N + 1u, N + 1u>
+    checked_discretize_factored(const T (&b_c)[N + 1u], const T (&a_c)[N + 1u],
+                                const FactoredTF<T, N> &factored_tf,
+                                T sample_rate_hz, BoundMethod method_tag)
+    {
+        return discretize_with_factored<T, N>(
+            b_c, a_c, factored_tf, static_cast<T>(1) / sample_rate_hz,
+            method_tag);
     }
 };
 

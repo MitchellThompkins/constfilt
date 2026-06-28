@@ -49,6 +49,14 @@ class Butterworth
               compute_continuous_tf_zeta(cutoff_hz, zeta), sample_rate_hz,
               make_tustin_tag(cutoff_hz, BoundMethod{}))
     {
+        // Uniform zeta produces repeated complex eigenvalue pairs for N>=4.
+        // consteig's QR iteration cannot split a defective eigenvalue block,
+        // so matrix_exp returns wrong results. MatchedZ and Tustin are fine.
+        static_assert(
+            !std::is_same<Method, ZOH>::value || N <= 3u,
+            "Butterworth zeta constructor: ZOH is unreliable for N>=4 due to "
+            "repeated eigenvalues. Use MatchedZ or TustinPW instead. "
+            "See https://github.com/MitchellThompkins/constfilt/issues/56");
     }
 
   private:

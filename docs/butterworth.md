@@ -118,6 +118,86 @@ keeping the denominator monic.
 The numerator has $b[0] = 1$ and all other $b[k] = 0$, giving unity
 high-frequency gain: $H(\infty) = 1$.
 
+## Uniform damping ratio constructor
+
+The second constructor overload accepts an explicit damping ratio $\zeta$.
+
+```cpp
+Butterworth<T, N, Method, FilterType>(cutoff_hz, sample_rate_hz, zeta)
+```
+
+Every complex-conjugate pole pair is placed at the same $\zeta$, giving each
+quadratic factor the form $s^2 + 2\zeta\omega_c s + \omega_c^2$. This differs from
+the classical constructor, where each pair has a distinct damping ratio determined
+by its position on the unit circle.
+
+### Pole placement
+
+All $M = \lfloor N/2 \rfloor$ complex pairs share the same pole location:
+
+$$p = \omega_c(-\zeta \pm j\sqrt{1 - \zeta^2})$$
+
+The behavior depends on $\zeta$. For $0 < \zeta < 1$ the poles are complex
+conjugates (underdamped). For $\zeta = 1$ the two roots coincide at
+$-\omega_c$ (critically damped). For $\zeta > 1$, the equivalent real-pole form
+$p = \omega_c(-\zeta \pm \sqrt{\zeta^2 - 1})$ applies, so the poles are two
+distinct negative real values (overdamped). All three cases produce a stable
+filter with real polynomial coefficients, and `butterworth_poly_coeffs_zeta`
+handles them identically since it operates only on the real quadratic factor
+$s^2 + 2\zeta\omega_c s + \omega_c^2$.
+
+For odd $N$ the remaining real pole is placed at $-\omega_c$, identical to the
+classical case (a real pole has no damping ratio to control).
+
+### Denominator polynomial
+
+Because the poles are known analytically as quadratic factors, the denominator
+is built by real arithmetic directly, without complex types. Starting from the
+constant polynomial 1, each conjugate pair multiplies in a quadratic factor.
+
+```text
+for pair = 0 .. M-1:
+    cur = 2*pair
+    for j = cur+2 downto 2:
+        poly[j] += 2*zeta*poly[j-1] + poly[j-2]
+    poly[1] += 2*zeta*poly[0]
+if N is odd:
+    for j = N downto 1:
+        poly[j] += poly[j-1]
+```
+
+For example, with $\zeta = 0.5$:
+
+$$N=2: \quad s^2 + s + 1$$
+
+$$N=3: \quad s^3 + 2s^2 + 2s + 1$$
+
+$$N=4: \quad s^4 + 2s^3 + 3s^2 + 2s + 1$$
+
+Cutoff scaling and numerator construction follow the same rules as the classical
+constructor (Steps 3 and 4 above).
+
+### Highpass variant
+
+The highpass transform is identical to the classical case. The denominator
+coefficients are reversed and scaled by $\omega_c^k$, and the numerator is
+$b[0] = 1$ with all other entries zero.
+
+### ZOH order restriction
+
+The zeta constructor does not supply a `FactoredTF`, so ZOH discretization falls
+back to generic eigendecomposition via `matrix_exp`. With uniform $\zeta$ and
+$N \geq 4$, every complex pair lands at the same pole location, producing repeated
+eigenvalues in the controllable canonical form matrix. QR-based eigendecomposition
+is ill-conditioned for defective matrices of this kind. The eigenvector matrix is
+singular, so `matrix_exp` returns wrong results. MatchedZ and Tustin are
+unaffected because they do not use eigendecomposition.
+
+A `static_assert` rejects `ZOH` with `N >= 4` at compile time. See
+[issue 56](https://github.com/MitchellThompkins/constfilt/issues/56) for
+background. The classical constructor is not affected because its poles are
+always distinct by construction.
+
 ## Test reference
 
 `tests/butterworth_reference.hpp` is regenerated from Octave's stock `butter()`

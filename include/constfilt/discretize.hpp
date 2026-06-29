@@ -61,6 +61,16 @@ template <> struct is_tustinpw_tag<TustinPW>
     static constexpr bool value = true;
 };
 
+template <typename M> struct is_zoh_tag
+{
+    static constexpr bool value = false;
+};
+
+template <> struct is_zoh_tag<ZOH>
+{
+    static constexpr bool value = true;
+};
+
 // Build the method tag from a cutoff frequency.
 // For TustinPWData<T>, fills in warp_omega = 2*pi*cutoff_hz.
 // For all other methods, returns a default-constructed tag (cutoff unused).

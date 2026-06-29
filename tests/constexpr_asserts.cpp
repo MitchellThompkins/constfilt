@@ -715,6 +715,26 @@ static_assert(near_eq(kElDefaultLp2.coeffs_a()[1],
 static_assert(!near_eq(kElDefaultLp2.coeffs_a()[1],
                        el_ref::lp_2_5rp_40rs_100Hz_1000Hz::a[1], kCoeffTol),
               "Elliptic default method must not be ZOH");
+
+// =============================================================================
+// Butterworth uniform-zeta (ZOH), N=2, fc=100Hz, fs=1000Hz, zeta=0.5
+// =============================================================================
+static constexpr constfilt::Butterworth<double, 2, constfilt::ZOH> kBwZeta2(
+    100.0, 1000.0, 0.5);
+static_assert(near_eq(kBwZeta2.coeffs_b()[1],
+                      bw_ref::case_zeta_2_100Hz_1000Hz_z50::b[1], kCoeffTol),
+              "Butterworth zeta N=2: constexpr ctor b[1] disagrees");
+static_assert(near_eq(kBwZeta2.coeffs_a()[1],
+                      bw_ref::case_zeta_2_100Hz_1000Hz_z50::a[1], kCoeffTol),
+              "Butterworth zeta N=2: constexpr ctor a[1] disagrees");
+
+// N=1: zeta argument must be a no-op (real pole, no pairs to modify).
+static constexpr constfilt::Butterworth<double, 1, constfilt::ZOH> kBwZeta1(
+    100.0, 1000.0, 0.5);
+static constexpr constfilt::Butterworth<double, 1, constfilt::ZOH> kBw1(100.0,
+                                                                        1000.0);
+static_assert(near_eq(kBwZeta1.coeffs_a()[1], kBw1.coeffs_a()[1], kCoeffTol),
+              "Butterworth N=1: zeta must be ignored");
 } // namespace
 
 } // namespace

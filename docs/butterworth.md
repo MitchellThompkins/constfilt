@@ -137,6 +137,14 @@ All $M = \lfloor N/2 \rfloor$ complex pairs share the same pole location:
 
 $$p = \omega_c(-\zeta \pm j\sqrt{1 - \zeta^2})$$
 
+The behavior depends on $\zeta$. For $0 < \zeta < 1$ the poles are complex
+conjugates (underdamped). For $\zeta = 1$ the two roots coincide at
+$-\omega_c$ (critically damped). For $\zeta > 1$ the square root term is real
+and the poles are two distinct negative real values (overdamped). All three
+cases produce a stable filter with real polynomial coefficients, and
+`butterworth_poly_coeffs_zeta` handles them identically since it operates only
+on the real quadratic factor $s^2 + 2\zeta\omega_c s + \omega_c^2$.
+
 For odd $N$ the remaining real pole is placed at $-\omega_c$, identical to the
 classical case (a real pole has no damping ratio to control).
 

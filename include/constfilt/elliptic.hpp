@@ -18,6 +18,7 @@ namespace constfilt
 //   N          - filter order (>= 1)
 //   Method     - TustinPW (default), TustinNW, ZOH, or MatchedZ
 //   FilterType - LowPass (default) or HighPass
+//   SOS        - true (default): SOS cascade; false: direct form
 //
 // Constructor parameters:
 //   cutoff_hz      - passband edge (-Rp dB point)
@@ -31,7 +32,7 @@ namespace constfilt
 // identical. All coefficient math is constexpr.
 template <typename T, consteig::Size N, typename Method = TustinPW,
           typename FilterType = LowPass>
-class Elliptic
+class EllipticImpl
     : public AnalogFilter<T, N, typename bind_method<T, Method>::type>
 {
     static_assert(N >= 1u, "Elliptic order must be at least 1");
@@ -39,8 +40,8 @@ class Elliptic
     using BoundMethod = typename bind_method<T, Method>::type;
 
   public:
-    constexpr Elliptic(T cutoff_hz, T ripple_db, T attenuation_db,
-                       T sample_rate_hz)
+    constexpr EllipticImpl(T cutoff_hz, T ripple_db, T attenuation_db,
+                           T sample_rate_hz)
         : AnalogFilter<T, N, BoundMethod>(
               compute_continuous_tf(cutoff_hz, ripple_db, attenuation_db),
               compute_factored_tf(cutoff_hz, ripple_db, attenuation_db,
@@ -48,6 +49,15 @@ class Elliptic
               sample_rate_hz, make_tustin_tag(cutoff_hz, BoundMethod{}))
     {
     }
+
+    static constexpr FactoredTF<T, N> compute_factored_tf(T cutoff_hz,
+                                                          T ripple_db,
+                                                          T attenuation_db,
+                                                          LowPass);
+    static constexpr FactoredTF<T, N> compute_factored_tf(T cutoff_hz,
+                                                          T ripple_db,
+                                                          T attenuation_db,
+                                                          HighPass);
 
   private:
     using Complex = consteig::Complex<T>;
@@ -65,7 +75,8 @@ class Elliptic
     // terms decay as q^(n^2) and are below double precision well before n=30.
     // Any value >= ~15 would give the same result; 30 is a conservative margin.
     static constexpr int SERIES_TERMS{30};
-    // Coefficients of the nome q-series: q = q0 + 2*q0^5 + 15*q0^9 + 150*q0^13.
+    // Coefficients of the nome q-series: q = q0 + 2*q0^5 + 15*q0^9 +
+    // 150*q0^13.
     static constexpr int NOME_COEFF_Q0_5{2};
     static constexpr int NOME_COEFF_Q0_9{15};
     static constexpr int NOME_COEFF_Q0_13{150};
@@ -492,10 +503,12 @@ class Elliptic
     }
 
     // LP FactoredTF: prototype poles/zeros scaled by wc; gain from polynomial.
-    static constexpr FactoredTF<T, N> compute_factored_tf(T cutoff_hz,
-                                                          T ripple_db,
-                                                          T attenuation_db,
-                                                          LowPass)
+    // Poles: M conjugate pairs at indices [0..2M-1]; real pole at [2M] for odd
+    // N. Zeros: M conjugate pairs at indices [0..2M-1], pure imaginary.
+    static constexpr FactoredTF<T, N> compute_factored_tf_impl(T cutoff_hz,
+                                                               T ripple_db,
+                                                               T attenuation_db,
+                                                               LowPass)
     {
         const T wc = static_cast<T>(2) * static_cast<T>(GCEM_PI) * cutoff_hz;
         const T ep = gcem::sqrt(from_db10(ripple_db) - static_cast<T>(1));
@@ -546,17 +559,19 @@ class Elliptic
     // wc/s). LP pole p_lp -> HP pole wc/p_lp; LP zero j*omega_z -> HP zero
     // -j*wc/omega_z. For odd N: one extra zero at s=0 (LP strictly proper -> HP
     // has zero at origin).
-    static constexpr FactoredTF<T, N> compute_factored_tf(T cutoff_hz,
-                                                          T ripple_db,
-                                                          T attenuation_db,
-                                                          HighPass)
+    // Poles: M conjugate pairs at [0..2M-1]; real pole at [2M] for odd N.
+    // Zeros: M conjugate pairs at [0..2M-1]; zero at origin at [2M] for odd N.
+    static constexpr FactoredTF<T, N> compute_factored_tf_impl(T cutoff_hz,
+                                                               T ripple_db,
+                                                               T attenuation_db,
+                                                               HighPass)
     {
         const T wc = static_cast<T>(2) * static_cast<T>(GCEM_PI) * cutoff_hz;
 
         // Normalized LP prototype at wc=1 (cutoff_hz = 1/(2*pi)).
         const T norm_cutoff =
             static_cast<T>(1) / (static_cast<T>(2) * static_cast<T>(GCEM_PI));
-        const FactoredTF<T, N> lp = compute_factored_tf(
+        const FactoredTF<T, N> lp = compute_factored_tf_impl(
             norm_cutoff, ripple_db, attenuation_db, LowPass{});
 
         FactoredTF<T, N> factored_tf{};
@@ -601,6 +616,196 @@ class Elliptic
             (d_b > N) ? static_cast<T>(0) : b_tmp[d_b] / a_tmp[0];
 
         return factored_tf;
+    }
+};
+
+template <typename T, consteig::Size N, typename Method, typename FilterType>
+constexpr FactoredTF<T, N> EllipticImpl<
+    T, N, Method, FilterType>::compute_factored_tf(T cutoff_hz, T ripple_db,
+                                                   T attenuation_db,
+                                                   LowPass tag)
+{
+    return compute_factored_tf_impl(cutoff_hz, ripple_db, attenuation_db, tag);
+}
+
+template <typename T, consteig::Size N, typename Method, typename FilterType>
+constexpr FactoredTF<T, N> EllipticImpl<
+    T, N, Method, FilterType>::compute_factored_tf(T cutoff_hz, T ripple_db,
+                                                   T attenuation_db,
+                                                   HighPass tag)
+{
+    return compute_factored_tf_impl(cutoff_hz, ripple_db, attenuation_db, tag);
+}
+
+// Primary template: SOS cascade (default, numerically superior).
+//
+// Stores ceil(N/2) second-order sections, each independently discretized
+// from one conjugate pole/zero pair of the N-th order Elliptic design.
+// Odd-N filters have one padded first-order section.
+template <typename T, consteig::Size N, typename Method = TustinPW,
+          typename FilterType = LowPass, bool SOS = true>
+class Elliptic
+{
+    static_assert(N >= 1u, "Elliptic order must be at least 1");
+
+    using BoundMethod = typename bind_method<T, Method>::type;
+    using Impl = EllipticImpl<T, N, Method, FilterType>;
+
+    static constexpr consteig::Size kSections = (N + 1u) / 2u;
+    Filter<T, 3u, 3u> _sections[kSections]{};
+
+  public:
+    constexpr Elliptic(T cutoff_hz, T ripple_db, T attenuation_db,
+                       T sample_rate_hz)
+    {
+        const BoundMethod method_tag =
+            make_tustin_tag(cutoff_hz, BoundMethod{});
+        const FactoredTF<T, N> factored = Impl::compute_factored_tf(
+            cutoff_hz, ripple_db, attenuation_db, FilterType{});
+
+        const consteig::Size n_pairs = N / 2u;
+        for (consteig::Size i = 0u; i < n_pairs; ++i)
+        {
+            _sections[i] =
+                make_complex_section(factored, i, sample_rate_hz, method_tag);
+        }
+
+        if constexpr (N % 2u == 1u)
+        {
+            _sections[kSections - 1u] = make_real_section(
+                factored, sample_rate_hz, method_tag, FilterType{});
+        }
+    }
+
+    T operator()(T x) const
+    {
+        for (consteig::Size i = 0u; i < kSections; ++i)
+            x = _sections[i](x);
+        return x;
+    }
+
+    template <consteig::Size Len>
+    constexpr void operator()(const T (&input)[Len], T (&output)[Len]) const
+    {
+        _sections[0](input, output);
+        for (consteig::Size i = 1u; i < kSections; ++i)
+        {
+            T buf[Len]{};
+            _sections[i](output, buf);
+            for (consteig::Size n = 0u; n < Len; ++n)
+                output[n] = buf[n];
+        }
+    }
+
+  private:
+    // Build a second-order section for conjugate pole/zero pair i.
+    //
+    // Poles and zeros are stored as conjugate pairs in the FactoredTF:
+    //   poles[2*i], poles[2*i+1]  -- conjugate pair
+    //   zeros[2*i], zeros[2*i+1]  -- conjugate pair (pure imaginary for both
+    //                                 LP and HP elliptic)
+    //
+    // The overall filter gain is placed on section 0 so the cascade product
+    // equals the true filter response. Remaining sections use unit gain in the
+    // factored sense.
+    static constexpr Filter<T, 3u, 3u> make_complex_section(
+        const FactoredTF<T, N> &factored, consteig::Size pair_idx,
+        T sample_rate_hz, BoundMethod method_tag)
+    {
+        const T re = factored.poles[2u * pair_idx].real;
+        const T im = factored.poles[2u * pair_idx].imag;
+        const T mag_sq_p = re * re + im * im;
+
+        // zeros are pure imaginary; use the imaginary part of the first zero
+        const T omega_z = factored.zeros[2u * pair_idx].imag;
+        const T mag_sq_z = omega_z * omega_z;
+
+        const T section_gain =
+            (pair_idx == 0u) ? factored.gain : static_cast<T>(1);
+
+        // 2nd-order section TF: section_gain*(s^2+omega_z^2)/(s^2-2*re*s+|p|^2)
+        T b_c[3]{section_gain, static_cast<T>(0), section_gain * mag_sq_z};
+        T a_c[3]{static_cast<T>(1), -static_cast<T>(2) * re, mag_sq_p};
+
+        FactoredTF<T, 2u> sec_factored{};
+        sec_factored.poles[0] = factored.poles[2u * pair_idx];
+        sec_factored.poles[1] = factored.poles[2u * pair_idx + 1u];
+        sec_factored.zeros[0] = factored.zeros[2u * pair_idx];
+        sec_factored.zeros[1] = factored.zeros[2u * pair_idx + 1u];
+        sec_factored.nz = 2u;
+        sec_factored.gain = section_gain;
+
+        TransferFunction<T, 3u, 3u> ctf{};
+        for (consteig::Size j = 0u; j < 3u; ++j)
+        {
+            ctf.b[j] = b_c[j];
+            ctf.a[j] = a_c[j];
+        }
+
+        const AnalogFilter<T, 2u, Method> sec{ctf, sec_factored, sample_rate_hz,
+                                              method_tag};
+        T b_d[3]{};
+        T a_d[3]{};
+        for (consteig::Size j = 0u; j < 3u; ++j)
+        {
+            b_d[j] = sec.coeffs_b()[j];
+            a_d[j] = sec.coeffs_a()[j];
+        }
+        return Filter<T, 3u, 3u>{b_d, a_d};
+    }
+
+    // LP real pole at factored.poles[N-1]; no zeros.
+    // TF: 1/(s - r)  where r < 0. Unit contribution in cascade; overall gain
+    // is on section 0.
+    static constexpr Filter<T, 3u, 3u> make_real_section(
+        const FactoredTF<T, N> &factored, T sample_rate_hz,
+        BoundMethod method_tag, LowPass)
+    {
+        const T r = factored.poles[N - 1u].real; // negative
+        TransferFunction<T, 2u, 2u> ctf{};
+        ctf.b[0] = static_cast<T>(0);
+        ctf.b[1] = static_cast<T>(1);
+        ctf.a[0] = static_cast<T>(1);
+        ctf.a[1] = -r; // |r| > 0
+
+        const AnalogFilter<T, 1u, Method> sec{ctf, sample_rate_hz, method_tag};
+        T b_d[3]{sec.coeffs_b()[0], sec.coeffs_b()[1], static_cast<T>(0)};
+        T a_d[3]{sec.coeffs_a()[0], sec.coeffs_a()[1], static_cast<T>(0)};
+        return Filter<T, 3u, 3u>{b_d, a_d};
+    }
+
+    // HP real pole at factored.poles[N-1]; zero at origin
+    // (factored.zeros[N-1]). TF: s/(s - r)  where r < 0. Unity high-frequency
+    // gain.
+    static constexpr Filter<T, 3u, 3u> make_real_section(
+        const FactoredTF<T, N> &factored, T sample_rate_hz,
+        BoundMethod method_tag, HighPass)
+    {
+        const T r = factored.poles[N - 1u].real; // negative
+        TransferFunction<T, 2u, 2u> ctf{};
+        ctf.b[0] = static_cast<T>(1);
+        ctf.b[1] = static_cast<T>(0);
+        ctf.a[0] = static_cast<T>(1);
+        ctf.a[1] = -r; // |r| > 0
+
+        const AnalogFilter<T, 1u, Method> sec{ctf, sample_rate_hz, method_tag};
+        T b_d[3]{sec.coeffs_b()[0], sec.coeffs_b()[1], static_cast<T>(0)};
+        T a_d[3]{sec.coeffs_a()[0], sec.coeffs_a()[1], static_cast<T>(0)};
+        return Filter<T, 3u, 3u>{b_d, a_d};
+    }
+};
+
+// Partial specialization: direct-form realization (opt-in via SOS=false).
+template <typename T, consteig::Size N, typename Method, typename FilterType>
+class Elliptic<T, N, Method, FilterType, false>
+    : public EllipticImpl<T, N, Method, FilterType>
+{
+  public:
+    constexpr Elliptic(T cutoff_hz, T ripple_db, T attenuation_db,
+                       T sample_rate_hz)
+        : EllipticImpl<T, N, Method, FilterType>(cutoff_hz, ripple_db,
+                                                 attenuation_db, sample_rate_hz)
+    {
     }
 };
 

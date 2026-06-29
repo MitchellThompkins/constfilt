@@ -940,3 +940,78 @@ OUTPUT_MATRIX(ButterworthSOS_TU_HP, case_tu_hp_2_500Hz_8000Hz,
 OUTPUT_MATRIX(ButterworthSOS_TU_HP, case_tu_hp_3_200Hz_4000Hz,
               constfilt::Butterworth<double, 3, constfilt::TustinNW,
                                      constfilt::HighPass>(200.0, 4000.0))
+
+// =============================================================================
+// Butterworth SOS uniform-zeta low-pass, ZOH -- ZOH now works for all N since
+// each 2x2 section has distinct eigenvalues regardless of zeta.
+// =============================================================================
+
+OUTPUT_MATRIX(ButterworthSOS_ZetaLP, case_zeta_2_100Hz_1000Hz_z50,
+              constfilt::Butterworth<double, 2, constfilt::ZOH>(100.0, 1000.0,
+                                                                0.5))
+
+OUTPUT_MATRIX(ButterworthSOS_ZetaLP, case_zeta_3_100Hz_1000Hz_z50,
+              constfilt::Butterworth<double, 3, constfilt::ZOH>(100.0, 1000.0,
+                                                                0.5))
+
+OUTPUT_MATRIX(ButterworthSOS_ZetaLP, case_mz_zeta_4_100Hz_1000Hz_z50,
+              constfilt::Butterworth<double, 4, constfilt::MatchedZ>(100.0,
+                                                                     1000.0,
+                                                                     0.5))
+
+OUTPUT_MATRIX(ButterworthSOS_ZetaLP, case_mz_zeta_5_100Hz_1000Hz_z50,
+              constfilt::Butterworth<double, 5, constfilt::MatchedZ>(100.0,
+                                                                     1000.0,
+                                                                     0.5))
+
+OUTPUT_MATRIX(ButterworthSOS_ZetaLP, case_tu_zeta_4_100Hz_1000Hz_z50,
+              constfilt::Butterworth<double, 4, constfilt::TustinNW>(100.0,
+                                                                     1000.0,
+                                                                     0.5))
+
+OUTPUT_MATRIX(ButterworthSOS_ZetaLP, case_tu_zeta_8_100Hz_1000Hz_z50,
+              constfilt::Butterworth<double, 8, constfilt::TustinNW>(100.0,
+                                                                     1000.0,
+                                                                     0.5))
+
+OUTPUT_MATRIX(ButterworthSOS_ZetaLP, case_tupw_zeta_4_100Hz_1000Hz_z50,
+              constfilt::Butterworth<double, 4, constfilt::TustinPW>(100.0,
+                                                                     1000.0,
+                                                                     0.5))
+
+OUTPUT_MATRIX(ButterworthSOS_ZetaLP, case_tupw_zeta_8_100Hz_1000Hz_z50,
+              constfilt::Butterworth<double, 8, constfilt::TustinPW>(100.0,
+                                                                     1000.0,
+                                                                     0.5))
+
+// =============================================================================
+// Butterworth SOS uniform-zeta high-pass
+// =============================================================================
+
+OUTPUT_MATRIX(ButterworthSOS_ZetaHP, case_hp_zeta_2_100Hz_1000Hz_z50,
+              constfilt::Butterworth<double, 2, constfilt::ZOH,
+                                     constfilt::HighPass>(100.0, 1000.0, 0.5))
+
+OUTPUT_MATRIX(ButterworthSOS_ZetaHP, case_hp_zeta_3_100Hz_1000Hz_z50,
+              constfilt::Butterworth<double, 3, constfilt::ZOH,
+                                     constfilt::HighPass>(100.0, 1000.0, 0.5))
+
+OUTPUT_MATRIX(ButterworthSOS_ZetaHP, case_mz_hp_zeta_4_100Hz_1000Hz_z50,
+              constfilt::Butterworth<double, 4, constfilt::MatchedZ,
+                                     constfilt::HighPass>(100.0, 1000.0, 0.5))
+
+OUTPUT_MATRIX(ButterworthSOS_ZetaHP, case_tu_hp_zeta_4_100Hz_1000Hz_z50,
+              constfilt::Butterworth<double, 4, constfilt::TustinNW,
+                                     constfilt::HighPass>(100.0, 1000.0, 0.5))
+
+OUTPUT_MATRIX(ButterworthSOS_ZetaHP, case_tu_hp_zeta_8_100Hz_1000Hz_z50,
+              constfilt::Butterworth<double, 8, constfilt::TustinNW,
+                                     constfilt::HighPass>(100.0, 1000.0, 0.5))
+
+OUTPUT_MATRIX(ButterworthSOS_ZetaHP, case_tupw_hp_zeta_4_100Hz_1000Hz_z50,
+              constfilt::Butterworth<double, 4, constfilt::TustinPW,
+                                     constfilt::HighPass>(100.0, 1000.0, 0.5))
+
+OUTPUT_MATRIX(ButterworthSOS_ZetaHP, case_tupw_hp_zeta_8_100Hz_1000Hz_z50,
+              constfilt::Butterworth<double, 8, constfilt::TustinPW,
+                                     constfilt::HighPass>(100.0, 1000.0, 0.5))

@@ -369,6 +369,18 @@ FULL_MATRIX(ButterworthZetaMatchedZ, case_mz_zeta_5_100Hz_1000Hz_z50,
             constfilt::Butterworth<double, 5, constfilt::MatchedZ>(100.0,
                                                                    1000.0, 0.5))
 
+FULL_MATRIX(ButterworthZetaMatchedZ, case_mz_zeta_6_100Hz_1000Hz_z50,
+            constfilt::Butterworth<double, 6, constfilt::MatchedZ>(100.0,
+                                                                   1000.0, 0.5))
+
+FULL_MATRIX(ButterworthZetaMatchedZ, case_mz_zeta_7_100Hz_1000Hz_z50,
+            constfilt::Butterworth<double, 7, constfilt::MatchedZ>(100.0,
+                                                                   1000.0, 0.5))
+
+FULL_MATRIX(ButterworthZetaMatchedZ, case_mz_zeta_8_100Hz_1000Hz_z50,
+            constfilt::Butterworth<double, 8, constfilt::MatchedZ>(100.0,
+                                                                   1000.0, 0.5))
+
 // =============================================================================
 // Butterworth uniform-zeta low-pass, TustinNW discretization
 // =============================================================================
@@ -389,6 +401,18 @@ FULL_MATRIX(ButterworthZetaTustin, case_tu_zeta_5_100Hz_1000Hz_z50,
             constfilt::Butterworth<double, 5, constfilt::TustinNW>(100.0,
                                                                    1000.0, 0.5))
 
+FULL_MATRIX(ButterworthZetaTustin, case_tu_zeta_6_100Hz_1000Hz_z50,
+            constfilt::Butterworth<double, 6, constfilt::TustinNW>(100.0,
+                                                                   1000.0, 0.5))
+
+FULL_MATRIX(ButterworthZetaTustin, case_tu_zeta_7_100Hz_1000Hz_z50,
+            constfilt::Butterworth<double, 7, constfilt::TustinNW>(100.0,
+                                                                   1000.0, 0.5))
+
+FULL_MATRIX(ButterworthZetaTustin, case_tu_zeta_8_100Hz_1000Hz_z50,
+            constfilt::Butterworth<double, 8, constfilt::TustinNW>(100.0,
+                                                                   1000.0, 0.5))
+
 // =============================================================================
 // Butterworth uniform-zeta low-pass, TustinPW discretization
 // =============================================================================
@@ -407,6 +431,18 @@ FULL_MATRIX(ButterworthZetaTustinPW, case_tupw_zeta_4_100Hz_1000Hz_z50,
 
 FULL_MATRIX(ButterworthZetaTustinPW, case_tupw_zeta_5_100Hz_1000Hz_z50,
             constfilt::Butterworth<double, 5, constfilt::TustinPW>(100.0,
+                                                                   1000.0, 0.5))
+
+FULL_MATRIX(ButterworthZetaTustinPW, case_tupw_zeta_6_100Hz_1000Hz_z50,
+            constfilt::Butterworth<double, 6, constfilt::TustinPW>(100.0,
+                                                                   1000.0, 0.5))
+
+FULL_MATRIX(ButterworthZetaTustinPW, case_tupw_zeta_7_100Hz_1000Hz_z50,
+            constfilt::Butterworth<double, 7, constfilt::TustinPW>(100.0,
+                                                                   1000.0, 0.5))
+
+FULL_MATRIX(ButterworthZetaTustinPW, case_tupw_zeta_8_100Hz_1000Hz_z50,
+            constfilt::Butterworth<double, 8, constfilt::TustinPW>(100.0,
                                                                    1000.0, 0.5))
 
 // =============================================================================
@@ -443,6 +479,18 @@ FULL_MATRIX(ButterworthZetaMatchedZHP, case_mz_hp_zeta_5_100Hz_1000Hz_z50,
             constfilt::Butterworth<double, 5, constfilt::MatchedZ,
                                    constfilt::HighPass>(100.0, 1000.0, 0.5))
 
+FULL_MATRIX(ButterworthZetaMatchedZHP, case_mz_hp_zeta_6_100Hz_1000Hz_z50,
+            constfilt::Butterworth<double, 6, constfilt::MatchedZ,
+                                   constfilt::HighPass>(100.0, 1000.0, 0.5))
+
+FULL_MATRIX(ButterworthZetaMatchedZHP, case_mz_hp_zeta_7_100Hz_1000Hz_z50,
+            constfilt::Butterworth<double, 7, constfilt::MatchedZ,
+                                   constfilt::HighPass>(100.0, 1000.0, 0.5))
+
+FULL_MATRIX(ButterworthZetaMatchedZHP, case_mz_hp_zeta_8_100Hz_1000Hz_z50,
+            constfilt::Butterworth<double, 8, constfilt::MatchedZ,
+                                   constfilt::HighPass>(100.0, 1000.0, 0.5))
+
 // =============================================================================
 // Butterworth uniform-zeta high-pass, TustinNW discretization
 // =============================================================================
@@ -463,6 +511,18 @@ FULL_MATRIX(ButterworthZetaTustinHP, case_tu_hp_zeta_5_100Hz_1000Hz_z50,
             constfilt::Butterworth<double, 5, constfilt::TustinNW,
                                    constfilt::HighPass>(100.0, 1000.0, 0.5))
 
+FULL_MATRIX(ButterworthZetaTustinHP, case_tu_hp_zeta_6_100Hz_1000Hz_z50,
+            constfilt::Butterworth<double, 6, constfilt::TustinNW,
+                                   constfilt::HighPass>(100.0, 1000.0, 0.5))
+
+FULL_MATRIX(ButterworthZetaTustinHP, case_tu_hp_zeta_7_100Hz_1000Hz_z50,
+            constfilt::Butterworth<double, 7, constfilt::TustinNW,
+                                   constfilt::HighPass>(100.0, 1000.0, 0.5))
+
+FULL_MATRIX(ButterworthZetaTustinHP, case_tu_hp_zeta_8_100Hz_1000Hz_z50,
+            constfilt::Butterworth<double, 8, constfilt::TustinNW,
+                                   constfilt::HighPass>(100.0, 1000.0, 0.5))
+
 // =============================================================================
 // Butterworth uniform-zeta high-pass, TustinPW discretization
 // =============================================================================
@@ -481,4 +541,16 @@ FULL_MATRIX(ButterworthZetaTustinPWHP, case_tupw_hp_zeta_4_100Hz_1000Hz_z50,
 
 FULL_MATRIX(ButterworthZetaTustinPWHP, case_tupw_hp_zeta_5_100Hz_1000Hz_z50,
             constfilt::Butterworth<double, 5, constfilt::TustinPW,
+                                   constfilt::HighPass>(100.0, 1000.0, 0.5))
+
+FULL_MATRIX(ButterworthZetaTustinPWHP, case_tupw_hp_zeta_6_100Hz_1000Hz_z50,
+            constfilt::Butterworth<double, 6, constfilt::TustinPW,
+                                   constfilt::HighPass>(100.0, 1000.0, 0.5))
+
+FULL_MATRIX(ButterworthZetaTustinPWHP, case_tupw_hp_zeta_7_100Hz_1000Hz_z50,
+            constfilt::Butterworth<double, 7, constfilt::TustinPW,
+                                   constfilt::HighPass>(100.0, 1000.0, 0.5))
+
+FULL_MATRIX(ButterworthZetaTustinPWHP, case_tupw_hp_zeta_8_100Hz_1000Hz_z50,
+            constfilt::Butterworth<double, 8, constfilt::TustinPW,
                                    constfilt::HighPass>(100.0, 1000.0, 0.5))

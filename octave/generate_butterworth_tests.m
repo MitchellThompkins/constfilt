@@ -226,6 +226,10 @@ end
 % Avoids Octave's buttap (which uses classical Butterworth angles) so that the
 % Octave reference matches the C++ uniform-zeta constructor exactly.
 
+% There is no standard Octave signal package function for uniform-zeta
+% Butterworth design. buttap() produces classical Butterworth poles with
+% evenly spaced angles, which gives a different damping ratio per pair.
+% The poles must be constructed manually from zeta as below.
 function [b_s, a_s] = uniform_zeta_lp(N, wc, zeta)
     omega = sqrt(1 - zeta^2);
     poles = [];
@@ -257,6 +261,9 @@ zeta_lp_cases = {
     {3, 100, 1000},
     {4, 100, 1000},
     {5, 100, 1000},
+    {6, 100, 1000},
+    {7, 100, 1000},
+    {8, 100, 1000},
 };
 
 for ci = 1:length(zeta_lp_cases)
@@ -317,6 +324,9 @@ zeta_hp_cases = {
     {3, 100, 1000},
     {4, 100, 1000},
     {5, 100, 1000},
+    {6, 100, 1000},
+    {7, 100, 1000},
+    {8, 100, 1000},
 };
 
 for ci = 1:length(zeta_hp_cases)

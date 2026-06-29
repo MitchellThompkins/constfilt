@@ -26,6 +26,7 @@ template <typename T, consteig::Size NB, consteig::Size NA> class Filter
     T _a[NA]{};
     mutable T _state[M]{}; // DF2T delay line, zero-initialized
 
+  public:
     constexpr Filter() = default;
 
     constexpr Filter(const T (&b)[NB], const T (&a)[NA])

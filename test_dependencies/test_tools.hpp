@@ -206,4 +206,15 @@ template <typename T> static constexpr bool withinTol(T a, T b, T tol)
     REALTIME_CHIRP_TEST(suite, ref, __VA_ARGS__)                               \
     BATCH_REALTIME_EQUIVALENCE_TEST(suite, ref, __VA_ARGS__)
 
+// OUTPUT_MATRIX: step/impulse/chirp tests without coefficient comparison.
+// Use for filter realizations (e.g. SOS) that do not expose coeffs_b/coeffs_a.
+#define OUTPUT_MATRIX(suite, ref, ...)                                         \
+    BATCH_STEP_TEST(suite, ref, __VA_ARGS__)                                   \
+    REALTIME_STEP_TEST(suite, ref, __VA_ARGS__)                                \
+    BATCH_IMPULSE_TEST(suite, ref, __VA_ARGS__)                                \
+    REALTIME_IMPULSE_TEST(suite, ref, __VA_ARGS__)                             \
+    BATCH_CHIRP_TEST(suite, ref, __VA_ARGS__)                                  \
+    REALTIME_CHIRP_TEST(suite, ref, __VA_ARGS__)                               \
+    BATCH_REALTIME_EQUIVALENCE_TEST(suite, ref, __VA_ARGS__)
+
 #endif // CONSTFILT_TEST_TOOLS_HPP

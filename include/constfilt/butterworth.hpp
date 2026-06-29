@@ -8,14 +8,9 @@
 namespace constfilt
 {
 
-// Template parameters:
-//   T          - floating-point scalar type
-//   N          - filter order (>= 1)
-//   Method     - TustinPW (default), TustinNW, ZOH, or MatchedZ
-//   FilterType - LowPass (default) or HighPass
 template <typename T, consteig::Size N, typename Method = TustinPW,
           typename FilterType = LowPass>
-class Butterworth
+class ButterworthImpl
     : public AnalogFilter<T, N, typename bind_method<T, Method>::type>
 {
     static_assert(N >= 1u, "Butterworth order must be at least 1");
@@ -23,8 +18,7 @@ class Butterworth
     using BoundMethod = typename bind_method<T, Method>::type;
 
   public:
-    // Construct from filter specification; all math is constexpr.
-    constexpr Butterworth(T cutoff_hz, T sample_rate_hz)
+    constexpr ButterworthImpl(T cutoff_hz, T sample_rate_hz)
         : AnalogFilter<T, N, BoundMethod>(
               compute_continuous_tf(cutoff_hz),
               compute_factored_tf(cutoff_hz, FilterType{}), sample_rate_hz,
@@ -36,7 +30,7 @@ class Butterworth
     // Routes through generic eigendecomposition (no FactoredTF) to avoid the
     // Vandermonde singularity that arises when N>=4 produces identical pole
     // pairs.
-    constexpr Butterworth(T cutoff_hz, T sample_rate_hz, T zeta)
+    constexpr ButterworthImpl(T cutoff_hz, T sample_rate_hz, T zeta)
         : AnalogFilter<T, N, BoundMethod>(
               compute_continuous_tf_zeta(cutoff_hz, zeta), sample_rate_hz,
               make_tustin_tag(cutoff_hz, BoundMethod{}))
@@ -52,7 +46,6 @@ class Butterworth
     }
 
   private:
-    // Computes the continuous-time Butterworth transfer function.
     static constexpr TransferFunction<T, N + 1u, N + 1u> compute_continuous_tf(
         T cutoff_hz)
     {
@@ -252,12 +245,225 @@ class Butterworth
     }
 };
 
+// Primary template: SOS cascade (default, numerically superior).
+//
+// Stores ceil(N/2) second-order sections (biquads), each independently
+// discretized from one conjugate pole pair of the N-th order Butterworth
+// design. Odd-N filters have one padded first-order section.
+//
+// Template parameters:
+//   T          - floating-point scalar type
+//   N          - filter order (>= 1)
+//   Method     - TustinPW (default), TustinNW, ZOH, or MatchedZ
+//   FilterType - LowPass (default) or HighPass
+//   SOS        - true (default): SOS cascade; false: direct form
+template <typename T, consteig::Size N, typename Method = TustinPW,
+          typename FilterType = LowPass, bool SOS = true>
+class Butterworth
+{
+    static_assert(N >= 1u, "Butterworth order must be at least 1");
+
+    using BoundMethod = typename bind_method<T, Method>::type;
+
+    static constexpr consteig::Size kSections = (N + 1u) / 2u;
+    Filter<T, 3u, 3u> _sections[kSections]{};
+
+  public:
+    constexpr Butterworth(T cutoff_hz, T sample_rate_hz)
+    {
+        const T wc = static_cast<T>(2) * static_cast<T>(GCEM_PI) * cutoff_hz;
+        const BoundMethod method_tag =
+            make_tustin_tag(cutoff_hz, BoundMethod{});
+
+        const consteig::Size n_pairs = N / 2u;
+        for (consteig::Size i = 0u; i < n_pairs; ++i)
+        {
+            _sections[i] = make_complex_section(wc, i, sample_rate_hz,
+                                                method_tag, FilterType{});
+        }
+
+        if constexpr (N % 2u == 1u)
+        {
+            _sections[kSections - 1u] =
+                make_real_section(wc, sample_rate_hz, method_tag, FilterType{});
+        }
+    }
+
+    T operator()(T x) const
+    {
+        for (consteig::Size i = 0u; i < kSections; ++i)
+            x = _sections[i](x);
+        return x;
+    }
+
+    template <consteig::Size Len>
+    constexpr void operator()(const T (&input)[Len], T (&output)[Len]) const
+    {
+        _sections[0](input, output);
+        for (consteig::Size i = 1u; i < kSections; ++i)
+        {
+            T buf[Len]{};
+            _sections[i](output, buf);
+            for (consteig::Size n = 0u; n < Len; ++n)
+                output[n] = buf[n];
+        }
+    }
+
+  private:
+    // Build a second-order section for the i-th conjugate pole pair.
+    //
+    // Pole index mapping (1-indexed k = i+1):
+    //   theta_k = pi*(2k+N-1)/(2N)
+    // The upper-half-plane pole (positive imaginary part) is used; its
+    // conjugate is implicit. All Butterworth poles have magnitude wc.
+
+    static constexpr Filter<T, 3u, 3u> make_complex_section(
+        T wc, consteig::Size pair_idx, T sample_rate_hz, BoundMethod method_tag,
+        LowPass)
+    {
+        const T theta = static_cast<T>(GCEM_PI) *
+                        static_cast<T>(2u * (pair_idx + 1u) + N - 1u) /
+                        static_cast<T>(2u * N);
+        const T re = wc * gcem::cos(theta);
+        const T im = wc * gcem::sin(theta);
+        const T mag_sq = re * re + im * im;
+
+        // LP: b(s) = |p|^2 (unity DC gain), a(s) = (s-p)(s-conj(p))
+        T b_c[3]{static_cast<T>(0), static_cast<T>(0), mag_sq};
+        T a_c[3]{static_cast<T>(1), -static_cast<T>(2) * re, mag_sq};
+
+        FactoredTF<T, 2u> factored{};
+        factored.poles[0] = {re, im};
+        factored.poles[1] = {re, -im};
+        factored.nz = 0;
+        factored.gain = mag_sq;
+
+        TransferFunction<T, 3u, 3u> ctf{};
+        for (consteig::Size j = 0u; j < 3u; ++j)
+        {
+            ctf.b[j] = b_c[j];
+            ctf.a[j] = a_c[j];
+        }
+
+        const AnalogFilter<T, 2u, Method> sec{ctf, factored, sample_rate_hz,
+                                              method_tag};
+        T b_d[3]{};
+        T a_d[3]{};
+        for (consteig::Size j = 0u; j < 3u; ++j)
+        {
+            b_d[j] = sec.coeffs_b()[j];
+            a_d[j] = sec.coeffs_a()[j];
+        }
+        return Filter<T, 3u, 3u>{b_d, a_d};
+    }
+
+    static constexpr Filter<T, 3u, 3u> make_complex_section(
+        T wc, consteig::Size pair_idx, T sample_rate_hz, BoundMethod method_tag,
+        HighPass)
+    {
+        const T theta = static_cast<T>(GCEM_PI) *
+                        static_cast<T>(2u * (pair_idx + 1u) + N - 1u) /
+                        static_cast<T>(2u * N);
+        const T re = wc * gcem::cos(theta);
+        const T im = wc * gcem::sin(theta);
+        const T mag_sq = re * re + im * im;
+
+        // HP: zeros at s=0 (N zeros total), unity high-freq gain
+        T b_c[3]{static_cast<T>(1), static_cast<T>(0), static_cast<T>(0)};
+        T a_c[3]{static_cast<T>(1), -static_cast<T>(2) * re, mag_sq};
+
+        FactoredTF<T, 2u> factored{};
+        factored.poles[0] = {re, im};
+        factored.poles[1] = {re, -im};
+        factored.nz = 2;
+        factored.zeros[0] = {static_cast<T>(0), static_cast<T>(0)};
+        factored.zeros[1] = {static_cast<T>(0), static_cast<T>(0)};
+        factored.gain = static_cast<T>(1);
+
+        TransferFunction<T, 3u, 3u> ctf{};
+        for (consteig::Size j = 0u; j < 3u; ++j)
+        {
+            ctf.b[j] = b_c[j];
+            ctf.a[j] = a_c[j];
+        }
+
+        const AnalogFilter<T, 2u, Method> sec{ctf, factored, sample_rate_hz,
+                                              method_tag};
+        T b_d[3]{};
+        T a_d[3]{};
+        for (consteig::Size j = 0u; j < 3u; ++j)
+        {
+            b_d[j] = sec.coeffs_b()[j];
+            a_d[j] = sec.coeffs_a()[j];
+        }
+        return Filter<T, 3u, 3u>{b_d, a_d};
+    }
+
+    // First-order real pole section for odd N, padded to biquad storage.
+    // LP real pole is at s = -wc (left half plane), giving unity DC gain.
+    static constexpr Filter<T, 3u, 3u> make_real_section(T wc, T sample_rate_hz,
+                                                         BoundMethod method_tag,
+                                                         LowPass)
+    {
+        TransferFunction<T, 2u, 2u> ctf{};
+        ctf.b[0] = static_cast<T>(0);
+        ctf.b[1] = wc;
+        ctf.a[0] = static_cast<T>(1);
+        ctf.a[1] = wc;
+
+        const AnalogFilter<T, 1u, Method> sec{ctf, sample_rate_hz, method_tag};
+        T b_d[3]{sec.coeffs_b()[0], sec.coeffs_b()[1], static_cast<T>(0)};
+        T a_d[3]{sec.coeffs_a()[0], sec.coeffs_a()[1], static_cast<T>(0)};
+        return Filter<T, 3u, 3u>{b_d, a_d};
+    }
+
+    // HP real pole at s = -wc, zero at s = 0 (LP-to-HP transform), unity
+    // high-freq gain.
+    static constexpr Filter<T, 3u, 3u> make_real_section(T wc, T sample_rate_hz,
+                                                         BoundMethod method_tag,
+                                                         HighPass)
+    {
+        TransferFunction<T, 2u, 2u> ctf{};
+        ctf.b[0] = static_cast<T>(1);
+        ctf.b[1] = static_cast<T>(0);
+        ctf.a[0] = static_cast<T>(1);
+        ctf.a[1] = wc;
+
+        const AnalogFilter<T, 1u, Method> sec{ctf, sample_rate_hz, method_tag};
+        T b_d[3]{sec.coeffs_b()[0], sec.coeffs_b()[1], static_cast<T>(0)};
+        T a_d[3]{sec.coeffs_a()[0], sec.coeffs_a()[1], static_cast<T>(0)};
+        return Filter<T, 3u, 3u>{b_d, a_d};
+    }
+};
+
+// Partial specialization: direct-form realization (opt-in via SOS=false).
+// Inherits from ButterworthImpl which extends AnalogFilter<T, N, Method>.
+// Preserves the existing single-filter interface (coeffs_b, coeffs_a, etc.).
+template <typename T, consteig::Size N, typename Method, typename FilterType>
+class Butterworth<T, N, Method, FilterType, false>
+    : public ButterworthImpl<T, N, Method, FilterType>
+{
+  public:
+    constexpr Butterworth(T cutoff_hz, T sample_rate_hz)
+        : ButterworthImpl<T, N, Method, FilterType>(cutoff_hz, sample_rate_hz)
+    {
+    }
+
+    constexpr Butterworth(T cutoff_hz, T sample_rate_hz, T zeta)
+        : ButterworthImpl<T, N, Method, FilterType>(cutoff_hz, sample_rate_hz,
+                                                    zeta)
+    {
+    }
+};
+
 // Convenience aliases for first-order RC-equivalent filters.
+// N=1 has a single real pole; SOS offers no advantage, so these use
+// direct form.
 template <typename T, typename Method = TustinPW>
-using FirstOrderLowPass = Butterworth<T, 1u, Method, LowPass>;
+using FirstOrderLowPass = Butterworth<T, 1u, Method, LowPass, false>;
 
 template <typename T, typename Method = TustinPW>
-using FirstOrderHighPass = Butterworth<T, 1u, Method, HighPass>;
+using FirstOrderHighPass = Butterworth<T, 1u, Method, HighPass, false>;
 
 } // namespace constfilt
 

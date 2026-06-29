@@ -8,14 +8,6 @@
 namespace constfilt
 {
 
-struct LowPass
-{
-};
-
-struct HighPass
-{
-};
-
 // Template parameters:
 //   T          - floating-point scalar type
 //   N          - filter order (>= 1)

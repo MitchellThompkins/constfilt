@@ -8,6 +8,14 @@
 namespace constfilt
 {
 
+struct LowPass
+{
+};
+
+struct HighPass
+{
+};
+
 // Discretize an analog (continuous-time, s-domain) transfer function into a
 // digital Filter.
 //

@@ -37,11 +37,11 @@ tested order, and faster than ZOH by a wider margin.
 Benchmarks process 5 million samples and report the best time across 5
 repetitions, in nanoseconds per sample.
 
-**Butterworth library comparison** (constfilt averaged across discretization methods):
+**Butterworth library comparison** (constfilt direct-form and SOS each averaged across discretization methods):
 
 ![Runtime throughput Butterworth](profiling/results/runtime_gcc_15.2.0_butterworth.png)
 
-**Elliptic library comparison** (constfilt averaged across discretization methods):
+**Elliptic library comparison** (constfilt direct-form and SOS each averaged across discretization methods):
 
 ![Runtime throughput Elliptic](profiling/results/runtime_gcc_15.2.0_elliptic.png)
 
@@ -50,20 +50,22 @@ repetitions, in nanoseconds per sample.
 ![Runtime throughput constfilt](profiling/results/runtime_gcc_15.2.0_constfilt.png)
 
 constfilt and iir1 scale roughly linearly with filter order and are within a few
-nanoseconds of each other. Elliptic throughput matches Butterworth at the same
-order because both use the same Direct Form II Transposed runtime path. See the
-Comparison libraries section for notes on the kfr results.
+nanoseconds of each other. Direct-form Elliptic throughput matches Butterworth at
+the same order because both share the same Direct Form II Transposed runtime path.
+SOS variants cascade ceil(N/2) biquads, so their per-sample cost grows with the
+number of sections rather than the polynomial degree. See the Comparison libraries
+section for notes on the kfr results.
 
 ### Numerical accuracy
 
 Coefficient and step response accuracy are measured against an Octave reference
 for orders 1 through 12.
 
-**Butterworth library comparison:**
+**Butterworth library comparison** (constfilt shown separately for direct-form and SOS):
 
 ![Accuracy Butterworth](profiling/results/accuracy_gcc_15.2.0_butterworth.png)
 
-**Elliptic library comparison:**
+**Elliptic library comparison** (constfilt shown separately for direct-form and SOS):
 
 ![Accuracy Elliptic](profiling/results/accuracy_gcc_15.2.0_elliptic.png)
 
@@ -73,12 +75,14 @@ for orders 1 through 12.
 
 ZOH accuracy degrades sharply above order 8 because the matrix exponential uses
 eigendecomposition, which loses precision as eigenvalues spread at high orders.
-MatchedZ and Tustin (prewarped) remain near machine precision through order 12;
-TustinNW would show a systematic cutoff-frequency offset against this reference
-because the Octave reference uses the prewarped bilinear transform. kfr's
-elliptic step responses differ from the Octave reference by roughly 1e-5 to 1e-6
-across all tested orders, which I think reflects a different pole placement
-algorithm rather than a numerical precision problem
+MatchedZ and Tustin (prewarped) remain near machine precision through order 12 for
+both direct-form and SOS; SOS accuracy is measured via step response only (b/a
+coefficients are internal to each biquad section). TustinNW would show a
+systematic cutoff-frequency offset against this reference because the Octave
+reference uses the prewarped bilinear transform. kfr's elliptic step responses
+differ from the Octave reference by roughly 1e-5 to 1e-6 across all tested orders,
+which I think reflects a different pole placement algorithm rather than a numerical
+precision problem
 ([issue #41](https://github.com/MitchellThompkins/constfilt/issues/41)).
 
 ## Comparison libraries

@@ -34,25 +34,26 @@ function of a continuous-time system $H(s)$ is:
 $$H_d(z) = (1 - z^{-1}) \cdot \mathcal{Z}\!\left\{ \mathcal{L}^{-1}\!\left\{ \frac{H(s)}{s} \right\}(nT_s) \right\}$$
 
 The $1/s$ factor means it is the step response of the **entire** system that gets
-sampled, not the step responses of the individual sections. Because
-
-$$\mathcal{L}^{-1}\!\left\{ \frac{H_1(s) H_2(s)}{s} \right\} \neq
-\mathcal{L}^{-1}\!\left\{ \frac{H_1(s)}{s} \right\} *
-\mathcal{L}^{-1}\!\left\{ \frac{H_2(s)}{s} \right\}$$
-
-the ZOH of a product is not the product of the ZOHs:
+sampled as a unit. This makes ZOH non-separable over products:
 
 $$\text{ZOH}(H_1 \cdot H_2) \neq \text{ZOH}(H_1) \cdot \text{ZOH}(H_2)$$
 
 ### Counterexample
 
-Let $H(s) = 1/(s+1)^2$, $T_s = 0.1$:
+Let $H(s) = 1/(s+1)^2$ with $H_1(s) = H_2(s) = 1/(s+1)$, and let $a = e^{-T_s}$.
 
-- $\text{ZOH}(H)$ samples the double-pole step response $t e^{-t}$, producing a
-  numerator that depends on $(z-1)$ terms.
-- $\text{ZOH}(1/(s+1)) \cdot \text{ZOH}(1/(s+1)) = (1 - e^{-0.1})^2 / (z - e^{-0.1})^2$
+The step response of $H$ is $h_\text{step}(t) = 1 - e^{-t} - te^{-t}$. Sampling
+and applying the ZOH formula gives:
 
-These are numerically different transfer functions.
+$$\text{ZOH}(H_1 \cdot H_2) = \frac{\bigl(1 - a(1 + T_s)\bigr)\,z + a(a - 1 + T_s)}{(z - a)^2}$$
+
+Cascading the individually ZOH-discretized first-order sections gives:
+
+$$\text{ZOH}(H_1) \cdot \text{ZOH}(H_2) = \frac{(1 - a)^2}{(z - a)^2}$$
+
+Both have the same denominator but different numerators so the ZOH of a cascaded
+set of filters is _not_ equilvalent to the ZOH of a single filter of the same
+effective order.
 
 ### Consequences for SOS
 

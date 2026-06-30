@@ -647,6 +647,11 @@ template <typename T, consteig::Size N, typename Method = TustinPW,
 class Elliptic
 {
     static_assert(N >= 1u, "Elliptic order must be at least 1");
+    static_assert(
+        !is_zoh_tag<Method>::value,
+        "Elliptic SOS + ZOH: ZOH is not separable over cascaded "
+        "sections and produces a different filter than full-order ZOH. "
+        "Use SOS=false for ZOH, or switch to TustinPW or MatchedZ.");
 
     using BoundMethod = typename bind_method<T, Method>::type;
     using Impl = EllipticImpl<T, N, Method, FilterType>;

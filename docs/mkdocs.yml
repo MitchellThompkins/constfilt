@@ -45,6 +45,7 @@ nav:
       - Butterworth: butterworth.md
       - Elliptic: elliptic.md
       - Discretization Methods: discretization.md
+      - SOS Separability: sos-discretization.md
   - Development:
       - Building & Testing: building.md
       - Verification: verification.md

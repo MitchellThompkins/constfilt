@@ -739,9 +739,8 @@ class Elliptic
                           factored.poles[2u * pair_idx + 1u]};
         Complex zeros[2u]{factored.zeros[2u * pair_idx],
                           factored.zeros[2u * pair_idx + 1u]};
-        const auto dtf = matched_z_assemble_sos<T, 2u>(poles, zeros, 2u,
-                                                       section_gain, Ts,
-                                                       w_c_global, 0u);
+        const auto dtf = matched_z_assemble_sos<T, 2u>(
+            poles, zeros, 2u, section_gain, Ts, w_c_global, 0u);
         T b_d[3]{dtf.b[0], dtf.b[1], dtf.b[2]};
         T a_d[3]{dtf.a[0], dtf.a[1], dtf.a[2]};
         return Filter<T, 3u, 3u>{b_d, a_d};

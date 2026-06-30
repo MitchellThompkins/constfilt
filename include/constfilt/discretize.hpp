@@ -704,9 +704,8 @@ constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_assemble_sos(
     for (consteig::Size k = 0u; k < n_extra; ++k)
     {
         const consteig::Size idx = nz + k;
-        zero_poly[idx + 1u] =
-            Complex{static_cast<T>(0), static_cast<T>(0)} -
-            neg_one * zero_poly[idx];
+        zero_poly[idx + 1u] = Complex{static_cast<T>(0), static_cast<T>(0)} -
+                              neg_one * zero_poly[idx];
         for (consteig::Size i = idx; i > 0u; --i)
         {
             zero_poly[i] = zero_poly[i] - neg_one * zero_poly[i - 1u];

@@ -296,9 +296,8 @@ class Butterworth
             {
                 const consteig::Size extra =
                     n_extra_rem >= 1u ? 1u : n_extra_rem;
-                _sections[kSections - 1u] =
-                    make_real_section_mz(wc, Ts, w_c_global, extra,
-                                        FilterType{});
+                _sections[kSections - 1u] = make_real_section_mz(
+                    wc, Ts, w_c_global, extra, FilterType{});
             }
         }
         else
@@ -345,9 +344,8 @@ class Butterworth
             {
                 const consteig::Size extra =
                     n_extra_rem >= 1u ? 1u : n_extra_rem;
-                _sections[kSections - 1u] =
-                    make_real_section_mz(wc, Ts, w_c_global, extra,
-                                        FilterType{});
+                _sections[kSections - 1u] = make_real_section_mz(
+                    wc, Ts, w_c_global, extra, FilterType{});
             }
         }
         else
@@ -428,9 +426,8 @@ class Butterworth
         using Complex = consteig::Complex<T>;
         Complex poles[2u]{{re, im}, {re, -im}};
         Complex zeros[2u]{};
-        const auto dtf = matched_z_assemble_sos<T, 2u>(poles, zeros, 0u,
-                                                       wc * wc, Ts, w_c,
-                                                       n_extra);
+        const auto dtf = matched_z_assemble_sos<T, 2u>(
+            poles, zeros, 0u, wc * wc, Ts, w_c, n_extra);
         T b_d[3]{dtf.b[0], dtf.b[1], dtf.b[2]};
         T a_d[3]{dtf.a[0], dtf.a[1], dtf.a[2]};
         return Filter<T, 3u, 3u>{b_d, a_d};
@@ -449,72 +446,61 @@ class Butterworth
         Complex poles[2u]{{re, im}, {re, -im}};
         Complex zeros[2u]{{static_cast<T>(0), static_cast<T>(0)},
                           {static_cast<T>(0), static_cast<T>(0)}};
-        const auto dtf = matched_z_assemble_sos<T, 2u>(poles, zeros, 2u,
-                                                       static_cast<T>(1), Ts,
-                                                       w_c, 0u);
+        const auto dtf = matched_z_assemble_sos<T, 2u>(
+            poles, zeros, 2u, static_cast<T>(1), Ts, w_c, 0u);
         T b_d[3]{dtf.b[0], dtf.b[1], dtf.b[2]};
         T a_d[3]{dtf.a[0], dtf.a[1], dtf.a[2]};
         return Filter<T, 3u, 3u>{b_d, a_d};
     }
 
-    static constexpr Filter<T, 3u, 3u> make_zeta_section_mz(T re, T im, T wc,
-                                                             T Ts, T w_c,
-                                                             consteig::Size n_extra,
-                                                             LowPass)
+    static constexpr Filter<T, 3u, 3u> make_zeta_section_mz(
+        T re, T im, T wc, T Ts, T w_c, consteig::Size n_extra, LowPass)
     {
         using Complex = consteig::Complex<T>;
         Complex poles[2u]{{re, im}, {re, -im}};
         Complex zeros[2u]{};
-        const auto dtf = matched_z_assemble_sos<T, 2u>(poles, zeros, 0u,
-                                                       wc * wc, Ts, w_c,
-                                                       n_extra);
+        const auto dtf = matched_z_assemble_sos<T, 2u>(
+            poles, zeros, 0u, wc * wc, Ts, w_c, n_extra);
         T b_d[3]{dtf.b[0], dtf.b[1], dtf.b[2]};
         T a_d[3]{dtf.a[0], dtf.a[1], dtf.a[2]};
         return Filter<T, 3u, 3u>{b_d, a_d};
     }
 
-    static constexpr Filter<T, 3u, 3u> make_zeta_section_mz(T re, T im,
-                                                             T /*wc*/, T Ts,
-                                                             T w_c,
-                                                             consteig::Size /*n_extra*/,
-                                                             HighPass)
+    static constexpr Filter<T, 3u, 3u> make_zeta_section_mz(
+        T re, T im, T /*wc*/, T Ts, T w_c, consteig::Size /*n_extra*/, HighPass)
     {
         using Complex = consteig::Complex<T>;
         Complex poles[2u]{{re, im}, {re, -im}};
         Complex zeros[2u]{{static_cast<T>(0), static_cast<T>(0)},
                           {static_cast<T>(0), static_cast<T>(0)}};
-        const auto dtf = matched_z_assemble_sos<T, 2u>(poles, zeros, 2u,
-                                                       static_cast<T>(1), Ts,
-                                                       w_c, 0u);
+        const auto dtf = matched_z_assemble_sos<T, 2u>(
+            poles, zeros, 2u, static_cast<T>(1), Ts, w_c, 0u);
         T b_d[3]{dtf.b[0], dtf.b[1], dtf.b[2]};
         T a_d[3]{dtf.a[0], dtf.a[1], dtf.a[2]};
         return Filter<T, 3u, 3u>{b_d, a_d};
     }
 
-    static constexpr Filter<T, 3u, 3u> make_real_section_mz(T wc, T Ts, T w_c,
-                                                             consteig::Size n_extra,
-                                                             LowPass)
+    static constexpr Filter<T, 3u, 3u> make_real_section_mz(
+        T wc, T Ts, T w_c, consteig::Size n_extra, LowPass)
     {
         using Complex = consteig::Complex<T>;
         Complex poles[1u]{{-wc, static_cast<T>(0)}};
         Complex zeros[1u]{};
-        const auto dtf = matched_z_assemble_sos<T, 1u>(poles, zeros, 0u, wc,
-                                                       Ts, w_c, n_extra);
+        const auto dtf = matched_z_assemble_sos<T, 1u>(poles, zeros, 0u, wc, Ts,
+                                                       w_c, n_extra);
         T b_d[3]{dtf.b[0], dtf.b[1], static_cast<T>(0)};
         T a_d[3]{dtf.a[0], dtf.a[1], static_cast<T>(0)};
         return Filter<T, 3u, 3u>{b_d, a_d};
     }
 
-    static constexpr Filter<T, 3u, 3u> make_real_section_mz(T wc, T Ts, T w_c,
-                                                             consteig::Size /*n_extra*/,
-                                                             HighPass)
+    static constexpr Filter<T, 3u, 3u> make_real_section_mz(
+        T wc, T Ts, T w_c, consteig::Size /*n_extra*/, HighPass)
     {
         using Complex = consteig::Complex<T>;
         Complex poles[1u]{{-wc, static_cast<T>(0)}};
         Complex zeros[1u]{{static_cast<T>(0), static_cast<T>(0)}};
-        const auto dtf = matched_z_assemble_sos<T, 1u>(poles, zeros, 1u,
-                                                       static_cast<T>(1), Ts,
-                                                       w_c, 0u);
+        const auto dtf = matched_z_assemble_sos<T, 1u>(
+            poles, zeros, 1u, static_cast<T>(1), Ts, w_c, 0u);
         T b_d[3]{dtf.b[0], dtf.b[1], static_cast<T>(0)};
         T a_d[3]{dtf.a[0], dtf.a[1], static_cast<T>(0)};
         return Filter<T, 3u, 3u>{b_d, a_d};

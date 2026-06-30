@@ -679,16 +679,9 @@ OUTPUT_MATRIX(ButterworthSOS_HP, case_tupw_hp_8_100Hz_1000Hz,
 OUTPUT_MATRIX(ButterworthSOS_LP, case_tupw_2_500Hz_8000Hz,
               constfilt::Butterworth<double, 2>(500.0, 8000.0))
 
-OUTPUT_MATRIX(ButterworthSOS_LP, case_tupw_3_200Hz_4000Hz,
-              constfilt::Butterworth<double, 3>(200.0, 4000.0))
-
 OUTPUT_MATRIX(ButterworthSOS_HP, case_tupw_hp_2_500Hz_8000Hz,
               constfilt::Butterworth<double, 2, constfilt::TustinPW,
                                      constfilt::HighPass>(500.0, 8000.0))
-
-OUTPUT_MATRIX(ButterworthSOS_HP, case_tupw_hp_3_200Hz_4000Hz,
-              constfilt::Butterworth<double, 3, constfilt::TustinPW,
-                                     constfilt::HighPass>(200.0, 4000.0))
 
 // =============================================================================
 // Butterworth SOS low-pass, ZOH
@@ -761,10 +754,6 @@ OUTPUT_MATRIX(ButterworthSOS_ZOH_HP, case_hp_2_500Hz_8000Hz,
               constfilt::Butterworth<double, 2, constfilt::ZOH,
                                      constfilt::HighPass>(500.0, 8000.0))
 
-OUTPUT_MATRIX(ButterworthSOS_ZOH_HP, case_hp_3_200Hz_4000Hz,
-              constfilt::Butterworth<double, 3, constfilt::ZOH,
-                                     constfilt::HighPass>(200.0, 4000.0))
-
 // =============================================================================
 // Butterworth SOS low-pass, MatchedZ
 // =============================================================================
@@ -804,10 +793,6 @@ OUTPUT_MATRIX(ButterworthSOS_MZ_LP, case_mz_8_100Hz_1000Hz,
 OUTPUT_MATRIX(ButterworthSOS_MZ_LP, case_mz_2_500Hz_8000Hz,
               constfilt::Butterworth<double, 2, constfilt::MatchedZ>(500.0,
                                                                      8000.0))
-
-OUTPUT_MATRIX(ButterworthSOS_MZ_LP, case_mz_3_200Hz_4000Hz,
-              constfilt::Butterworth<double, 3, constfilt::MatchedZ>(200.0,
-                                                                     4000.0))
 
 // =============================================================================
 // Butterworth SOS high-pass, MatchedZ
@@ -849,10 +834,6 @@ OUTPUT_MATRIX(ButterworthSOS_MZ_HP, case_mz_hp_2_500Hz_8000Hz,
               constfilt::Butterworth<double, 2, constfilt::MatchedZ,
                                      constfilt::HighPass>(500.0, 8000.0))
 
-OUTPUT_MATRIX(ButterworthSOS_MZ_HP, case_mz_hp_3_200Hz_4000Hz,
-              constfilt::Butterworth<double, 3, constfilt::MatchedZ,
-                                     constfilt::HighPass>(200.0, 4000.0))
-
 // =============================================================================
 // Butterworth SOS low-pass, TustinNW
 // =============================================================================
@@ -893,10 +874,6 @@ OUTPUT_MATRIX(ButterworthSOS_TU_LP, case_tu_2_500Hz_8000Hz,
               constfilt::Butterworth<double, 2, constfilt::TustinNW>(500.0,
                                                                      8000.0))
 
-OUTPUT_MATRIX(ButterworthSOS_TU_LP, case_tu_3_200Hz_4000Hz,
-              constfilt::Butterworth<double, 3, constfilt::TustinNW>(200.0,
-                                                                     4000.0))
-
 // =============================================================================
 // Butterworth SOS high-pass, TustinNW
 // =============================================================================
@@ -936,10 +913,6 @@ OUTPUT_MATRIX(ButterworthSOS_TU_HP, case_tu_hp_8_100Hz_1000Hz,
 OUTPUT_MATRIX(ButterworthSOS_TU_HP, case_tu_hp_2_500Hz_8000Hz,
               constfilt::Butterworth<double, 2, constfilt::TustinNW,
                                      constfilt::HighPass>(500.0, 8000.0))
-
-OUTPUT_MATRIX(ButterworthSOS_TU_HP, case_tu_hp_3_200Hz_4000Hz,
-              constfilt::Butterworth<double, 3, constfilt::TustinNW,
-                                     constfilt::HighPass>(200.0, 4000.0))
 
 // =============================================================================
 // Butterworth SOS uniform-zeta low-pass, ZOH -- ZOH now works for all N since

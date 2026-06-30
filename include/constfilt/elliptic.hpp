@@ -722,6 +722,12 @@ class Elliptic
         }
     }
 
+    void reset() const
+    {
+        for (consteig::Size i = 0u; i < kSections; ++i)
+            _sections[i].reset();
+    }
+
   private:
     // Pure Matched-Z second-order section: n_extra=0, caller-supplied w_c.
     // Used when Method=MatchedZ so that all sections share the global test

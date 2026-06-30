@@ -385,6 +385,12 @@ class Butterworth
         }
     }
 
+    void reset() const
+    {
+        for (consteig::Size i = 0u; i < kSections; ++i)
+            _sections[i].reset();
+    }
+
   private:
     // Global Matched-Z test frequency for SOS sections.
     // LP: no zeros at s=0 and all poles in LHP; w_c=0 avoids all collisions.

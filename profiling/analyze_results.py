@@ -155,7 +155,7 @@ def print_runtime_table(data, dc, orders, groups):
     # iir1 and KFR don't have separate ZOH/MatchedZ implementations;
     # their method label is "runtime" / "runtime+simd" respectively.
     # Show "N/A" in cells where a library simply has no data for a method.
-    constfilt_methods = {"tustin", "zoh", "matchedz"}
+    constfilt_methods = {"tustin", "zoh", "matchedz", "tustin_sos", "matchedz_sos"}
     all_methods = sorted({grp.rsplit("_", 1)[-1] for grp in groups})
 
     # Throughput table
@@ -193,15 +193,31 @@ def print_runtime_table(data, dc, orders, groups):
     print()
 
 
+_KNOWN_FILTER_TYPES = ("Butterworth", "Elliptic", "butterworth", "elliptic")
+
+
 def _parse_group(grp):
-    """Return (lib, filter_type, method) from a 'lib_filtertype_method' group string."""
+    """Return (lib, filter_type, method) from a 'lib_filtertype_method' group string.
+
+    Method names may contain underscores (e.g. 'tustin_sos'), so we match on
+    known filter-type prefixes rather than splitting on the last underscore.
+    """
     for lib in ("constfilt", "iir1", "kfr"):
         if grp.startswith(lib + "_"):
             rest = grp[len(lib) + 1:]
+            for ftype in _KNOWN_FILTER_TYPES:
+                if rest.startswith(ftype + "_"):
+                    method = rest[len(ftype) + 1:]
+                    return lib, ftype, method
             idx = rest.rfind("_")
             return lib, rest[:idx], rest[idx + 1:]
     parts = grp.split("_", 2)
     return (parts + ["", ""])[:3]
+
+
+def _constfilt_variant(method):
+    """Map a constfilt method string to a display key for comparison plots."""
+    return "constfilt (SOS)" if method.endswith("_sos") else "constfilt (direct)"
 
 
 def plot_runtime(data, orders, groups, csv_path, label):
@@ -214,26 +230,29 @@ def plot_runtime(data, orders, groups, csv_path, label):
     parsed = {grp: _parse_group(grp) for grp in groups}
     filter_types = sorted({ft for _, ft, _ in parsed.values()})
 
-    # One comparison plot per filter type: one line per library (constfilt averaged)
+    # One comparison plot per filter type.
+    # constfilt is split into two lines: direct-form and SOS cascade (averaged
+    # across discretization methods within each variant).
     for ftype in filter_types:
         lib_data = defaultdict(lambda: defaultdict(list))
-        for grp, (lib, ft, _) in parsed.items():
+        for grp, (lib, ft, method) in parsed.items():
             if ft != ftype:
                 continue
+            key = _constfilt_variant(method) if lib == "constfilt" else lib
             for o in orders:
                 vals = data.get((grp, o), [])
-                lib_data[lib][o].extend(vals)
+                lib_data[key][o].extend(vals)
 
         fig, ax = plt.subplots(figsize=(10, 6))
         cycle = itertools.cycle(plt.rcParams["axes.prop_cycle"])
-        for lib in sorted(lib_data):
+        for lib_key in sorted(lib_data):
             col = next(cycle)["color"]
-            xs = sorted(o for o in lib_data[lib] if lib_data[lib][o])
-            ys = [sum(lib_data[lib][o]) / len(lib_data[lib][o]) for o in xs]
-            ls = "--" if lib == "kfr" else "-"
-            note = " (SIMD batch=256)" if lib == "kfr" else ""
+            xs = sorted(o for o in lib_data[lib_key] if lib_data[lib_key][o])
+            ys = [sum(lib_data[lib_key][o]) / len(lib_data[lib_key][o]) for o in xs]
+            ls = "--" if lib_key == "kfr" else (":" if "(SOS)" in lib_key else "-")
+            note = " (SIMD batch=256)" if lib_key == "kfr" else ""
             ax.plot(xs, ys, marker="o", linestyle=ls,
-                    label=f"{lib} {ftype}{note}", color=col)
+                    label=f"{lib_key} {ftype}{note}", color=col)
 
         ax.set_xlabel("Filter Order")
         ax.set_ylabel("ns / sample")
@@ -343,27 +362,31 @@ def plot_accuracy(data, orders, groups, csv_path, label):
     parsed = {grp: _parse_group(grp) for grp in groups}
     filter_types = sorted({ft for _, ft, _ in parsed.values()})
 
-    # One comparison plot per filter type: one line per library (constfilt best method)
+    # One comparison plot per filter type.
+    # constfilt is split into direct-form and SOS; best (min) error shown per variant.
     for ftype in filter_types:
-        lib_best = defaultdict(dict)  # lib -> order -> min step error
-        for grp, (lib, ft, _) in parsed.items():
+        lib_best = defaultdict(dict)  # key -> order -> min step error
+        for grp, (lib, ft, method) in parsed.items():
             if ft != ftype:
                 continue
+            key = _constfilt_variant(method) if lib == "constfilt" else lib
             for o, entry in data[grp].items():
                 if entry["step"] is None:
                     continue
-                prev = lib_best[lib].get(o)
+                prev = lib_best[key].get(o)
                 if prev is None or entry["step"] < prev:
-                    lib_best[lib][o] = entry["step"]
+                    lib_best[key][o] = entry["step"]
 
         fig, ax = plt.subplots(figsize=(10, 6))
         cycle = itertools.cycle(plt.rcParams["axes.prop_cycle"])
-        for lib in sorted(lib_best):
+        for lib_key in sorted(lib_best):
             col = next(cycle)["color"]
-            xs = sorted(o for o, v in lib_best[lib].items() if v > 0)
-            ys = [lib_best[lib][o] for o in xs]
+            xs = sorted(o for o, v in lib_best[lib_key].items() if v > 0)
+            ys = [lib_best[lib_key][o] for o in xs]
             if xs:
-                ax.semilogy(xs, ys, marker="o", label=f"{lib} {ftype}", color=col)
+                ls = "--" if lib_key == "kfr" else (":" if "(SOS)" in lib_key else "-")
+                ax.semilogy(xs, ys, marker="o", linestyle=ls,
+                            label=f"{lib_key} {ftype}", color=col)
 
         ax.axhline(ACCURACY_THRESHOLD, color="red", linestyle="--",
                    label=f"threshold ({ACCURACY_THRESHOLD:.0e})")

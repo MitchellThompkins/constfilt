@@ -58,15 +58,10 @@ effective order.
 ### Consequences for SOS
 
 ZOH SOS is never mathematically equivalent to full-order ZOH, for any filter
-type. The error depends on the filter poles, zeros, and the ratio $T_s \omega_c$.
-For Butterworth LP at typical test parameters ($f_c = 100\,\text{Hz}$,
-$f_s = 1000\,\text{Hz}$) the error happens to fall below $10^{-7}$; at different
-parameters it need not. For Elliptic filters the finite imaginary zeros produce
-larger coupling errors ($10^{-6}$ to $10^{-3}$ observed) that exceed the test
-tolerance for the same parameters.
+type. While it _can_ be done, the error introduced depends on the filter poles,
+zeros, and the ratio $T_s \omega_c$.
 
-### Summary
-
-ZOH is not appropriate for SOS. Use `SOS = false` when `Method = ZOH`.
-Tustin and Matched-Z are separable and work correctly with SOS for any filter
-type.
+For Butterworth LP at typical test parameters ($f_c = 100\,\text{Hz}$, $f_s =
+1000\,\text{Hz}$) the error happens to fall below $10^{-7}$. That's not bounded
+though so at different parameters it may have more error. For Elliptic filters
+the finite imaginary zeros produce larger errors.

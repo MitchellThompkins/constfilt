@@ -1,8 +1,11 @@
 # SOS discretization separability
 
-When a filter is realized as a cascade of second-order sections (SOS), each
-section is discretized independently. Whether the result is equivalent to
-discretizing the full-order filter depends on the discretization method.
+To avoid the numerical accuracy errors introduced by operating on large
+state-space matrices that are produced by high-order filters, a cascade of
+second-order sections (SOS) can be used where each section is discretized
+independently. That is the default method used by this library to improve
+numerical accuracy. However whether the result is equivalent to discretizing the
+full-order filter depends on the discretization method.
 
 ## Tustin (bilinear)
 

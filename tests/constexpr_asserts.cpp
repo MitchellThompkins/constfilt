@@ -622,7 +622,8 @@ static_assert(array_near_eq(kAfTuChirp.v, ctf_ref::case_5_tustin_fs10::chirp,
 // =============================================================================
 constexpr Arr<256> bw_lp8_step()
 {
-    constfilt::Butterworth<double, 8, constfilt::ZOH> f(100.0, 1000.0);
+    constfilt::Butterworth<double, 8, constfilt::ZOH, constfilt::LowPass, false>
+        f(100.0, 1000.0);
     double in[256]{};
     for (unsigned i = 0; i < 256; ++i)
         in[i] = 1.0;
@@ -637,7 +638,8 @@ static_assert(array_near_eq(kBwLp8Step.v, bw_ref::case_8_100Hz_1000Hz::step,
 
 constexpr Arr<256> bw_lp8_impulse()
 {
-    constfilt::Butterworth<double, 8, constfilt::ZOH> f(100.0, 1000.0);
+    constfilt::Butterworth<double, 8, constfilt::ZOH, constfilt::LowPass, false>
+        f(100.0, 1000.0);
     double in[256]{};
     in[0] = 1.0;
     Arr<256> out{};
@@ -652,7 +654,8 @@ static_assert(array_near_eq(kBwLp8Impulse.v,
 constexpr Arr<4096> bw_lp8_chirp()
 {
     using Ref = bw_ref::case_8_100Hz_1000Hz;
-    constfilt::Butterworth<double, 8, constfilt::ZOH> f(100.0, 1000.0);
+    constfilt::Butterworth<double, 8, constfilt::ZOH, constfilt::LowPass, false>
+        f(100.0, 1000.0);
     double in[4096]{};
     for (unsigned i = 0; i < 4096; ++i)
         in[i] = Ref::chirp_in[i];
@@ -671,8 +674,9 @@ static_assert(array_near_eq(kBwLp8Chirp.v, bw_ref::case_8_100Hz_1000Hz::chirp,
 // =============================================================================
 namespace
 {
-static constexpr constfilt::Butterworth<double, 2, constfilt::ZOH> kBwLp2(
-    100.0, 1000.0);
+static constexpr constfilt::Butterworth<double, 2, constfilt::ZOH,
+                                        constfilt::LowPass, false>
+    kBwLp2(100.0, 1000.0);
 static_assert(near_eq(kBwLp2.coeffs_b()[1], bw_ref::case_2_100Hz_1000Hz::b[1],
                       kCoeffTol),
               "Butterworth LP N=2: constexpr ctor b[1] disagrees");
@@ -680,10 +684,9 @@ static_assert(near_eq(kBwLp2.coeffs_a()[1], bw_ref::case_2_100Hz_1000Hz::a[1],
                       kCoeffTol),
               "Butterworth LP N=2: constexpr ctor a[1] disagrees");
 
-static constexpr constfilt::Elliptic<double, 2, constfilt::ZOH> kElLp2(100.0,
-                                                                       0.5,
-                                                                       40.0,
-                                                                       1000.0);
+static constexpr constfilt::Elliptic<double, 2, constfilt::ZOH,
+                                     constfilt::LowPass, false>
+    kElLp2(100.0, 0.5, 40.0, 1000.0);
 static_assert(near_eq(kElLp2.coeffs_b()[0],
                       el_ref::lp_2_5rp_40rs_100Hz_1000Hz::b[0], kCoeffTol),
               "Elliptic LP N=2: constexpr ctor b[0] disagrees");
@@ -693,7 +696,11 @@ static_assert(near_eq(kElLp2.coeffs_a()[1],
 
 // Default method must be TustinPW: a[1] differs between ZOH and TustinNW,
 // so checking against the Tustin reference (and != ZOH) pins the default.
-static constexpr constfilt::Butterworth<double, 2> kBwDefaultLp2(100.0, 1000.0);
+// SOS=false used here so coeffs_b/coeffs_a are accessible; the default
+// method is verified independently by the runtime ButterworthDefault tests.
+static constexpr constfilt::Butterworth<double, 2, constfilt::TustinPW,
+                                        constfilt::LowPass, false>
+    kBwDefaultLp2(100.0, 1000.0);
 static_assert(near_eq(kBwDefaultLp2.coeffs_b()[1],
                       bw_ref::case_tupw_2_100Hz_1000Hz::b[1], kCoeffTol),
               "Butterworth default method must be TustinPW: b[1] disagrees");
@@ -704,8 +711,9 @@ static_assert(!near_eq(kBwDefaultLp2.coeffs_a()[1],
                        bw_ref::case_2_100Hz_1000Hz::a[1], kCoeffTol),
               "Butterworth default method must not be ZOH");
 
-static constexpr constfilt::Elliptic<double, 2> kElDefaultLp2(100.0, 0.5, 40.0,
-                                                              1000.0);
+static constexpr constfilt::Elliptic<double, 2, constfilt::TustinPW,
+                                     constfilt::LowPass, false>
+    kElDefaultLp2(100.0, 0.5, 40.0, 1000.0);
 static_assert(near_eq(kElDefaultLp2.coeffs_b()[0],
                       el_ref::lp_tupw_2_5rp_40rs_100Hz_1000Hz::b[0], kCoeffTol),
               "Elliptic default method must be TustinPW: b[0] disagrees");
@@ -719,8 +727,9 @@ static_assert(!near_eq(kElDefaultLp2.coeffs_a()[1],
 // =============================================================================
 // Butterworth uniform-zeta (ZOH), N=2, fc=100Hz, fs=1000Hz, zeta=0.5
 // =============================================================================
-static constexpr constfilt::Butterworth<double, 2, constfilt::ZOH> kBwZeta2(
-    100.0, 1000.0, 0.5);
+static constexpr constfilt::Butterworth<double, 2, constfilt::ZOH,
+                                        constfilt::LowPass, false>
+    kBwZeta2(100.0, 1000.0, 0.5);
 static_assert(near_eq(kBwZeta2.coeffs_b()[1],
                       bw_ref::case_zeta_2_100Hz_1000Hz_z50::b[1], kCoeffTol),
               "Butterworth zeta N=2: constexpr ctor b[1] disagrees");
@@ -729,10 +738,12 @@ static_assert(near_eq(kBwZeta2.coeffs_a()[1],
               "Butterworth zeta N=2: constexpr ctor a[1] disagrees");
 
 // N=1: zeta argument must be a no-op (real pole, no pairs to modify).
-static constexpr constfilt::Butterworth<double, 1, constfilt::ZOH> kBwZeta1(
-    100.0, 1000.0, 0.5);
-static constexpr constfilt::Butterworth<double, 1, constfilt::ZOH> kBw1(100.0,
-                                                                        1000.0);
+static constexpr constfilt::Butterworth<double, 1, constfilt::ZOH,
+                                        constfilt::LowPass, false>
+    kBwZeta1(100.0, 1000.0, 0.5);
+static constexpr constfilt::Butterworth<double, 1, constfilt::ZOH,
+                                        constfilt::LowPass, false>
+    kBw1(100.0, 1000.0);
 static_assert(near_eq(kBwZeta1.coeffs_a()[1], kBw1.coeffs_a()[1], kCoeffTol),
               "Butterworth N=1: zeta must be ignored");
 } // namespace

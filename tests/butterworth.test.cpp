@@ -847,12 +847,14 @@ OUTPUT_MATRIX(ButterworthSOS_TU_HP, case_tu_hp_2_500Hz_8000Hz,
 // =============================================================================
 
 OUTPUT_MATRIX(ButterworthSOS_ZetaLP, case_zeta_2_100Hz_1000Hz_z50,
-              constfilt::Butterworth<double, 2, constfilt::ZOH>(100.0, 1000.0,
-                                                                0.5))
+              constfilt::Butterworth<double, 2, constfilt::ZOH, constfilt::LowPass,
+                                                                false>(
+                                  100.0, 1000.0, 0.5))
 
 OUTPUT_MATRIX(ButterworthSOS_ZetaLP, case_zeta_3_100Hz_1000Hz_z50,
-              constfilt::Butterworth<double, 3, constfilt::ZOH>(100.0, 1000.0,
-                                                                0.5))
+              constfilt::Butterworth<double, 3, constfilt::ZOH, constfilt::LowPass,
+                                                                false>(
+                                  100.0, 1000.0, 0.5))
 
 OUTPUT_MATRIX(ButterworthSOS_ZetaLP, case_mz_zeta_4_100Hz_1000Hz_z50,
               constfilt::Butterworth<double, 4, constfilt::MatchedZ>(100.0,

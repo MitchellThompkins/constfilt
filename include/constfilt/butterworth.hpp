@@ -277,20 +277,44 @@ class Butterworth
     constexpr Butterworth(T cutoff_hz, T sample_rate_hz)
     {
         const T wc = static_cast<T>(2) * static_cast<T>(GCEM_PI) * cutoff_hz;
-        const BoundMethod method_tag =
-            make_tustin_tag(cutoff_hz, BoundMethod{});
-
         const consteig::Size n_pairs = N / 2u;
-        for (consteig::Size i = 0u; i < n_pairs; ++i)
-        {
-            _sections[i] = make_complex_section(wc, i, sample_rate_hz,
-                                                method_tag, FilterType{});
-        }
 
-        if constexpr (N % 2u == 1u)
+        if constexpr (is_matchedz_tag<BoundMethod>::value)
         {
-            _sections[kSections - 1u] =
-                make_real_section(wc, sample_rate_hz, method_tag, FilterType{});
+            const T Ts = static_cast<T>(1) / sample_rate_hz;
+            const T w_c_global = mz_global_wc(Ts, FilterType{});
+            consteig::Size n_extra_rem = mz_n_extra_total(FilterType{});
+            for (consteig::Size i = 0u; i < n_pairs; ++i)
+            {
+                const consteig::Size extra =
+                    n_extra_rem >= 2u ? 2u : n_extra_rem;
+                n_extra_rem -= extra;
+                _sections[i] = make_complex_section_mz(wc, i, Ts, w_c_global,
+                                                       extra, FilterType{});
+            }
+            if constexpr (N % 2u == 1u)
+            {
+                const consteig::Size extra =
+                    n_extra_rem >= 1u ? 1u : n_extra_rem;
+                _sections[kSections - 1u] =
+                    make_real_section_mz(wc, Ts, w_c_global, extra,
+                                        FilterType{});
+            }
+        }
+        else
+        {
+            const BoundMethod method_tag =
+                make_tustin_tag(cutoff_hz, BoundMethod{});
+            for (consteig::Size i = 0u; i < n_pairs; ++i)
+            {
+                _sections[i] = make_complex_section(wc, i, sample_rate_hz,
+                                                    method_tag, FilterType{});
+            }
+            if constexpr (N % 2u == 1u)
+            {
+                _sections[kSections - 1u] = make_real_section(
+                    wc, sample_rate_hz, method_tag, FilterType{});
+            }
         }
     }
 
@@ -300,22 +324,46 @@ class Butterworth
     constexpr Butterworth(T cutoff_hz, T sample_rate_hz, T zeta)
     {
         const T wc = static_cast<T>(2) * static_cast<T>(GCEM_PI) * cutoff_hz;
-        const BoundMethod method_tag =
-            make_tustin_tag(cutoff_hz, BoundMethod{});
         const T re = -zeta * wc;
         const T im = wc * gcem::sqrt(static_cast<T>(1) - zeta * zeta);
-
         const consteig::Size n_pairs = N / 2u;
-        for (consteig::Size i = 0u; i < n_pairs; ++i)
-        {
-            _sections[i] = make_zeta_section(re, im, wc, sample_rate_hz,
-                                             method_tag, FilterType{});
-        }
 
-        if constexpr (N % 2u == 1u)
+        if constexpr (is_matchedz_tag<BoundMethod>::value)
         {
-            _sections[kSections - 1u] =
-                make_real_section(wc, sample_rate_hz, method_tag, FilterType{});
+            const T Ts = static_cast<T>(1) / sample_rate_hz;
+            const T w_c_global = mz_global_wc(Ts, FilterType{});
+            consteig::Size n_extra_rem = mz_n_extra_total(FilterType{});
+            for (consteig::Size i = 0u; i < n_pairs; ++i)
+            {
+                const consteig::Size extra =
+                    n_extra_rem >= 2u ? 2u : n_extra_rem;
+                n_extra_rem -= extra;
+                _sections[i] = make_zeta_section_mz(re, im, wc, Ts, w_c_global,
+                                                    extra, FilterType{});
+            }
+            if constexpr (N % 2u == 1u)
+            {
+                const consteig::Size extra =
+                    n_extra_rem >= 1u ? 1u : n_extra_rem;
+                _sections[kSections - 1u] =
+                    make_real_section_mz(wc, Ts, w_c_global, extra,
+                                        FilterType{});
+            }
+        }
+        else
+        {
+            const BoundMethod method_tag =
+                make_tustin_tag(cutoff_hz, BoundMethod{});
+            for (consteig::Size i = 0u; i < n_pairs; ++i)
+            {
+                _sections[i] = make_zeta_section(re, im, wc, sample_rate_hz,
+                                                 method_tag, FilterType{});
+            }
+            if constexpr (N % 2u == 1u)
+            {
+                _sections[kSections - 1u] = make_real_section(
+                    wc, sample_rate_hz, method_tag, FilterType{});
+            }
         }
     }
 
@@ -340,6 +388,138 @@ class Butterworth
     }
 
   private:
+    // Global Matched-Z test frequency for SOS sections.
+    // LP: no zeros at s=0 and all poles in LHP; w_c=0 avoids all collisions.
+    // HP: N zeros at s=0; w_c=0 would collide, so step to 0.1/Ts.
+    static constexpr T mz_global_wc(T /*Ts*/, LowPass)
+    {
+        return static_cast<T>(0);
+    }
+    static constexpr T mz_global_wc(T Ts, HighPass)
+    {
+        return static_cast<T>(0.1) / Ts;
+    }
+
+    // Total z=-1 padding zeros for the full N-th order SOS filter.
+    // LP (nz_total=0): np - nz - 1 = N - 1.
+    // HP (nz_total=N, zeros at s=0 -> z=1): np - nz - 1 = -1 -> 0 (proper).
+    static constexpr consteig::Size mz_n_extra_total(LowPass)
+    {
+        return N - 1u;
+    }
+    static constexpr consteig::Size mz_n_extra_total(HighPass)
+    {
+        return 0u;
+    }
+
+    // Matched-Z section builders with explicit w_c and per-section n_extra.
+    // n_extra is the share of z=-1 padding zeros assigned to this section;
+    // summed across all sections it equals mz_n_extra_total.
+
+    static constexpr Filter<T, 3u, 3u> make_complex_section_mz(
+        T wc, consteig::Size pair_idx, T Ts, T w_c, consteig::Size n_extra,
+        LowPass)
+    {
+        const T theta = static_cast<T>(GCEM_PI) *
+                        static_cast<T>(2u * (pair_idx + 1u) + N - 1u) /
+                        static_cast<T>(2u * N);
+        const T re = wc * gcem::cos(theta);
+        const T im = wc * gcem::sin(theta);
+        using Complex = consteig::Complex<T>;
+        Complex poles[2u]{{re, im}, {re, -im}};
+        Complex zeros[2u]{};
+        const auto dtf = matched_z_assemble_sos<T, 2u>(poles, zeros, 0u,
+                                                       wc * wc, Ts, w_c,
+                                                       n_extra);
+        T b_d[3]{dtf.b[0], dtf.b[1], dtf.b[2]};
+        T a_d[3]{dtf.a[0], dtf.a[1], dtf.a[2]};
+        return Filter<T, 3u, 3u>{b_d, a_d};
+    }
+
+    static constexpr Filter<T, 3u, 3u> make_complex_section_mz(
+        T wc, consteig::Size pair_idx, T Ts, T w_c, consteig::Size /*n_extra*/,
+        HighPass)
+    {
+        const T theta = static_cast<T>(GCEM_PI) *
+                        static_cast<T>(2u * (pair_idx + 1u) + N - 1u) /
+                        static_cast<T>(2u * N);
+        const T re = wc * gcem::cos(theta);
+        const T im = wc * gcem::sin(theta);
+        using Complex = consteig::Complex<T>;
+        Complex poles[2u]{{re, im}, {re, -im}};
+        Complex zeros[2u]{{static_cast<T>(0), static_cast<T>(0)},
+                          {static_cast<T>(0), static_cast<T>(0)}};
+        const auto dtf = matched_z_assemble_sos<T, 2u>(poles, zeros, 2u,
+                                                       static_cast<T>(1), Ts,
+                                                       w_c, 0u);
+        T b_d[3]{dtf.b[0], dtf.b[1], dtf.b[2]};
+        T a_d[3]{dtf.a[0], dtf.a[1], dtf.a[2]};
+        return Filter<T, 3u, 3u>{b_d, a_d};
+    }
+
+    static constexpr Filter<T, 3u, 3u> make_zeta_section_mz(T re, T im, T wc,
+                                                             T Ts, T w_c,
+                                                             consteig::Size n_extra,
+                                                             LowPass)
+    {
+        using Complex = consteig::Complex<T>;
+        Complex poles[2u]{{re, im}, {re, -im}};
+        Complex zeros[2u]{};
+        const auto dtf = matched_z_assemble_sos<T, 2u>(poles, zeros, 0u,
+                                                       wc * wc, Ts, w_c,
+                                                       n_extra);
+        T b_d[3]{dtf.b[0], dtf.b[1], dtf.b[2]};
+        T a_d[3]{dtf.a[0], dtf.a[1], dtf.a[2]};
+        return Filter<T, 3u, 3u>{b_d, a_d};
+    }
+
+    static constexpr Filter<T, 3u, 3u> make_zeta_section_mz(T re, T im,
+                                                             T /*wc*/, T Ts,
+                                                             T w_c,
+                                                             consteig::Size /*n_extra*/,
+                                                             HighPass)
+    {
+        using Complex = consteig::Complex<T>;
+        Complex poles[2u]{{re, im}, {re, -im}};
+        Complex zeros[2u]{{static_cast<T>(0), static_cast<T>(0)},
+                          {static_cast<T>(0), static_cast<T>(0)}};
+        const auto dtf = matched_z_assemble_sos<T, 2u>(poles, zeros, 2u,
+                                                       static_cast<T>(1), Ts,
+                                                       w_c, 0u);
+        T b_d[3]{dtf.b[0], dtf.b[1], dtf.b[2]};
+        T a_d[3]{dtf.a[0], dtf.a[1], dtf.a[2]};
+        return Filter<T, 3u, 3u>{b_d, a_d};
+    }
+
+    static constexpr Filter<T, 3u, 3u> make_real_section_mz(T wc, T Ts, T w_c,
+                                                             consteig::Size n_extra,
+                                                             LowPass)
+    {
+        using Complex = consteig::Complex<T>;
+        Complex poles[1u]{{-wc, static_cast<T>(0)}};
+        Complex zeros[1u]{};
+        const auto dtf = matched_z_assemble_sos<T, 1u>(poles, zeros, 0u, wc,
+                                                       Ts, w_c, n_extra);
+        T b_d[3]{dtf.b[0], dtf.b[1], static_cast<T>(0)};
+        T a_d[3]{dtf.a[0], dtf.a[1], static_cast<T>(0)};
+        return Filter<T, 3u, 3u>{b_d, a_d};
+    }
+
+    static constexpr Filter<T, 3u, 3u> make_real_section_mz(T wc, T Ts, T w_c,
+                                                             consteig::Size /*n_extra*/,
+                                                             HighPass)
+    {
+        using Complex = consteig::Complex<T>;
+        Complex poles[1u]{{-wc, static_cast<T>(0)}};
+        Complex zeros[1u]{{static_cast<T>(0), static_cast<T>(0)}};
+        const auto dtf = matched_z_assemble_sos<T, 1u>(poles, zeros, 1u,
+                                                       static_cast<T>(1), Ts,
+                                                       w_c, 0u);
+        T b_d[3]{dtf.b[0], dtf.b[1], static_cast<T>(0)};
+        T a_d[3]{dtf.a[0], dtf.a[1], static_cast<T>(0)};
+        return Filter<T, 3u, 3u>{b_d, a_d};
+    }
+
     // Build a second-order section for the i-th conjugate pole pair.
     //
     // Pole index mapping (1-indexed k = i+1):

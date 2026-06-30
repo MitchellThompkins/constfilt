@@ -71,6 +71,16 @@ template <> struct is_zoh_tag<ZOH>
     static constexpr bool value = true;
 };
 
+template <typename M> struct is_matchedz_tag
+{
+    static constexpr bool value = false;
+};
+
+template <> struct is_matchedz_tag<MatchedZ>
+{
+    static constexpr bool value = true;
+};
+
 // Build the method tag from a cutoff frequency.
 // For TustinPWData<T>, fills in warp_omega = 2*pi*cutoff_hz.
 // For all other methods, returns a default-constructed tag (cutoff unused).
@@ -600,6 +610,165 @@ constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_assemble(
     }
     const consteig::Size pad = N - num_deg;
     for (consteig::Size i = 0; i <= num_deg; ++i)
+    {
+        tf.b[pad + i] = k_d * zero_poly[i].real;
+    }
+
+    return tf;
+}
+
+// Compute the Matched-Z test frequency for SOS gain matching.
+// Finds the smallest w_c >= 0 (stepping by 0.1/Ts) that does not coincide
+// with any analog pole or zero.  Extracted from matched_z_assemble so that
+// SOS constructors can call it on the full-filter FactoredTF and pass the
+// result to every section, ensuring consistent gain matching across sections.
+template <typename T, consteig::Size N>
+constexpr T compute_mz_test_freq(const consteig::Complex<T> (&poles)[N],
+                                 const consteig::Complex<T> (&zeros)[N],
+                                 consteig::Size nz, T Ts)
+{
+    const T tol = gcem::sqrt(consteig::epsilon<T>());
+    T w_c = static_cast<T>(0);
+    for (consteig::Size attempt = 0u; attempt < 1000u; ++attempt)
+    {
+        bool collision = false;
+        for (consteig::Size i = 0u; i < N && !collision; ++i)
+        {
+            const T dr = w_c - poles[i].real;
+            const T di = poles[i].imag;
+            if (dr * dr + di * di < tol * tol)
+                collision = true;
+        }
+        for (consteig::Size i = 0u; i < nz && !collision; ++i)
+        {
+            const T dr = w_c - zeros[i].real;
+            const T di = zeros[i].imag;
+            if (dr * dr + di * di < tol * tol)
+                collision = true;
+        }
+        if (!collision)
+            break;
+        w_c += static_cast<T>(0.1) / Ts;
+    }
+    return w_c;
+}
+
+// SOS-specific Matched-Z assembly: like matched_z_assemble but with w_c and
+// n_extra supplied by the caller rather than computed internally.  Use this
+// for SOS + MatchedZ so that all sections share the global test frequency and
+// the global zero-padding count derived from the full analog filter, matching
+// the result of Octave's c2d(...,'matched') applied to the full-order system.
+template <typename T, consteig::Size N>
+constexpr TransferFunction<T, N + 1u, N + 1u> matched_z_assemble_sos(
+    const consteig::Complex<T> (&poles)[N],
+    const consteig::Complex<T> (&zeros)[N], consteig::Size nz, T k_c, T Ts,
+    T w_c, consteig::Size n_extra)
+{
+    using Complex = consteig::Complex<T>;
+
+    // Step 1: map poles to z-domain; build monic denominator polynomial.
+    Complex p_d_vals[N]{};
+    Complex pole_poly[N + 1u]{};
+    pole_poly[0] = Complex{static_cast<T>(1), static_cast<T>(0)};
+    for (consteig::Size k = 0u; k < N; ++k)
+    {
+        p_d_vals[k] = consteig::exp(poles[k] * Complex{Ts, static_cast<T>(0)});
+        const Complex zk = p_d_vals[k];
+        pole_poly[k + 1u] =
+            Complex{static_cast<T>(0), static_cast<T>(0)} - zk * pole_poly[k];
+        for (consteig::Size i = k; i > 0u; --i)
+        {
+            pole_poly[i] = pole_poly[i] - zk * pole_poly[i - 1u];
+        }
+    }
+
+    // Step 2: map finite zeros to z-domain, then append n_extra zeros at
+    // z = -1.  Together these form the monic numerator polynomial.  This
+    // mirrors Octave: z_d = [exp(z_c*Ts); repmat(-1, np-nz-1, 1)].
+    Complex z_d_finite[N]{};
+    Complex zero_poly[N + 1u]{};
+    zero_poly[0] = Complex{static_cast<T>(1), static_cast<T>(0)};
+    for (consteig::Size k = 0u; k < nz; ++k)
+    {
+        z_d_finite[k] =
+            consteig::exp(zeros[k] * Complex{Ts, static_cast<T>(0)});
+        const Complex zk = z_d_finite[k];
+        zero_poly[k + 1u] =
+            Complex{static_cast<T>(0), static_cast<T>(0)} - zk * zero_poly[k];
+        for (consteig::Size i = k; i > 0u; --i)
+        {
+            zero_poly[i] = zero_poly[i] - zk * zero_poly[i - 1u];
+        }
+    }
+    const Complex neg_one{static_cast<T>(-1), static_cast<T>(0)};
+    for (consteig::Size k = 0u; k < n_extra; ++k)
+    {
+        const consteig::Size idx = nz + k;
+        zero_poly[idx + 1u] =
+            Complex{static_cast<T>(0), static_cast<T>(0)} -
+            neg_one * zero_poly[idx];
+        for (consteig::Size i = idx; i > 0u; --i)
+        {
+            zero_poly[i] = zero_poly[i] - neg_one * zero_poly[i - 1u];
+        }
+    }
+
+    // Step 3 (SOS): numerator degree = nz + n_extra.
+    const consteig::Size num_deg = nz + n_extra;
+
+    // Step 4 (SOS): w_c and w_d come from the caller.
+    const Complex w_c_cx{w_c, static_cast<T>(0)};
+    const Complex w_d_cx =
+        consteig::exp(w_c_cx * Complex{Ts, static_cast<T>(0)});
+
+    // Step 5: compute discrete gain k_d matching H_d(w_d) = H_c(w_c).
+    // The z=-1 zeros are included in den_d_cx, matching Octave's gain formula
+    // which uses z_d after the z=-1 zeros have been appended.
+    Complex num_c_cx{static_cast<T>(1), static_cast<T>(0)};
+    for (consteig::Size i = 0u; i < nz; ++i)
+    {
+        num_c_cx = num_c_cx * (w_c_cx - zeros[i]);
+    }
+
+    Complex den_c_cx{static_cast<T>(1), static_cast<T>(0)};
+    for (consteig::Size i = 0u; i < N; ++i)
+    {
+        den_c_cx = den_c_cx * (w_c_cx - poles[i]);
+    }
+
+    Complex num_d_cx{static_cast<T>(1), static_cast<T>(0)};
+    for (consteig::Size i = 0u; i < N; ++i)
+    {
+        num_d_cx = num_d_cx * (w_d_cx - p_d_vals[i]);
+    }
+
+    Complex den_d_cx{static_cast<T>(1), static_cast<T>(0)};
+    for (consteig::Size i = 0u; i < nz; ++i)
+    {
+        den_d_cx = den_d_cx * (w_d_cx - z_d_finite[i]);
+    }
+    for (consteig::Size i = 0u; i < n_extra; ++i)
+    {
+        den_d_cx = den_d_cx * (w_d_cx - neg_one);
+    }
+
+    const Complex gain_num =
+        Complex{k_c, static_cast<T>(0)} * num_c_cx * num_d_cx;
+    const Complex gain_den = den_c_cx * den_d_cx;
+    const T gain_den_sq =
+        gain_den.real * gain_den.real + gain_den.imag * gain_den.imag;
+    const T k_d =
+        (gain_num.real * gain_den.real + gain_num.imag * gain_den.imag) /
+        gain_den_sq;
+
+    // Step 6: assemble output TF.
+    TransferFunction<T, N + 1u, N + 1u> tf{};
+    for (consteig::Size i = 0u; i <= N; ++i)
+    {
+        tf.a[i] = pole_poly[i].real;
+    }
+    const consteig::Size pad = N - num_deg;
+    for (consteig::Size i = 0u; i <= num_deg; ++i)
     {
         tf.b[pad + i] = k_d * zero_poly[i].real;
     }

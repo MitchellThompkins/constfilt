@@ -110,7 +110,8 @@ static_assert(array_near_eq(kBwLp2Chirp.v, bw_ref::case_2_100Hz_1000Hz::chirp,
 // =============================================================================
 constexpr Arr<256> bw_hp2_step()
 {
-    constfilt::Butterworth<double, 2, constfilt::ZOH, constfilt::HighPass> f(
+    constfilt::Butterworth<double, 2, constfilt::ZOH, constfilt::HighPass,
+        false> f(
         100.0, 1000.0);
     double in[256]{};
     for (unsigned i = 0; i < 256; ++i)
@@ -126,7 +127,8 @@ static_assert(array_near_eq(kBwHp2Step.v, bw_ref::case_hp_2_100Hz_1000Hz::step,
 
 constexpr Arr<256> bw_hp2_impulse()
 {
-    constfilt::Butterworth<double, 2, constfilt::ZOH, constfilt::HighPass> f(
+    constfilt::Butterworth<double, 2, constfilt::ZOH, constfilt::HighPass,
+        false> f(
         100.0, 1000.0);
     double in[256]{};
     in[0] = 1.0;
@@ -142,7 +144,8 @@ static_assert(array_near_eq(kBwHp2Impulse.v,
 constexpr Arr<4096> bw_hp2_chirp()
 {
     using Ref = bw_ref::case_hp_2_100Hz_1000Hz;
-    constfilt::Butterworth<double, 2, constfilt::ZOH, constfilt::HighPass> f(
+    constfilt::Butterworth<double, 2, constfilt::ZOH, constfilt::HighPass,
+        false> f(
         100.0, 1000.0);
     double in[4096]{};
     for (unsigned i = 0; i < 4096; ++i)
@@ -209,7 +212,8 @@ static_assert(array_near_eq(kBwMz2Chirp.v,
 // =============================================================================
 constexpr Arr<256> el_lp2_step()
 {
-    constfilt::Elliptic<double, 2, constfilt::ZOH> f(100.0, 0.5, 40.0, 1000.0);
+    constfilt::Elliptic<double, 2, constfilt::ZOH, constfilt::LowPass, false> f(
+        100.0, 0.5, 40.0, 1000.0);
     double in[256]{};
     for (unsigned i = 0; i < 256; ++i)
         in[i] = 1.0;
@@ -224,7 +228,8 @@ static_assert(array_near_eq(kElLp2Step.v,
 
 constexpr Arr<256> el_lp2_impulse()
 {
-    constfilt::Elliptic<double, 2, constfilt::ZOH> f(100.0, 0.5, 40.0, 1000.0);
+    constfilt::Elliptic<double, 2, constfilt::ZOH, constfilt::LowPass, false> f(
+        100.0, 0.5, 40.0, 1000.0);
     double in[256]{};
     in[0] = 1.0;
     Arr<256> out{};
@@ -240,7 +245,8 @@ static_assert(array_near_eq(kElLp2Impulse.v,
 constexpr Arr<4096> el_lp2_chirp()
 {
     using Ref = el_ref::lp_2_5rp_40rs_100Hz_1000Hz;
-    constfilt::Elliptic<double, 2, constfilt::ZOH> f(100.0, 0.5, 40.0, 1000.0);
+    constfilt::Elliptic<double, 2, constfilt::ZOH, constfilt::LowPass, false> f(
+        100.0, 0.5, 40.0, 1000.0);
     double in[4096]{};
     for (unsigned i = 0; i < 4096; ++i)
         in[i] = Ref::chirp_in[i];
@@ -259,7 +265,8 @@ static_assert(array_near_eq(kElLp2Chirp.v,
 // =============================================================================
 constexpr Arr<256> el_hp2_step()
 {
-    constfilt::Elliptic<double, 2, constfilt::ZOH, constfilt::HighPass> f(
+    constfilt::Elliptic<double, 2, constfilt::ZOH, constfilt::HighPass,
+        false> f(
         100.0, 0.5, 40.0, 1000.0);
     double in[256]{};
     for (unsigned i = 0; i < 256; ++i)
@@ -275,7 +282,8 @@ static_assert(array_near_eq(kElHp2Step.v,
 
 constexpr Arr<256> el_hp2_impulse()
 {
-    constfilt::Elliptic<double, 2, constfilt::ZOH, constfilt::HighPass> f(
+    constfilt::Elliptic<double, 2, constfilt::ZOH, constfilt::HighPass,
+        false> f(
         100.0, 0.5, 40.0, 1000.0);
     double in[256]{};
     in[0] = 1.0;
@@ -292,7 +300,8 @@ static_assert(array_near_eq(kElHp2Impulse.v,
 constexpr Arr<4096> el_hp2_chirp()
 {
     using Ref = el_ref::hp_2_5rp_40rs_100Hz_1000Hz;
-    constfilt::Elliptic<double, 2, constfilt::ZOH, constfilt::HighPass> f(
+    constfilt::Elliptic<double, 2, constfilt::ZOH, constfilt::HighPass,
+        false> f(
         100.0, 0.5, 40.0, 1000.0);
     double in[4096]{};
     for (unsigned i = 0; i < 4096; ++i)

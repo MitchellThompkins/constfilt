@@ -25,9 +25,25 @@ Matched-Z maps each pole and zero independently:
 
 $$p_s \;\to\; e^{p_s T_s}, \qquad z_s \;\to\; e^{z_s T_s}$$
 
-Because the transform operates pole-by-pole and zero-by-zero, cascading
-independently matched-Z-discretized sections preserves the same poles and zeros
-as discretizing the full filter. The result is equivalent.
+The pole and zero mapping itself distributes over products. However, the
+full-order Matched-Z implementation (following Octave's convention) also pads
+the numerator with $n_p - n_z - 1$ zeros at $z = -1$ for strictly-proper
+systems, and matches the scalar gain for the full padded numerator at a single
+test frequency.
+
+For the SOS cascade to equal the full-order result, these two global quantities
+must be distributed consistently across sections rather than applied
+independently per section:
+
+- **Padding zeros**: the $n_p - n_z - 1$ total zeros at $z = -1$ are
+  distributed greedily across sections (each biquad takes up to 2, each
+  real section takes up to 1), so their product equals the full numerator.
+- **Test frequency**: a single $\omega_c$ derived from the full analog filter
+  is used for all sections, so per-section gains compose to the full-filter
+  gain.
+
+With this global distribution the SOS cascade produces an identical filter to
+full-order Matched-Z.
 
 ## ZOH (zero-order hold)
 

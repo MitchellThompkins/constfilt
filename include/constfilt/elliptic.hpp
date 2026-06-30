@@ -663,22 +663,42 @@ class Elliptic
     constexpr Elliptic(T cutoff_hz, T ripple_db, T attenuation_db,
                        T sample_rate_hz)
     {
-        const BoundMethod method_tag =
-            make_tustin_tag(cutoff_hz, BoundMethod{});
         const FactoredTF<T, N> factored = Impl::compute_factored_tf(
             cutoff_hz, ripple_db, attenuation_db, FilterType{});
-
         const consteig::Size n_pairs = N / 2u;
-        for (consteig::Size i = 0u; i < n_pairs; ++i)
-        {
-            _sections[i] =
-                make_complex_section(factored, i, sample_rate_hz, method_tag);
-        }
 
-        if constexpr (N % 2u == 1u)
+        if constexpr (is_matchedz_tag<BoundMethod>::value)
         {
-            _sections[kSections - 1u] = make_real_section(
-                factored, sample_rate_hz, method_tag, FilterType{});
+            const T Ts = static_cast<T>(1) / sample_rate_hz;
+            const T w_c_global = compute_mz_test_freq<T, N>(
+                factored.poles, factored.zeros, factored.nz, Ts);
+            for (consteig::Size i = 0u; i < n_pairs; ++i)
+            {
+                _sections[i] =
+                    make_complex_section_mz(factored, i, Ts, w_c_global);
+            }
+            if constexpr (N % 2u == 1u)
+            {
+                const BoundMethod method_tag =
+                    make_tustin_tag(cutoff_hz, BoundMethod{});
+                _sections[kSections - 1u] = make_real_section(
+                    factored, sample_rate_hz, method_tag, FilterType{});
+            }
+        }
+        else
+        {
+            const BoundMethod method_tag =
+                make_tustin_tag(cutoff_hz, BoundMethod{});
+            for (consteig::Size i = 0u; i < n_pairs; ++i)
+            {
+                _sections[i] = make_complex_section(factored, i, sample_rate_hz,
+                                                    method_tag);
+            }
+            if constexpr (N % 2u == 1u)
+            {
+                _sections[kSections - 1u] = make_real_section(
+                    factored, sample_rate_hz, method_tag, FilterType{});
+            }
         }
     }
 
@@ -703,6 +723,30 @@ class Elliptic
     }
 
   private:
+    // Pure Matched-Z second-order section: n_extra=0, caller-supplied w_c.
+    // Used when Method=MatchedZ so that all sections share the global test
+    // frequency derived from the full-filter FactoredTF, avoiding
+    // inconsistent per-section gain matching (especially for HP odd N, where
+    // the full filter has a zero at s=0 that shifts the test frequency).
+    static constexpr Filter<T, 3u, 3u> make_complex_section_mz(
+        const FactoredTF<T, N> &factored, consteig::Size pair_idx, T Ts,
+        T w_c_global)
+    {
+        using Complex = consteig::Complex<T>;
+        const T section_gain =
+            (pair_idx == 0u) ? factored.gain : static_cast<T>(1);
+        Complex poles[2u]{factored.poles[2u * pair_idx],
+                          factored.poles[2u * pair_idx + 1u]};
+        Complex zeros[2u]{factored.zeros[2u * pair_idx],
+                          factored.zeros[2u * pair_idx + 1u]};
+        const auto dtf = matched_z_assemble_sos<T, 2u>(poles, zeros, 2u,
+                                                       section_gain, Ts,
+                                                       w_c_global, 0u);
+        T b_d[3]{dtf.b[0], dtf.b[1], dtf.b[2]};
+        T a_d[3]{dtf.a[0], dtf.a[1], dtf.a[2]};
+        return Filter<T, 3u, 3u>{b_d, a_d};
+    }
+
     // Build a second-order section for conjugate pole/zero pair i.
     //
     // Poles and zeros are stored as conjugate pairs in the FactoredTF:

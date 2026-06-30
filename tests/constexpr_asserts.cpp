@@ -59,7 +59,8 @@ constexpr bool array_near_eq(const double (&a)[N], const double (&b)[N],
 // =============================================================================
 constexpr Arr<256> bw_lp2_step()
 {
-    constfilt::Butterworth<double, 2, constfilt::ZOH> f(100.0, 1000.0);
+    constfilt::Butterworth<double, 2, constfilt::ZOH, constfilt::LowPass, false>
+        f(100.0, 1000.0);
     double in[256]{};
     for (unsigned i = 0; i < 256; ++i)
         in[i] = 1.0;
@@ -74,7 +75,8 @@ static_assert(array_near_eq(kBwLp2Step.v, bw_ref::case_2_100Hz_1000Hz::step,
 
 constexpr Arr<256> bw_lp2_impulse()
 {
-    constfilt::Butterworth<double, 2, constfilt::ZOH> f(100.0, 1000.0);
+    constfilt::Butterworth<double, 2, constfilt::ZOH, constfilt::LowPass, false>
+        f(100.0, 1000.0);
     double in[256]{};
     in[0] = 1.0;
     Arr<256> out{};
@@ -89,7 +91,8 @@ static_assert(array_near_eq(kBwLp2Impulse.v,
 constexpr Arr<4096> bw_lp2_chirp()
 {
     using Ref = bw_ref::case_2_100Hz_1000Hz;
-    constfilt::Butterworth<double, 2, constfilt::ZOH> f(100.0, 1000.0);
+    constfilt::Butterworth<double, 2, constfilt::ZOH, constfilt::LowPass, false>
+        f(100.0, 1000.0);
     double in[4096]{};
     for (unsigned i = 0; i < 4096; ++i)
         in[i] = Ref::chirp_in[i];

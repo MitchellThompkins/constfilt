@@ -2,7 +2,7 @@
 %
 % Generates profiling/accuracy_reference.hpp: Octave-computed b/a coefficients
 % and 256-sample step responses for Butterworth and Elliptic filters at orders
-% up to 12, for all three discretization methods (ZOH, MatchedZ, Tustin).
+% up to 25, for all three discretization methods (ZOH, MatchedZ, Tustin).
 %
 % The generated header is consumed by profiling/bench_accuracy.cpp to compare
 % constfilt output against this independent Octave reference.  Differences
@@ -11,7 +11,22 @@
 % Run from the repo root:
 %   octave --no-gui profiling/octave/generate_accuracy_reference.m
 %
-% Requires: Signal package
+% Requires: Signal package, Control package
+%
+% step_sos is computed via ZPK form throughout to avoid the precision loss of
+% the polynomial tf2sos path at high N.  Two different ZPK paths are used:
+%
+%   Tustin / prewarped Tustin:
+%     signal-package bilinear(z, p, k, T) maps each pole directly,
+%     avoiding the gain-underflow that afflicts the control-package c2d(zpk)
+%     for N >= 23.
+%
+%   ZOH / MatchedZ:
+%     control-package c2d(zpk(...), Ts, method) followed by zpkdata, which
+%     uses eigenvalue-based algorithms internally (more stable than polynomial
+%     tf2sos).  ZOH gain underflows at very high N (>= 23) but ZOH + SOS is
+%     static_assert'd away in constfilt, so step_sos for ZOH is only used for
+%     the _vs_sos_ref comparison rows (already broken for N >> 12).
 
 pkg load signal;
 
@@ -55,10 +70,28 @@ function emit_arr(fid, name, v)
     fprintf(fid, '};\n');
 end
 
-function y_sos = step_via_sosfilt(b_d, a_d, STEP_LEN)
-    [sos, g] = tf2sos(b_d, a_d);
-    sos(1, 1:3) = sos(1, 1:3) * g;
+% Compute step_sos from digital ZPK via zp2sos + sosfilt.
+function y_sos = step_sos_zpk(z_d, p_d, k_d, STEP_LEN)
+    sos = zp2sos(z_d, p_d, k_d);
     y_sos = sosfilt(sos, ones(1, STEP_LEN));
+end
+
+% Discretize analog ZPK to digital ZPK for Tustin methods.
+% Uses signal-package bilinear(z, p, k, T) which maps poles individually
+% and avoids the gain underflow that affects the control-package c2d(zpk)
+% path for N >= 23.  T = 1/fs (sampling period).
+% For prewarped Tustin, the caller pre-scales the prototype by wc_pw before
+% calling this function, then passes standard bilinear (no warp arg needed).
+function [z_d, p_d, k_d] = analog_to_digital_zpk_tustin(z_a, p_a, k_a, fs)
+    [z_d, p_d, k_d] = bilinear(z_a, p_a, k_a, 1/fs);
+end
+
+% Discretize analog ZPK to digital ZPK for ZOH and MatchedZ methods.
+% Uses control-package c2d(zpk(...), Ts, method) + zpkdata, which uses
+% eigenvalue-based algorithms more stable than polynomial tf2sos.
+function [z_d, p_d, k_d] = analog_to_digital_zpk(z_a, p_a, k_a, fs, method)
+    sys_d = c2d(zpk(z_a, p_a, k_a), 1/fs, method);
+    [z_d, p_d, k_d] = zpkdata(sys_d, 'v');
 end
 
 function emit_struct(fid, sname, ord, b_d, a_d, y_step, y_sos)
@@ -72,13 +105,15 @@ function emit_struct(fid, sname, ord, b_d, a_d, y_step, y_sos)
 end
 
 % Design a continuous-time Butterworth LP, discretize, zero-pad b if needed,
-% and compute the step response.
-function [b_d, a_d, y_step] = bw_design(ord, fc, fs, method)
+% and compute the step response.  Returns both TF form (for the direct-form
+% reference) and ZPK form (for the SOS reference via step_sos_zpk).
+function [b_d, a_d, y_step, z_d, p_d, k_d] = bw_design(ord, fc, fs, method)
     wc = 2 * pi * fc;
-    [z_p, p_p, k_p] = buttap(ord);
-    p_scaled = p_p * wc;
-    k_scaled = k_p * wc^ord;
-    [b_s, a_s] = zp2tf(z_p, p_scaled, k_scaled);
+    [z_a, p_a, k_a] = buttap(ord);
+    p_a = p_a * wc;
+    k_a = k_a * wc^ord;
+    % Direct-form path (for b_d, a_d, y_step reference)
+    [b_s, a_s] = zp2tf(z_a, p_a, k_a);
     sys_d = c2d(tf(b_s, a_s), 1.0/fs, method);
     [b_d, a_d] = tfdata(sys_d, 'v');
     while length(b_d) < length(a_d)
@@ -86,6 +121,12 @@ function [b_d, a_d, y_step] = bw_design(ord, fc, fs, method)
     end
     STEP_LEN = 256;
     y_step = filter(b_d, a_d, ones(1, STEP_LEN));
+    % ZPK path (for step_sos reference)
+    if strcmp(method, 'tustin')
+        [z_d, p_d, k_d] = analog_to_digital_zpk_tustin(z_a, p_a, k_a, fs);
+    else
+        [z_d, p_d, k_d] = analog_to_digital_zpk(z_a, p_a, k_a, fs, method);
+    end
 end
 
 % Pre-warped bilinear: design the analog prototype at the pre-warped frequency
@@ -94,12 +135,13 @@ end
 % bilinear maps wc_pw to exactly fc Hz digital, so the -3dB point lands at
 % the specified cutoff.  Octave's c2d ignores the 4th-argument warp frequency,
 % so we implement the pre-warp manually.
-function [b_d, a_d, y_step] = bw_design_pw(ord, fc, fs)
+function [b_d, a_d, y_step, z_d, p_d, k_d] = bw_design_pw(ord, fc, fs)
     wc_pw = 2 * fs * tan(pi * fc / fs);
-    [z_p, p_p, k_p] = buttap(ord);
-    p_scaled = p_p * wc_pw;
-    k_scaled = k_p * wc_pw^ord;
-    [b_s, a_s] = zp2tf(z_p, p_scaled, k_scaled);
+    [z_a, p_a, k_a] = buttap(ord);
+    p_a = p_a * wc_pw;
+    k_a = k_a * wc_pw^ord;
+    % Direct-form path
+    [b_s, a_s] = zp2tf(z_a, p_a, k_a);
     sys_d = c2d(tf(b_s, a_s), 1.0/fs, 'tustin');
     [b_d, a_d] = tfdata(sys_d, 'v');
     while length(b_d) < length(a_d)
@@ -107,11 +149,14 @@ function [b_d, a_d, y_step] = bw_design_pw(ord, fc, fs)
     end
     STEP_LEN = 256;
     y_step = filter(b_d, a_d, ones(1, STEP_LEN));
+    % ZPK path: pre-scaled prototype, standard bilinear via signal package
+    [z_d, p_d, k_d] = analog_to_digital_zpk_tustin(z_a, p_a, k_a, fs);
 end
 
 % Design a continuous-time Elliptic LP, discretize, zero-pad, step response.
-function [b_d, a_d, y_step] = el_design(ord, Rp, Rs, fc, fs, method)
+function [b_d, a_d, y_step, z_d, p_d, k_d] = el_design(ord, Rp, Rs, fc, fs, method)
     wc = 2 * pi * fc;
+    % Direct-form path
     [b_s, a_s] = ellip(ord, Rp, Rs, wc, 's');
     sys_d = c2d(tf(b_s, a_s), 1.0/fs, method);
     [b_d, a_d] = tfdata(sys_d, 'v');
@@ -120,10 +165,18 @@ function [b_d, a_d, y_step] = el_design(ord, Rp, Rs, fc, fs, method)
     end
     STEP_LEN = 256;
     y_step = filter(b_d, a_d, ones(1, STEP_LEN));
+    % ZPK path
+    [z_s, p_s, k_s] = ellip(ord, Rp, Rs, wc, 's');
+    if strcmp(method, 'tustin')
+        [z_d, p_d, k_d] = analog_to_digital_zpk_tustin(z_s, p_s, k_s, fs);
+    else
+        [z_d, p_d, k_d] = analog_to_digital_zpk(z_s, p_s, k_s, fs, method);
+    end
 end
 
-function [b_d, a_d, y_step] = el_design_pw(ord, Rp, Rs, fc, fs)
+function [b_d, a_d, y_step, z_d, p_d, k_d] = el_design_pw(ord, Rp, Rs, fc, fs)
     wc_pw = 2 * fs * tan(pi * fc / fs);
+    % Direct-form path
     [b_s, a_s] = ellip(ord, Rp, Rs, wc_pw, 's');
     sys_d = c2d(tf(b_s, a_s), 1.0/fs, 'tustin');
     [b_d, a_d] = tfdata(sys_d, 'v');
@@ -132,9 +185,12 @@ function [b_d, a_d, y_step] = el_design_pw(ord, Rp, Rs, fc, fs)
     end
     STEP_LEN = 256;
     y_step = filter(b_d, a_d, ones(1, STEP_LEN));
+    % ZPK path
+    [z_s, p_s, k_s] = ellip(ord, Rp, Rs, wc_pw, 's');
+    [z_d, p_d, k_d] = analog_to_digital_zpk_tustin(z_s, p_s, k_s, fs);
 end
 
-% Butterworth LP, orders 1-12, all three methods + pre-warped Tustin
+% Butterworth LP, orders 1-25, all three methods + pre-warped Tustin
 
 fprintf(fid, '// Butterworth lowpass: fc=100 Hz, fs=1000 Hz\n\n');
 
@@ -149,17 +205,17 @@ for ord = 1:25
         label   = labels{mi};
 
         if strcmp(method, 'prewarp')
-            [b_d, a_d, y_step] = bw_design_pw(ord, fc, fs);
+            [b_d, a_d, y_step, z_d, p_d, k_d] = bw_design_pw(ord, fc, fs);
         else
-            [b_d, a_d, y_step] = bw_design(ord, fc, fs, method);
+            [b_d, a_d, y_step, z_d, p_d, k_d] = bw_design(ord, fc, fs, method);
         end
-        y_sos = step_via_sosfilt(b_d, a_d, STEP_LEN);
+        y_sos = step_sos_zpk(z_d, p_d, k_d, STEP_LEN);
         sname = sprintf('bw_%s_N%d', label, ord);
         emit_struct(fid, sname, ord, b_d, a_d, y_step, y_sos);
     end
 end
 
-% Elliptic LP, orders 2-12, all three methods + pre-warped Tustin
+% Elliptic LP, orders 2-25, all three methods + pre-warped Tustin
 
 fprintf(fid, '// Elliptic lowpass: fc=100 Hz, fs=1000 Hz, Rp=0.5 dB, Rs=40 dB\n\n');
 
@@ -174,11 +230,11 @@ for ord = 2:25
         label   = labels{mi};
 
         if strcmp(method, 'prewarp')
-            [b_d, a_d, y_step] = el_design_pw(ord, Rp, Rs, fc, fs);
+            [b_d, a_d, y_step, z_d, p_d, k_d] = el_design_pw(ord, Rp, Rs, fc, fs);
         else
-            [b_d, a_d, y_step] = el_design(ord, Rp, Rs, fc, fs, method);
+            [b_d, a_d, y_step, z_d, p_d, k_d] = el_design(ord, Rp, Rs, fc, fs, method);
         end
-        y_sos = step_via_sosfilt(b_d, a_d, STEP_LEN);
+        y_sos = step_sos_zpk(z_d, p_d, k_d, STEP_LEN);
         sname = sprintf('el_%s_N%d', label, ord);
         emit_struct(fid, sname, ord, b_d, a_d, y_step, y_sos);
     end

@@ -80,10 +80,24 @@ endif()
 #   octave --no-gui profiling/octave/generate_accuracy_reference.m
 ################################################################################
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/accuracy_reference.hpp")
-    add_executable(bench_accuracy_constfilt bench_accuracy_constfilt.cpp)
+    add_executable(bench_accuracy_constfilt
+        bench_accuracy_constfilt.cpp
+        bench_accuracy_constfilt_bw.cpp
+        bench_accuracy_constfilt_el.cpp)
     target_include_directories(bench_accuracy_constfilt PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR})
     target_link_libraries(bench_accuracy_constfilt PRIVATE constfilt)
+    # Force runtime evaluation: a tiny ops limit makes the compiler give up
+    # constant-folding immediately and generate runtime code instead, which
+    # prevents OOM at high N (N=25 ZOH eigendecomposition exhausts cc1plus RAM
+    # even with the high limit from constfilt_warnings).
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+        target_compile_options(bench_accuracy_constfilt PRIVATE
+            -fconstexpr-ops-limit=1000)
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        target_compile_options(bench_accuracy_constfilt PRIVATE
+            -fconstexpr-steps=1000)
+    endif()
     set_target_properties(bench_accuracy_constfilt PROPERTIES
         CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON)
 

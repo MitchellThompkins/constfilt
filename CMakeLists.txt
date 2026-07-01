@@ -119,6 +119,9 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
             -Wduplicated-cond
             -Wduplicated-branches
             -Wlogical-op
+            # High-order ZOH eigendecomposition can exceed GCC's default
+            # constexpr ops limit.  1e9 is sufficient for N=25.
+            -fconstexpr-ops-limit=1000000000
         )
     endif()
 

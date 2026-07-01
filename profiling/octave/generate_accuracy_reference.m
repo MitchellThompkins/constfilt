@@ -141,7 +141,7 @@ fprintf(fid, '// Butterworth lowpass: fc=100 Hz, fs=1000 Hz\n\n');
 fc = 100;
 fs = 1000;
 
-for ord = 1:12
+for ord = 1:25
     for mi = 1:4
         methods = {'zoh', 'matched', 'tustin', 'prewarp'};
         method  = methods{mi};
@@ -166,7 +166,7 @@ fprintf(fid, '// Elliptic lowpass: fc=100 Hz, fs=1000 Hz, Rp=0.5 dB, Rs=40 dB\n\
 Rp = 0.5;
 Rs = 40;
 
-for ord = 2:12
+for ord = 2:25
     for mi = 1:4
         methods = {'zoh', 'matched', 'tustin', 'prewarp'};
         method  = methods{mi};

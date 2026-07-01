@@ -16,7 +16,7 @@
         using Ref = acc_ref::bw_prewarp_N##N;                                  \
         Iir::Butterworth::LowPass<N> f;                                        \
         f.setup(1000.0, 100.0);                                                \
-        auto r = check_step([&]() { return f.filter(1.0); }, Ref::step);       \
+        auto r = check_step([&]() { return f.filter(1.0); }, Ref::step_sos);   \
         csv_row("iir1", "butterworth", N, "prewarp", r);                       \
         human_row("iir1", "butterworth", N, "prewarp", r);                     \
     } while (0)
@@ -36,6 +36,19 @@ int main()
     RUN_IIR1(10);
     RUN_IIR1(11);
     RUN_IIR1(12);
+    RUN_IIR1(13);
+    RUN_IIR1(14);
+    RUN_IIR1(15);
+    RUN_IIR1(16);
+    RUN_IIR1(17);
+    RUN_IIR1(18);
+    RUN_IIR1(19);
+    RUN_IIR1(20);
+    RUN_IIR1(21);
+    RUN_IIR1(22);
+    RUN_IIR1(23);
+    RUN_IIR1(24);
+    RUN_IIR1(25);
 
     return 0;
 }

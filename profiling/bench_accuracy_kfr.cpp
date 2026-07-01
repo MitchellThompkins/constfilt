@@ -42,7 +42,7 @@ static double kfr_step_err(kfr::iir_filter<double> &f,
         auto params = kfr::to_sos<double>(                                     \
             kfr::iir_lowpass(kfr::butterworth(N), 100.0, 1000.0));             \
         kfr::iir_filter<double> f(params);                                     \
-        AccResult r = {-1.0, -1.0, kfr_step_err(f, Ref::step)};                \
+        AccResult r = {-1.0, -1.0, kfr_step_err(f, Ref::step_sos)};            \
         csv_row("kfr", "butterworth", N, "prewarp", r);                        \
         human_row("kfr", "butterworth", N, "prewarp", r);                      \
     } while (0)
@@ -55,7 +55,7 @@ static double kfr_step_err(kfr::iir_filter<double> &f,
         auto params = kfr::to_sos<double>(                                     \
             kfr::iir_lowpass(kfr::elliptic(N, 0.5, 40.0), 100.0, 1000.0));     \
         kfr::iir_filter<double> f(params);                                     \
-        AccResult r = {-1.0, -1.0, kfr_step_err(f, Ref::step)};                \
+        AccResult r = {-1.0, -1.0, kfr_step_err(f, Ref::step_sos)};            \
         csv_row("kfr", "elliptic", N, "prewarp", r);                           \
         human_row("kfr", "elliptic", N, "prewarp", r);                         \
     } while (0)
@@ -76,6 +76,19 @@ int main()
     RUN_KFR_BW(10);
     RUN_KFR_BW(11);
     RUN_KFR_BW(12);
+    RUN_KFR_BW(13);
+    RUN_KFR_BW(14);
+    RUN_KFR_BW(15);
+    RUN_KFR_BW(16);
+    RUN_KFR_BW(17);
+    RUN_KFR_BW(18);
+    RUN_KFR_BW(19);
+    RUN_KFR_BW(20);
+    RUN_KFR_BW(21);
+    RUN_KFR_BW(22);
+    RUN_KFR_BW(23);
+    RUN_KFR_BW(24);
+    RUN_KFR_BW(25);
 
 #ifdef KFR_HAVE_ELLIPTIC
     std::fputs("  [KFR  Elliptic  prewarp bilinear]\n", stderr);
@@ -90,6 +103,19 @@ int main()
     RUN_KFR_EL(10);
     RUN_KFR_EL(11);
     RUN_KFR_EL(12);
+    RUN_KFR_EL(13);
+    RUN_KFR_EL(14);
+    RUN_KFR_EL(15);
+    RUN_KFR_EL(16);
+    RUN_KFR_EL(17);
+    RUN_KFR_EL(18);
+    RUN_KFR_EL(19);
+    RUN_KFR_EL(20);
+    RUN_KFR_EL(21);
+    RUN_KFR_EL(22);
+    RUN_KFR_EL(23);
+    RUN_KFR_EL(24);
+    RUN_KFR_EL(25);
 #endif
 
     return 0;

@@ -9,8 +9,8 @@
 #define RUN_CF(ftype, N, METHOD, mstr)                                         \
     do                                                                         \
     {                                                                          \
-        constfilt::ftype<double, N##u, constfilt::METHOD,                      \
-                         constfilt::LowPass, false>                            \
+        constfilt::ftype<double, N##u, constfilt::METHOD, constfilt::LowPass,  \
+                         false>                                                \
             f(100.0, 1000.0);                                                  \
         auto r = bench(f, [](auto &f) { return f(1.0); });                     \
         csv_row("constfilt", #ftype, N, mstr, r);                              \
@@ -20,8 +20,8 @@
 #define RUN_CF_SOS(ftype, N, METHOD, mstr)                                     \
     do                                                                         \
     {                                                                          \
-        constfilt::ftype<double, N##u, constfilt::METHOD,                      \
-                         constfilt::LowPass, true>                             \
+        constfilt::ftype<double, N##u, constfilt::METHOD, constfilt::LowPass,  \
+                         true>                                                 \
             f(100.0, 1000.0);                                                  \
         auto r = bench(f, [](auto &f) { return f(1.0); });                     \
         csv_row("constfilt", #ftype, N, mstr "_sos", r);                       \

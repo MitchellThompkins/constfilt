@@ -34,8 +34,8 @@
     do                                                                         \
     {                                                                          \
         using Ref = acc_ref::el_##mstr##_N##N;                                 \
-        constfilt::Elliptic<double, N##u, constfilt::MC,                       \
-                            constfilt::LowPass, false>                         \
+        constfilt::Elliptic<double, N##u, constfilt::MC, constfilt::LowPass,   \
+                            false>                                             \
             f(100.0, 0.5, 40.0, 1000.0);                                       \
         auto r = check(f, Ref::b, Ref::a, Ref::step);                          \
         csv_row("constfilt", "elliptic", N, #mstr, r);                         \
@@ -46,8 +46,8 @@
     do                                                                         \
     {                                                                          \
         using Ref = acc_ref::el_##mstr##_N##N;                                 \
-        constfilt::Elliptic<double, N##u, constfilt::MC,                       \
-                            constfilt::LowPass, true>                          \
+        constfilt::Elliptic<double, N##u, constfilt::MC, constfilt::LowPass,   \
+                            true>                                              \
             f(100.0, 0.5, 40.0, 1000.0);                                       \
         auto r = check_step([&] { return f(1.0); }, Ref::step);                \
         csv_row("constfilt", "elliptic", N, #mstr "_sos", r);                  \

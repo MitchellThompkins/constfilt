@@ -20,8 +20,10 @@ pkg load signal;
 % test suite).
 addpath(fullfile(fileparts(mfilename('fullpath')), '..', '..', 'octave'), '-begin');
 which_ncauer = which('ncauer');
-expected_ncauer = fullfile(fileparts(mfilename('fullpath')), '..', '..', 'octave', 'ncauer.m');
-if ~strcmp(which_ncauer, expected_ncauer)
+expected_dir  = fullfile(fileparts(mfilename('fullpath')), '..', '..', 'octave');
+if isempty(strfind(which_ncauer, 'ncauer.m')) || ...
+   isempty(strfind(canonicalize_file_name(which_ncauer), ...
+                   canonicalize_file_name(expected_dir)))
     error('generate_accuracy_reference: shadowed ncauer.m not on path; got %s', ...
           which_ncauer);
 end
@@ -53,12 +55,19 @@ function emit_arr(fid, name, v)
     fprintf(fid, '};\n');
 end
 
-function emit_struct(fid, sname, ord, b_d, a_d, y_step)
+function y_sos = step_via_sosfilt(b_d, a_d, STEP_LEN)
+    [sos, g] = tf2sos(b_d, a_d);
+    sos(1, 1:3) = sos(1, 1:3) * g;
+    y_sos = sosfilt(sos, ones(1, STEP_LEN));
+end
+
+function emit_struct(fid, sname, ord, b_d, a_d, y_step, y_sos)
     fprintf(fid, 'struct %s\n{\n', sname);
     fprintf(fid, '    static constexpr int order = %d;\n', ord);
     emit_arr(fid, 'b', b_d);
     emit_arr(fid, 'a', a_d);
     emit_arr(fid, 'step', y_step);
+    emit_arr(fid, 'step_sos', y_sos);
     fprintf(fid, '};\n\n');
 end
 
@@ -144,8 +153,9 @@ for ord = 1:12
         else
             [b_d, a_d, y_step] = bw_design(ord, fc, fs, method);
         end
+        y_sos = step_via_sosfilt(b_d, a_d, STEP_LEN);
         sname = sprintf('bw_%s_N%d', label, ord);
-        emit_struct(fid, sname, ord, b_d, a_d, y_step);
+        emit_struct(fid, sname, ord, b_d, a_d, y_step, y_sos);
     end
 end
 
@@ -168,8 +178,9 @@ for ord = 2:12
         else
             [b_d, a_d, y_step] = el_design(ord, Rp, Rs, fc, fs, method);
         end
+        y_sos = step_via_sosfilt(b_d, a_d, STEP_LEN);
         sname = sprintf('el_%s_N%d', label, ord);
-        emit_struct(fid, sname, ord, b_d, a_d, y_step);
+        emit_struct(fid, sname, ord, b_d, a_d, y_step, y_sos);
     end
 end
 

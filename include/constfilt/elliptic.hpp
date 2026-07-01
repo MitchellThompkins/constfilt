@@ -26,10 +26,11 @@ namespace constfilt
 //   attenuation_db - stopband attenuation Rs in dB (e.g. 40)
 //   sample_rate_hz - sample rate in Hz
 //
-// The implementation follows Octave's ncauer (theta-function / q-series path),
-// with one deviation: Step 2 uses the modular identity q = q1^(1/N) instead of
-// ncauer's iterative degree-equation solver. Steps 1 and 3 onward are
-// identical. All coefficient math is constexpr.
+// The implementation follows Octave's ncauer (theta-function / q-series path)
+// with all coefficient math constexpr. Step 2 solves the Jacobi degree equation
+// K(k)/K(k') = N*K(k1)/K(k1') via bisection on k, matching Octave's iterative
+// approach and avoiding the precision loss of the closed-form q = q1^(1/N) +
+// theta inversion at large N.
 template <typename T, consteig::Size N, typename Method = TustinPW,
           typename FilterType = LowPass>
 class EllipticImpl
@@ -71,15 +72,17 @@ class EllipticImpl
     // AGM iteration count for elliptic_K; 64 rounds gives full double
     // precision.
     static constexpr int AGM_ITERATIONS{64};
-    // Truncation depth for theta-function and nome q-series. Since q < 1,
-    // terms decay as q^(n^2) and are below double precision well before n=30.
-    // Any value >= ~15 would give the same result; 30 is a conservative margin.
+    // Tighter counts used inside solve_degree_equation to stay within Clang's
+    // constexpr step budget. AGM doubles correct bits per iteration, so 8
+    // rounds gives 2^8 > 52 bits (double mantissa). 60 bisection steps covers
+    // the [0,1] interval to 2^{-60} < 1 ULP.
+    static constexpr int DEGREE_EQ_AGM{8};
+    static constexpr int DEGREE_EQ_BISECT{60};
+    // Truncation depth for the theta-function series in compute_sig0. Since
+    // q < 1, terms decay as q^(n^2) and are below double precision well before
+    // n=30.  Any value >= ~15 would give the same result; 30 is a conservative
+    // margin.
     static constexpr int SERIES_TERMS{30};
-    // Coefficients of the nome q-series: q = q0 + 2*q0^5 + 15*q0^9 +
-    // 150*q0^13.
-    static constexpr int NOME_COEFF_Q0_5{2};
-    static constexpr int NOME_COEFF_Q0_9{15};
-    static constexpr int NOME_COEFF_Q0_13{150};
 
     static constexpr TransferFunction<T, N + 1u, N + 1u> compute_continuous_tf(
         T cutoff_hz, T ripple_db, T attenuation_db)
@@ -115,73 +118,58 @@ class EllipticImpl
         return gcem::exp(x * static_cast<T>(LN10_OVER_10));
     }
 
-    // Nome q from modulus k (ncauer q-series approximation).
-    //   q0 = 0.5 * (1 - sqrt(k')) / (1 + sqrt(k'))
-    //   q  = q0 + 2*q0^5 + 15*q0^9 + 150*q0^13
+    // Nome q from modulus k via the exact definition:
+    //   q = exp(-pi * K(k') / K(k)),  k' = sqrt(1 - k^2)
+    // ncauer.m uses the same formula (ellipke-based), so both the reference and
+    // this implementation agree to full double precision across all orders.
     static constexpr T compute_nome(T k)
     {
         const T kp = gcem::sqrt(static_cast<T>(1) - k * k);
-        const T sqrt_kp = gcem::sqrt(kp);
-        const T q0 = static_cast<T>(0.5) * (static_cast<T>(1) - sqrt_kp) /
-                     (static_cast<T>(1) + sqrt_kp);
-        const T q0_2 = q0 * q0;
-        const T q0_4 = q0_2 * q0_2;
-        const T q0_5 = q0_4 * q0;
-        const T q0_9 = q0_5 * q0_4;
-        const T q0_13 = q0_9 * q0_4;
-        return q0 + static_cast<T>(NOME_COEFF_Q0_5) * q0_5 +
-               static_cast<T>(NOME_COEFF_Q0_9) * q0_9 +
-               static_cast<T>(NOME_COEFF_Q0_13) * q0_13;
+        return gcem::exp(-static_cast<T>(GCEM_PI) * elliptic_K_fast(kp) /
+                         elliptic_K_fast(k));
     }
 
-    // Recover modulus k from nome q (invert q = exp(-pi*K(k')/K(k)),
-    // where K(k) and K(k') are the complete elliptic integrals
-    // https://dlmf.nist.gov/19.2#ii).
-    // No closed form exists for this inversion, so Jacobi theta functions
-    // (https://dlmf.nist.gov/20.2#i) are used -- power series in q whose
-    // ratio gives k exactly via the identity k = theta2^2/theta3^2
-    // (https://dlmf.nist.gov/22.2, Whittaker & Watson ch. 22, Zverev s4.3):
-    //   theta2(q) = 2*q^(1/4) * sum_{n=0}^{inf} q^{n(n+1)}
-    //   theta3(q) = 1 + 2*sum_{n=1}^{inf} q^{n^2}
-    //   k = (theta2/theta3)^2
-    static constexpr T modulus_from_nome(T q)
+    // K(k) with DEGREE_EQ_AGM iterations — enough for double precision inside
+    // the bisection loop while keeping Clang's constexpr step count low.
+    static constexpr T elliptic_K_fast(T k)
     {
-        const T q14 = gcem::sqrt(gcem::sqrt(q)); // q^(1/4)
-        const T q2 = q * q;
-
-        // theta2(0,q) power series: 2*q^(1/4) * sum_{n=0}^{inf} q^{n(n+1)}
-        // Derived from the DLMF form 2*sum q^{(n+1/2)^2} by factoring out
-        // q^(1/4) since (n+1/2)^2 = n(n+1) + 1/4.
-        T theta2 = static_cast<T>(0);
-        T qpow = static_cast<T>(1); // q^(n*(n+1)), starts at q^0 when n=0
-        T q_2n = static_cast<T>(1);
-        for (int n = 0; n <= SERIES_TERMS; ++n)
+        T a = static_cast<T>(1);
+        T b = gcem::sqrt(static_cast<T>(1) - k * k);
+        for (int i = 0; i < DEGREE_EQ_AGM; ++i)
         {
-            if (n > 0)
-            {
-                q_2n *= q2;
-                qpow *= q_2n;
-            }
-            theta2 += qpow;
+            const T a2 = (a + b) / static_cast<T>(2);
+            b = gcem::sqrt(a * b);
+            a = a2;
         }
-        theta2 *= static_cast<T>(2) * q14;
+        return static_cast<T>(GCEM_PI) / (static_cast<T>(2) * a);
+    }
 
-        // theta3(0,q) power series: 1 + 2*sum_{n=1}^{inf} q^{n^2}
-        T theta3 = static_cast<T>(1);
-        T qpow3 = q; // q^(n^2), starting at q^1
-        T q_2n1 = q; // q^(2n-1), starting at q^1
-        for (int n = 1; n <= SERIES_TERMS; ++n)
+    // Solve the Jacobi degree equation for the design modulus k:
+    //   K(k) / K(k') = N * K(k1) / K(k1')
+    // via bisection. Matches Octave's ncauer iterative approach and avoids the
+    // precision loss of the closed-form q1^(1/N) + theta inversion at large N.
+    // K(k)/K(k') is monotone increasing from 0 to inf as k goes 0 -> 1, so
+    // bisection is well-posed. k >= k1 (equality only at N=1).
+    static constexpr T solve_degree_equation(T k1)
+    {
+        const T k1p = gcem::sqrt(static_cast<T>(1) - k1 * k1);
+        const T target =
+            static_cast<T>(N) * elliptic_K_fast(k1) / elliptic_K_fast(k1p);
+
+        T lo = k1;
+        T hi = static_cast<T>(1) - static_cast<T>(1e-12);
+
+        for (int i = 0; i < DEGREE_EQ_BISECT; ++i)
         {
-            if (n > 1)
-            {
-                q_2n1 *= q2;
-                qpow3 *= q_2n1;
-            }
-            theta3 += static_cast<T>(2) * qpow3;
+            const T mid = lo + (hi - lo) / static_cast<T>(2);
+            const T kp = gcem::sqrt(static_cast<T>(1) - mid * mid);
+            const T ratio = elliptic_K_fast(mid) / elliptic_K_fast(kp);
+            if (ratio < target)
+                lo = mid;
+            else
+                hi = mid;
         }
-
-        const T ratio = theta2 / theta3;
-        return ratio * ratio;
+        return lo + (hi - lo) / static_cast<T>(2);
     }
 
     // Pole-shift parameter sig0 via theta-function series (ncauer algorithm).
@@ -361,17 +349,16 @@ class EllipticImpl
     // Low-pass elliptic transfer function (ncauer theta-function algorithm).
     //
     // Steps:
-    //   1. Compute nome q from k1 via modular identity: q = q1^(1/N).
-    //   2. Recover design modulus k from q via theta functions.
-    //   3. Pole-shift sig0 via theta series.
+    //   1. Selectivity ratio k1 = ep/es from ripple specs.
+    //   2. Design modulus k via bisection on K(k)/K(k') = N*K(k1)/K(k1').
+    //   3. Nome q = compute_nome(k); pole-shift sig0 via theta series.
     //   4. Zero positions wi via theta series.
     //   5. Build s-domain polynomials from poles/zeros, scale by sqrt(ws).
     //   6. Gain normalization: H(0)=1 (odd N), H(0)=Gp (even N).
     //   7. Scale for passband cutoff wc.
     //
-    // The filter is fully determined after step 4. Steps 2-4 are the elliptic
-    // function machinery that places poles and zeros for equiripple in both
-    // bands. Step 1 is unit conversion; steps 5-7 are extraction and scaling.
+    // Steps 3-7 follow ncauer exactly. Step 2 uses bisection instead of the
+    // closed-form q1^(1/N) to avoid precision loss at large N.
     static constexpr void elliptic_tf(T wc, T ripple_db, T attenuation_db,
                                       T (&b)[N + 1u], T (&a)[N + 1u], LowPass)
     {
@@ -381,14 +368,9 @@ class EllipticImpl
         const T es = gcem::sqrt(from_db10(attenuation_db) - static_cast<T>(1));
         const T k1 = ep / es;
 
-        // Step 2: find design modulus k.
-        //   q1 = exp(-pi * K(k1') / K(k1))       nome of k1
-        //   q  = q1^(1/N)                         modular equation (Zverev
-        //   s4.3) k  = (theta2(q) / theta3(q))^2        recover modulus from
-        //   nome
-        const T q1 = compute_nome(k1);
-        const T q = gcem::exp(gcem::log(q1) / static_cast<T>(N));
-        const T k = modulus_from_nome(q);
+        // Step 2: design modulus k via bisection on the degree equation.
+        const T k = solve_degree_equation(k1);
+        const T q = compute_nome(k);
 
         // Step 3: pole-shift parameter sig0.
         //   Controls how far poles sit in the LHP, setting the equiripple
@@ -514,9 +496,8 @@ class EllipticImpl
         const T ep = gcem::sqrt(from_db10(ripple_db) - static_cast<T>(1));
         const T es = gcem::sqrt(from_db10(attenuation_db) - static_cast<T>(1));
         const T k1 = ep / es;
-        const T q1 = compute_nome(k1);
-        const T q = gcem::exp(gcem::log(q1) / static_cast<T>(N));
-        const T k = modulus_from_nome(q);
+        const T k = solve_degree_equation(k1);
+        const T q = compute_nome(k);
         const T sig0 = compute_sig0(ripple_db, q);
 
         Complex poles_proto[N]{};

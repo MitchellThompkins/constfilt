@@ -25,9 +25,21 @@
         constfilt::Butterworth<double, N##u, constfilt::MC,                    \
                                constfilt::LowPass, true>                       \
             f(100.0, 1000.0);                                                  \
-        auto r = check_step([&] { return f(1.0); }, Ref::step);                \
+        auto r = check_step([&] { return f(1.0); }, Ref::step_sos);            \
         csv_row("constfilt", "butterworth", N, #mstr "_sos", r);               \
         human_row("constfilt", "butterworth", N, #mstr "_sos", r);             \
+    } while (0)
+
+#define RUN_BW_VS_SOS(N, MC, mstr)                                             \
+    do                                                                         \
+    {                                                                          \
+        using Ref = acc_ref::bw_##mstr##_N##N;                                 \
+        constfilt::Butterworth<double, N##u, constfilt::MC,                    \
+                               constfilt::LowPass, false>                      \
+            f(100.0, 1000.0);                                                  \
+        auto r = check(f, Ref::b, Ref::a, Ref::step_sos);                      \
+        csv_row("constfilt", "butterworth", N, #mstr "_vs_sos_ref", r);        \
+        human_row("constfilt", "butterworth", N, #mstr "_vs_sos_ref", r);      \
     } while (0)
 
 #define RUN_EL(N, MC, mstr)                                                    \
@@ -49,9 +61,21 @@
         constfilt::Elliptic<double, N##u, constfilt::MC, constfilt::LowPass,   \
                             true>                                              \
             f(100.0, 0.5, 40.0, 1000.0);                                       \
-        auto r = check_step([&] { return f(1.0); }, Ref::step);                \
+        auto r = check_step([&] { return f(1.0); }, Ref::step_sos);            \
         csv_row("constfilt", "elliptic", N, #mstr "_sos", r);                  \
         human_row("constfilt", "elliptic", N, #mstr "_sos", r);                \
+    } while (0)
+
+#define RUN_EL_VS_SOS(N, MC, mstr)                                             \
+    do                                                                         \
+    {                                                                          \
+        using Ref = acc_ref::el_##mstr##_N##N;                                 \
+        constfilt::Elliptic<double, N##u, constfilt::MC, constfilt::LowPass,   \
+                            false>                                             \
+            f(100.0, 0.5, 40.0, 1000.0);                                       \
+        auto r = check(f, Ref::b, Ref::a, Ref::step_sos);                      \
+        csv_row("constfilt", "elliptic", N, #mstr "_vs_sos_ref", r);           \
+        human_row("constfilt", "elliptic", N, #mstr "_vs_sos_ref", r);         \
     } while (0)
 
 int main()
@@ -126,6 +150,36 @@ int main()
     RUN_BW_SOS(11, TustinPW, prewarp);
     RUN_BW_SOS(12, TustinPW, prewarp);
 
+    std::fputs("  [constfilt  Butterworth  MatchedZ  direct vs SOS ref]\n",
+               stderr);
+    RUN_BW_VS_SOS(1, MatchedZ, matchedz);
+    RUN_BW_VS_SOS(2, MatchedZ, matchedz);
+    RUN_BW_VS_SOS(3, MatchedZ, matchedz);
+    RUN_BW_VS_SOS(4, MatchedZ, matchedz);
+    RUN_BW_VS_SOS(5, MatchedZ, matchedz);
+    RUN_BW_VS_SOS(6, MatchedZ, matchedz);
+    RUN_BW_VS_SOS(7, MatchedZ, matchedz);
+    RUN_BW_VS_SOS(8, MatchedZ, matchedz);
+    RUN_BW_VS_SOS(9, MatchedZ, matchedz);
+    RUN_BW_VS_SOS(10, MatchedZ, matchedz);
+    RUN_BW_VS_SOS(11, MatchedZ, matchedz);
+    RUN_BW_VS_SOS(12, MatchedZ, matchedz);
+
+    std::fputs("  [constfilt  Butterworth  Tustin  direct vs SOS ref]\n",
+               stderr);
+    RUN_BW_VS_SOS(1, TustinPW, prewarp);
+    RUN_BW_VS_SOS(2, TustinPW, prewarp);
+    RUN_BW_VS_SOS(3, TustinPW, prewarp);
+    RUN_BW_VS_SOS(4, TustinPW, prewarp);
+    RUN_BW_VS_SOS(5, TustinPW, prewarp);
+    RUN_BW_VS_SOS(6, TustinPW, prewarp);
+    RUN_BW_VS_SOS(7, TustinPW, prewarp);
+    RUN_BW_VS_SOS(8, TustinPW, prewarp);
+    RUN_BW_VS_SOS(9, TustinPW, prewarp);
+    RUN_BW_VS_SOS(10, TustinPW, prewarp);
+    RUN_BW_VS_SOS(11, TustinPW, prewarp);
+    RUN_BW_VS_SOS(12, TustinPW, prewarp);
+
     std::fputs("  [constfilt  Elliptic  ZOH  direct]\n", stderr);
     RUN_EL(2, ZOH, zoh);
     RUN_EL(3, ZOH, zoh);
@@ -190,6 +244,46 @@ int main()
     RUN_EL_SOS(10, TustinPW, prewarp);
     RUN_EL_SOS(11, TustinPW, prewarp);
     RUN_EL_SOS(12, TustinPW, prewarp);
+
+    std::fputs("  [constfilt  Elliptic  ZOH  direct vs SOS ref]\n", stderr);
+    RUN_EL_VS_SOS(2, ZOH, zoh);
+    RUN_EL_VS_SOS(3, ZOH, zoh);
+    RUN_EL_VS_SOS(4, ZOH, zoh);
+    RUN_EL_VS_SOS(5, ZOH, zoh);
+    RUN_EL_VS_SOS(6, ZOH, zoh);
+    RUN_EL_VS_SOS(7, ZOH, zoh);
+    RUN_EL_VS_SOS(8, ZOH, zoh);
+    RUN_EL_VS_SOS(9, ZOH, zoh);
+    RUN_EL_VS_SOS(10, ZOH, zoh);
+    RUN_EL_VS_SOS(11, ZOH, zoh);
+    RUN_EL_VS_SOS(12, ZOH, zoh);
+
+    std::fputs("  [constfilt  Elliptic  MatchedZ  direct vs SOS ref]\n",
+               stderr);
+    RUN_EL_VS_SOS(2, MatchedZ, matchedz);
+    RUN_EL_VS_SOS(3, MatchedZ, matchedz);
+    RUN_EL_VS_SOS(4, MatchedZ, matchedz);
+    RUN_EL_VS_SOS(5, MatchedZ, matchedz);
+    RUN_EL_VS_SOS(6, MatchedZ, matchedz);
+    RUN_EL_VS_SOS(7, MatchedZ, matchedz);
+    RUN_EL_VS_SOS(8, MatchedZ, matchedz);
+    RUN_EL_VS_SOS(9, MatchedZ, matchedz);
+    RUN_EL_VS_SOS(10, MatchedZ, matchedz);
+    RUN_EL_VS_SOS(11, MatchedZ, matchedz);
+    RUN_EL_VS_SOS(12, MatchedZ, matchedz);
+
+    std::fputs("  [constfilt  Elliptic  Tustin  direct vs SOS ref]\n", stderr);
+    RUN_EL_VS_SOS(2, TustinPW, prewarp);
+    RUN_EL_VS_SOS(3, TustinPW, prewarp);
+    RUN_EL_VS_SOS(4, TustinPW, prewarp);
+    RUN_EL_VS_SOS(5, TustinPW, prewarp);
+    RUN_EL_VS_SOS(6, TustinPW, prewarp);
+    RUN_EL_VS_SOS(7, TustinPW, prewarp);
+    RUN_EL_VS_SOS(8, TustinPW, prewarp);
+    RUN_EL_VS_SOS(9, TustinPW, prewarp);
+    RUN_EL_VS_SOS(10, TustinPW, prewarp);
+    RUN_EL_VS_SOS(11, TustinPW, prewarp);
+    RUN_EL_VS_SOS(12, TustinPW, prewarp);
 
     return 0;
 }

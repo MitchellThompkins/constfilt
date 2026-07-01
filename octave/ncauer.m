@@ -67,8 +67,8 @@ function [zer, pol, T0] = ncauer (Rp, Rs, n)
   ws=__ellip_ws(n, Rp, Rs);
   k=wp/ws;
   k1=sqrt(1-k^2);
-  q0=(1/2)*((1-sqrt(k1))/(1+sqrt(k1)));
-  q= q0 + 2*q0^5 + 15*q0^9 + 150*q0^13; #(....)
+  int_kk1=ellipke([k^2; k1^2]);
+  q=exp(-pi*int_kk1(2)/int_kk1(1));
   D=(10^(0.1*Rs)-1)/(10^(0.1*Rp)-1);
 
   ## Filter order maybe this, but not used now:

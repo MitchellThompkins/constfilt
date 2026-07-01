@@ -122,6 +122,16 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
         )
     endif()
 
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        # Elliptic ZOH N=8 combines eigendecomposition and degree-equation
+        # bisection; each gcem::sqrt call costs ~50 constexpr steps, pushing the
+        # total past Clang's default 1M limit.  10M is sufficient for all tested
+        # orders while remaining well below the absolute max (~2^31).
+        target_compile_options(constfilt_warnings INTERFACE
+            -fconstexpr-steps=10000000
+        )
+    endif()
+
     if(CONSTFILT_BUILD_TESTS)
         add_subdirectory(test_dependencies)
         enable_testing()

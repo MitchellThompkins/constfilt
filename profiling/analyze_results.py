@@ -215,11 +215,6 @@ def _parse_group(grp):
     return (parts + ["", ""])[:3]
 
 
-def _constfilt_variant(method):
-    """Map a constfilt method string to a display key for comparison plots."""
-    return "constfilt (SOS)" if method.endswith("_sos") else "constfilt (direct)"
-
-
 def plot_runtime(data, orders, groups, csv_path, label):
     import matplotlib
     matplotlib.use("Agg")
@@ -230,67 +225,82 @@ def plot_runtime(data, orders, groups, csv_path, label):
     parsed = {grp: _parse_group(grp) for grp in groups}
     filter_types = sorted({ft for _, ft, _ in parsed.values()})
 
-    # One comparison plot per filter type.
-    # constfilt is split into two lines: direct-form and SOS cascade (averaged
-    # across discretization methods within each variant).
+    # Two comparison plots per filter type: direct-form and SOS.
+    # Each includes all iir1/kfr data alongside the respective constfilt variant.
     for ftype in filter_types:
-        lib_data = defaultdict(lambda: defaultdict(list))
-        for grp, (lib, ft, method) in parsed.items():
-            if ft != ftype:
-                continue
-            key = _constfilt_variant(method) if lib == "constfilt" else lib
-            for o in orders:
-                vals = data.get((grp, o), [])
-                lib_data[key][o].extend(vals)
+        for is_sos in (False, True):
+            lib_data = defaultdict(lambda: defaultdict(list))
+            for grp, (lib, ft, method) in parsed.items():
+                if ft != ftype:
+                    continue
+                if lib == "constfilt" and method.endswith("_sos") != is_sos:
+                    continue
+                for o in orders:
+                    vals = data.get((grp, o), [])
+                    lib_data[lib][o].extend(vals)
 
+            if not any(lib_data[lib] for lib in lib_data):
+                continue
+
+            fig, ax = plt.subplots(figsize=(10, 6))
+            cycle = itertools.cycle(plt.rcParams["axes.prop_cycle"])
+            for lib in sorted(lib_data):
+                col = next(cycle)["color"]
+                xs = sorted(o for o in lib_data[lib] if lib_data[lib][o])
+                ys = [sum(lib_data[lib][o]) / len(lib_data[lib][o]) for o in xs]
+                ls = "--" if lib == "kfr" else "-"
+                note = " (SIMD batch=256)" if lib == "kfr" else ""
+                ax.plot(xs, ys, marker="o", linestyle=ls,
+                        label=f"{lib} {ftype}{note}", color=col)
+
+            sos_suffix = "_sos" if is_sos else ""
+            sos_label = " (SOS)" if is_sos else ""
+            ax.set_xlabel("Filter Order")
+            ax.set_ylabel("ns / sample")
+            ax.set_title(
+                f"{ftype}{sos_label} Runtime Throughput - Library Comparison\n{label}\n"
+                "constfilt averaged across discretization methods; KFR uses SIMD (dashed)"
+            )
+            ax.set_xticks(orders)
+            ax.grid(True, alpha=0.3)
+            ax.legend(loc="best", fontsize=9)
+            fig.tight_layout()
+            png_path = f"{base}_{ftype.lower()}{sos_suffix}.png"
+            fig.savefig(png_path, dpi=150)
+            plt.close(fig)
+            print(f"Plot saved: {png_path}")
+
+    # Two constfilt-only plots: direct-form and SOS.
+    for is_sos in (False, True):
         fig, ax = plt.subplots(figsize=(10, 6))
         cycle = itertools.cycle(plt.rcParams["axes.prop_cycle"])
-        for lib_key in sorted(lib_data):
+        for grp in sorted(grp for grp, (lib, _, _) in parsed.items()
+                          if lib == "constfilt"):
+            _, ft, method = parsed[grp]
+            if method.endswith("_sos") != is_sos:
+                continue
             col = next(cycle)["color"]
-            xs = sorted(o for o in lib_data[lib_key] if lib_data[lib_key][o])
-            ys = [sum(lib_data[lib_key][o]) / len(lib_data[lib_key][o]) for o in xs]
-            ls = "--" if lib_key == "kfr" else (":" if "(SOS)" in lib_key else "-")
-            note = " (SIMD batch=256)" if lib_key == "kfr" else ""
-            ax.plot(xs, ys, marker="o", linestyle=ls,
-                    label=f"{lib_key} {ftype}{note}", color=col)
+            xs = [o for o in orders if data.get((grp, o))]
+            ys = [sum(data[(grp, o)]) / len(data[(grp, o)]) for o in xs]
+            if xs:
+                ax.plot(xs, ys, marker="o", label=f"{ft} / {method}", color=col)
 
+        sos_suffix = "_sos" if is_sos else ""
+        sos_label = " SOS" if is_sos else ""
         ax.set_xlabel("Filter Order")
         ax.set_ylabel("ns / sample")
         ax.set_title(
-            f"{ftype} Runtime Throughput - Library Comparison\n{label}\n"
-            "constfilt averaged across discretization methods; KFR uses SIMD (dashed)"
+            f"constfilt{sos_label} Runtime Throughput"
+            f" - All Filter Types and Methods\n{label}"
         )
         ax.set_xticks(orders)
         ax.grid(True, alpha=0.3)
         ax.legend(loc="best", fontsize=9)
         fig.tight_layout()
-        png_path = f"{base}_{ftype.lower()}.png"
+        png_path = f"{base}_constfilt{sos_suffix}.png"
         fig.savefig(png_path, dpi=150)
         plt.close(fig)
         print(f"Plot saved: {png_path}")
-
-    # constfilt-only plot: every filter_type x method combination
-    fig, ax = plt.subplots(figsize=(10, 6))
-    cycle = itertools.cycle(plt.rcParams["axes.prop_cycle"])
-    for grp in sorted(grp for grp, (lib, _, _) in parsed.items() if lib == "constfilt"):
-        _, ft, method = parsed[grp]
-        col = next(cycle)["color"]
-        xs = [o for o in orders if data.get((grp, o))]
-        ys = [sum(data[(grp, o)]) / len(data[(grp, o)]) for o in xs]
-        if xs:
-            ax.plot(xs, ys, marker="o", label=f"{ft} / {method}", color=col)
-
-    ax.set_xlabel("Filter Order")
-    ax.set_ylabel("ns / sample")
-    ax.set_title(f"constfilt Runtime Throughput - All Filter Types and Methods\n{label}")
-    ax.set_xticks(orders)
-    ax.grid(True, alpha=0.3)
-    ax.legend(loc="best", fontsize=9)
-    fig.tight_layout()
-    png_path = f"{base}_constfilt.png"
-    fig.savefig(png_path, dpi=150)
-    plt.close(fig)
-    print(f"Plot saved: {png_path}")
 
 
 # Accuracy
@@ -362,71 +372,85 @@ def plot_accuracy(data, orders, groups, csv_path, label):
     parsed = {grp: _parse_group(grp) for grp in groups}
     filter_types = sorted({ft for _, ft, _ in parsed.values()})
 
-    # One comparison plot per filter type.
-    # constfilt is split into direct-form and SOS; best (min) error shown per variant.
+    # Two comparison plots per filter type: direct-form and SOS.
     for ftype in filter_types:
-        lib_best = defaultdict(dict)  # key -> order -> min step error
-        for grp, (lib, ft, method) in parsed.items():
-            if ft != ftype:
-                continue
-            key = _constfilt_variant(method) if lib == "constfilt" else lib
-            for o, entry in data[grp].items():
-                if entry["step"] is None:
+        for is_sos in (False, True):
+            lib_best = defaultdict(dict)  # lib -> order -> min step error
+            for grp, (lib, ft, method) in parsed.items():
+                if ft != ftype:
                     continue
-                prev = lib_best[key].get(o)
-                if prev is None or entry["step"] < prev:
-                    lib_best[key][o] = entry["step"]
+                if lib == "constfilt" and method.endswith("_sos") != is_sos:
+                    continue
+                for o, entry in data[grp].items():
+                    if entry["step"] is None:
+                        continue
+                    prev = lib_best[lib].get(o)
+                    if prev is None or entry["step"] < prev:
+                        lib_best[lib][o] = entry["step"]
 
+            if not lib_best:
+                continue
+
+            fig, ax = plt.subplots(figsize=(10, 6))
+            cycle = itertools.cycle(plt.rcParams["axes.prop_cycle"])
+            for lib in sorted(lib_best):
+                col = next(cycle)["color"]
+                xs = sorted(o for o, v in lib_best[lib].items() if v > 0)
+                ys = [lib_best[lib][o] for o in xs]
+                if xs:
+                    ls = "--" if lib == "kfr" else "-"
+                    ax.semilogy(xs, ys, marker="o", linestyle=ls,
+                                label=f"{lib} {ftype}", color=col)
+
+            sos_suffix = "_sos" if is_sos else ""
+            sos_label = " (SOS)" if is_sos else ""
+            ax.axhline(ACCURACY_THRESHOLD, color="red", linestyle="--",
+                       label=f"threshold ({ACCURACY_THRESHOLD:.0e})")
+            ax.set_xlabel("Filter Order")
+            ax.set_ylabel("Max |step error| vs Octave")
+            ax.set_title(f"{ftype}{sos_label} Accuracy - Library Comparison\n{label}")
+            ax.set_xticks(orders)
+            ax.grid(True, alpha=0.3, which="both")
+            ax.legend(loc="best", fontsize=9)
+            fig.tight_layout()
+            png_path = f"{base}_{ftype.lower()}{sos_suffix}.png"
+            fig.savefig(png_path, dpi=150)
+            plt.close(fig)
+            print(f"Plot saved: {png_path}")
+
+    # Two constfilt-only plots: direct-form and SOS.
+    for is_sos in (False, True):
         fig, ax = plt.subplots(figsize=(10, 6))
         cycle = itertools.cycle(plt.rcParams["axes.prop_cycle"])
-        for lib_key in sorted(lib_best):
+        for grp in sorted(grp for grp, (lib, _, _) in parsed.items()
+                          if lib == "constfilt"):
+            _, ft, method = parsed[grp]
+            if method.endswith("_sos") != is_sos:
+                continue
             col = next(cycle)["color"]
-            xs = sorted(o for o, v in lib_best[lib_key].items() if v > 0)
-            ys = [lib_best[lib_key][o] for o in xs]
+            xs = sorted(o for o, e in data[grp].items()
+                        if e["step"] is not None and e["step"] > 0)
+            ys = [data[grp][o]["step"] for o in xs]
             if xs:
-                ls = "--" if lib_key == "kfr" else (":" if "(SOS)" in lib_key else "-")
-                ax.semilogy(xs, ys, marker="o", linestyle=ls,
-                            label=f"{lib_key} {ftype}", color=col)
+                ax.semilogy(xs, ys, marker="o", label=f"{ft} / {method}", color=col)
 
+        sos_suffix = "_sos" if is_sos else ""
+        sos_label = " SOS" if is_sos else ""
         ax.axhline(ACCURACY_THRESHOLD, color="red", linestyle="--",
                    label=f"threshold ({ACCURACY_THRESHOLD:.0e})")
         ax.set_xlabel("Filter Order")
         ax.set_ylabel("Max |step error| vs Octave")
-        ax.set_title(f"{ftype} Accuracy - Library Comparison\n{label}")
+        ax.set_title(
+            f"constfilt{sos_label} Accuracy - All Filter Types and Methods\n{label}"
+        )
         ax.set_xticks(orders)
         ax.grid(True, alpha=0.3, which="both")
         ax.legend(loc="best", fontsize=9)
         fig.tight_layout()
-        png_path = f"{base}_{ftype.lower()}.png"
+        png_path = f"{base}_constfilt{sos_suffix}.png"
         fig.savefig(png_path, dpi=150)
         plt.close(fig)
         print(f"Plot saved: {png_path}")
-
-    # constfilt-only plot: every filter_type x method combination
-    fig, ax = plt.subplots(figsize=(10, 6))
-    cycle = itertools.cycle(plt.rcParams["axes.prop_cycle"])
-    for grp in sorted(grp for grp, (lib, _, _) in parsed.items() if lib == "constfilt"):
-        _, ft, method = parsed[grp]
-        col = next(cycle)["color"]
-        xs = sorted(o for o, e in data[grp].items()
-                    if e["step"] is not None and e["step"] > 0)
-        ys = [data[grp][o]["step"] for o in xs]
-        if xs:
-            ax.semilogy(xs, ys, marker="o", label=f"{ft} / {method}", color=col)
-
-    ax.axhline(ACCURACY_THRESHOLD, color="red", linestyle="--",
-               label=f"threshold ({ACCURACY_THRESHOLD:.0e})")
-    ax.set_xlabel("Filter Order")
-    ax.set_ylabel("Max |step error| vs Octave")
-    ax.set_title(f"constfilt Accuracy - All Filter Types and Methods\n{label}")
-    ax.set_xticks(orders)
-    ax.grid(True, alpha=0.3, which="both")
-    ax.legend(loc="best", fontsize=9)
-    fig.tight_layout()
-    png_path = f"{base}_constfilt.png"
-    fig.savefig(png_path, dpi=150)
-    plt.close(fig)
-    print(f"Plot saved: {png_path}")
 
 
 # Entry point
